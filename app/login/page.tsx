@@ -1,31 +1,33 @@
-import { GalleryVerticalEnd } from "lucide-react"
-
 import { LoginForm } from "@/components/login-form"
+import Image from "next/image"
+import localFont from "next/font/local"
 
-export default function LoginPage() {
+const brastine = localFont({
+  src: "../fonts/Brastine.woff2",
+  display: "swap",
+})
+
+export default function Page() {
   return (
-    <div className="grid min-h-svh lg:grid-cols-2">
-      <div className="flex flex-col gap-4 p-6 md:p-10">
-        <div className="flex justify-center gap-2 md:justify-start">
-          <a href="#" className="flex items-center gap-2 font-medium">
-            <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
-              <GalleryVerticalEnd className="size-4" />
-            </div>
-            Acme Inc.
-          </a>
-        </div>
-        <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xs">
-            <LoginForm />
-          </div>
+    <div className="flex min-h-svh w-full items-center p-6 md:p-10 relative">
+      <Image src="/images/login.png" alt="Maritime background" fill className="object-cover" priority />
+      <div className="absolute top-6 left-6 md:top-10 md:left-[8%] flex items-center gap-4 z-10">
+        <Image src="/images/Logo1.png" alt="École Maritime Logo" width={80} height={80} className="w-20 h-20 md:w-24 md:h-24" />
+        <div className="flex flex-col">
+          <span className="text-[#06407F] text-xl md:text-2xl font-bold leading-tight">École Maritime</span>
+          <span className="text-[#06407F] text-xl md:text-2xl font-bold leading-tight">Garde Nationale</span>
         </div>
       </div>
-      <div className="bg-muted relative hidden lg:block">
-        <img
-          src="/placeholder.svg"
-          alt="Image"
-          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
-        />
+      <div className="ml-[8%] relative z-10">
+        <h1 className={`${brastine.className} text-white text-4xl md:text-3xl lg:text-4xl font-semibold`}>Former L'élite de la Garde Nationale maritime</h1>
+        <h1 className={`${brastine.className} text-white text-4xl md:text-5xl lg:text-7xl font-extrabold pb-5 pt-2`}>Au Service de la Nation</h1>
+        <p className="text-white text-lg md:text-xl mt-2 max-w-2xl">
+          L'École des Gardes-Côtes forme les cadres et agents des services maritimes. Nos programmes certifiés
+          garantissent l'intégration professionnelle au sein de la Garde Nationale.
+        </p>
+      </div>
+      <div className="w-full max-w-sm ml-auto mr-[12.5%] relative z-10">
+        <LoginForm />
       </div>
     </div>
   )
