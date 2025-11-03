@@ -1,30 +1,32 @@
-import React from 'react';
-import { Header } from "@/components/ui/header-2";
+"use client"
 
-export default function Demo() {
-	return (
-		<div className="w-full">
-			<Header />
+import { Header } from "@/components/ui/header"
+import { ResizableTable, type Employee } from "@/components/ui/resizable-table"
 
-			<main className="mx-auto min-h-screen w-full max-w-3xl px-4 py-12">
-				<div  className="space-y-2 mb-4">
-					<div className="bg-accent h-6 w-4/6 rounded-md border" />
-					<div className="bg-accent h-6 w-1/2 rounded-md border" />
-				</div>
-				<div  className="flex gap-2 mb-8">
-					<div className="bg-accent h-3 w-14 rounded-md border" />
-					<div className="bg-accent h-3 w-12 rounded-md border" />
-				</div>
+export default function ResizableTableDemo() {
+  const handleEmployeeSelect = (employeeId: string) => {
+    console.log(`Selected employee:`, employeeId)
+  }
 
-				{Array.from({ length: 7 }).map((_, i) => (
-					<div key={i} className="space-y-2 mb-8">
-						<div className="bg-accent h-4 w-full rounded-md border" />
-						<div className="bg-accent h-4 w-full rounded-md border" />
-						<div className="bg-accent h-4 w-full rounded-md border" />
-						<div className="bg-accent h-4 w-1/2 rounded-md border" />
-					</div>
-				))}
-			</main>
-		</div>
-	);
+  const handleColumnResize = (columnKey: string, newWidth: number) => {
+    console.log(`Column ${columnKey} resized to ${newWidth}px`)
+  }
+
+  return (
+    <>
+      <Header />
+      <div className="min-h-screen bg-background py-6 md:py-12">
+        <div className="container mx-auto px-2 sm:px-4">
+          <div className="mb-8 md:mb-12">
+            <ResizableTable
+              className="mt-10"
+              title="Employee"
+              onEmployeeSelect={handleEmployeeSelect}
+              onColumnResize={handleColumnResize}
+            />
+          </div>
+        </div>
+      </div>
+    </>
+  )
 }

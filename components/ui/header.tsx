@@ -1,13 +1,22 @@
 "use client"
 import React from "react"
+import Image from "next/image"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon"
 import { useScroll } from "@/components/ui/use-scroll"
+import { Toggle } from "@/components/ui/toggle"
+import { Sun, Moon } from "lucide-react"
+import { useTheme } from "next-themes"
 
 export function Header() {
   const [open, setOpen] = React.useState(false)
   const scrolled = useScroll(10)
+  const { theme, setTheme } = useTheme()
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark")
+  }
 
   const links = [
     {
@@ -55,16 +64,24 @@ export function Header() {
           "md:px-2": scrolled,
         })}
       >
-        <WordmarkIcon className="h-4" />
+        <Image
+          src="/images/Logo2.png"
+          alt="École de Formation Maritime"
+          width={48}
+          height={48}
+          className="h-10 w-auto"
+        />
         <div className="hidden items-center gap-2 md:flex">
           {links.map((link, i) => (
             <a key={i} className={buttonVariants({ variant: "ghost" })} href={link.href}>
               {link.label}
             </a>
           ))}
-          <Button className="cursor-pointer" variant="outline">
-            Sign In
-          </Button>
+          <Toggle className="cursor-pointer" variant="outline" onClick={toggleTheme}>
+            <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <span className="sr-only">Toggle theme</span>
+          </Toggle>
           <Button className="cursor-pointer">خـــروج</Button>
         </div>
         <Button size="icon" variant="outline" onClick={() => setOpen(!open)} className="md:hidden">
@@ -100,10 +117,12 @@ export function Header() {
             ))}
           </div>
           <div className="flex flex-col gap-2">
-            <Button variant="outline" className="w-full">
-              Sign In
-            </Button>
-            <Button className="w-full">Get Started</Button>
+            <Toggle className="cursor-pointer w-full" variant="outline" onClick={toggleTheme}>
+            <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <span className="sr-only">Toggle theme</span>
+          </Toggle>
+            <Button className="w-full cursor-pointer">خـــروج</Button>
           </div>
         </div>
       </div>
