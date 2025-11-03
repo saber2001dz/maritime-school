@@ -51,7 +51,7 @@ export function Header() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 mx-auto w-full max-w-5xl border-b border-transparent md:rounded-md md:border md:transition-all md:ease-out",
+        "sticky top-0 z-50 mx-auto w-full max-w-5xl border-b md:rounded-md md:border md:transition-all md:ease-out",
         {
           "bg-background/95 supports-backdrop-filter:bg-background/50 border-border backdrop-blur-lg md:top-4 md:max-w-4xl md:shadow":
             scrolled && !open,
@@ -82,7 +82,7 @@ export function Header() {
             <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             <span className="sr-only">Toggle theme</span>
           </Toggle>
-          <Button className="cursor-pointer">خـــروج</Button>
+          <Button className="bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors">خـــروج</Button>
         </div>
         <Button size="icon" variant="outline" onClick={() => setOpen(!open)} className="md:hidden">
           <MenuToggleIcon open={open} className="size-5" duration={300} />
@@ -118,11 +118,11 @@ export function Header() {
           </div>
           <div className="flex flex-col gap-2">
             <Toggle className="cursor-pointer w-full" variant="outline" onClick={toggleTheme}>
-            <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">Toggle theme</span>
-          </Toggle>
-            <Button className="w-full cursor-pointer">خـــروج</Button>
+              <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              <span className="sr-only">Toggle theme</span>
+            </Toggle>
+            <Button className="w-full bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors">خـــروج</Button>
           </div>
         </div>
       </div>
