@@ -1,6 +1,7 @@
 "use client"
 import React from "react"
 import Image from "next/image"
+import { usePathname } from "next/navigation"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon"
@@ -13,6 +14,7 @@ export function Header() {
   const [open, setOpen] = React.useState(false)
   const scrolled = useScroll(10)
   const { theme, setTheme } = useTheme()
+  const pathname = usePathname()
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark")
@@ -25,7 +27,7 @@ export function Header() {
     },
     {
       label: "متــربــص جــديــد",
-      href: "#",
+      href: "/nouveau-agent",
     },
     {
       label: "تكــويــن جــديــد",
@@ -51,9 +53,9 @@ export function Header() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 mx-auto w-full max-w-5xl border-b md:rounded-md md:border md:transition-all md:ease-out",
+        "sticky top-0 z-50 mx-auto w-full max-w-7xl border-b md:rounded-md md:border md:transition-all md:ease-out",
         {
-          "bg-background/95 supports-backdrop-filter:bg-background/50 border-border backdrop-blur-lg md:top-4 md:max-w-4xl md:shadow":
+          "bg-background/95 supports-backdrop-filter:bg-background/50 border-border backdrop-blur-lg md:top-4 md:max-w-6xl md:shadow":
             scrolled && !open,
           "bg-background/90": open,
         }
@@ -69,14 +71,26 @@ export function Header() {
           alt="École de Formation Maritime"
           width={48}
           height={48}
-          className="h-10 w-auto"
+          className="h-10 w-auto mr-1"
         />
         <div className="hidden items-center gap-2 md:flex">
-          {links.map((link, i) => (
-            <a key={i} className={buttonVariants({ variant: "ghost" })} href={link.href}>
-              {link.label}
-            </a>
-          ))}
+          {links.map((link, i) => {
+            const isActive = pathname === link.href
+            return (
+              <a
+                key={i}
+                className={cn(
+                  buttonVariants({ variant: "ghost" }),
+                  "transition-colors duration-300",
+                  isActive && "bg-[#06417F] text-white hover:bg-[#06417F] hover:text-white"
+                )}
+                href={link.href}
+              >
+                {link.label}
+              </a>
+            )
+          })}
+          <div className="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-2" />
           <Toggle className="cursor-pointer" variant="outline" onClick={toggleTheme}>
             <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
@@ -103,18 +117,25 @@ export function Header() {
           )}
         >
           <div className="grid gap-y-2">
-            {links.map((link) => (
-              <a
-                key={link.label}
-                className={buttonVariants({
-                  variant: "ghost",
-                  className: "justify-start",
-                })}
-                href={link.href}
-              >
-                {link.label}
-              </a>
-            ))}
+            {links.map((link) => {
+              const isActive = pathname === link.href
+              return (
+                <a
+                  key={link.label}
+                  className={cn(
+                    buttonVariants({
+                      variant: "ghost",
+                      className: "justify-start",
+                    }),
+                    "transition-colors duration-300",
+                    isActive && "bg-[#06417F] text-white hover:bg-[#06417F] hover:text-white"
+                  )}
+                  href={link.href}
+                >
+                  {link.label}
+                </a>
+              )
+            })}
           </div>
           <div className="flex flex-col gap-2">
             <Toggle className="cursor-pointer w-full" variant="outline" onClick={toggleTheme}>
@@ -122,7 +143,7 @@ export function Header() {
               <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
               <span className="sr-only">Toggle theme</span>
             </Toggle>
-            <Button className="w-full bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors">خـــروج</Button>
+            <Button className="w-full bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors mr-1">خـــروج</Button>
           </div>
         </div>
       </div>
