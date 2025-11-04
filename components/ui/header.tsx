@@ -21,7 +21,7 @@ export function Header() {
   const links = [
     {
       label: "الصفحـة الـرئيسيـة",
-      href: "#",
+      href: "/principal",
     },
     {
       label: "متــربــص جــديــد",

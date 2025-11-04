@@ -3,20 +3,20 @@
 import { useState, useEffect, useMemo } from "react"
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion"
 import { useTheme } from "next-themes"
-import { Download, ChevronDown, Search, X, SearchX, Eye } from "lucide-react"
+import { Download, ChevronDown, Search, X, SearchX, Eye, ArrowDown, Check } from "lucide-react"
 import { Resizable } from "react-resizable"
 import { Input } from "@/components/ui/input"
 import "react-resizable/css/styles.css"
 
 export interface Employee {
   id: string
-  name: string
-  email: string
-  department: string
-  position: string
-  salary: number
-  hireDate: string
-  status: "active" | "inactive" | "on-leave"
+  nomPrenom: string
+  grade: string
+  matricule: string
+  responsabilite: string
+  telephone: number
+  derniereDateFormation: string
+  categorie: "ضابط سامي" | "ضابط" | "ضابط صف" | "هيئة الرقباء"
   avatar?: string
 }
 
@@ -32,158 +32,225 @@ interface ResizableTableProps {
 const defaultEmployees: Employee[] = [
   {
     id: "1",
-    name: "أحمد بن محمد",
-    email: "مقدم",
-    department: "12345",
-    position: "مهندس برمجيات أول",
-    salary: 55123456,
-    hireDate: "2022-03-15",
-    status: "active",
+    nomPrenom: "أحمد بن محمد",
+    grade: "مقدم",
+    matricule: "12345",
+    responsabilite: "مهندس برمجيات أول",
+    telephone: 55123456,
+    derniereDateFormation: "2022-03-15",
+    categorie: "ضابط سامي", // مقدم
   },
   {
     id: "2",
-    name: "فاطمة الزهراء",
-    email: "رائد",
-    department: "23456",
-    position: "مدير التسويق",
-    salary: 55234567,
-    hireDate: "2021-08-22",
-    status: "active",
+    nomPrenom: "فاطمة الزهراء",
+    grade: "رائد",
+    matricule: "23456",
+    responsabilite: "مدير التسويق",
+    telephone: 55234567,
+    derniereDateFormation: "2021-08-22",
+    categorie: "ضابط سامي", // رائد
   },
   {
     id: "3",
-    name: "محمد الأمين",
-    email: "عريف أول",
-    department: "34567",
-    position: "مصمم تجربة المستخدم",
-    salary: 55345678,
-    hireDate: "2023-01-10",
-    status: "active",
+    nomPrenom: "محمد الأمين",
+    grade: "عريف أول",
+    matricule: "34567",
+    responsabilite: "مصمم تجربة المستخدم",
+    telephone: 55345678,
+    derniereDateFormation: "2023-01-10",
+    categorie: "ضابط صف", // عريف أول
   },
   {
     id: "4",
-    name: "خديجة بنت علي",
-    email: "عريف",
-    department: "45678",
-    position: "قائد تقني",
-    salary: 55456789,
-    hireDate: "2020-11-05",
-    status: "active",
+    nomPrenom: "خديجة بنت علي",
+    grade: "عريف",
+    matricule: "45678",
+    responsabilite: "قائد تقني",
+    telephone: 55456789,
+    derniereDateFormation: "2020-11-05",
+    categorie: "ضابط صف", // عريف
   },
   {
     id: "5",
-    name: "عبد الرحمن السعيد",
-    email: "ملازم أول",
-    department: "56789",
-    position: "مدير الموارد البشرية",
-    salary: 55567890,
-    hireDate: "2019-06-12",
-    status: "on-leave",
+    nomPrenom: "عبد الرحمن السعيد",
+    grade: "ملازم أول",
+    matricule: "56789",
+    responsabilite: "مدير الموارد البشرية",
+    telephone: 55567890,
+    derniereDateFormation: "2019-06-12",
+    categorie: "ضابط", // ملازم أول
   },
   {
     id: "6",
-    name: "نور الهدى",
-    email: "وكيل",
-    department: "67890",
-    position: "مدير المبيعات",
-    salary: 55678901,
-    hireDate: "2021-02-28",
-    status: "active",
+    nomPrenom: "نور الهدى",
+    grade: "وكيل",
+    matricule: "67890",
+    responsabilite: "مدير المبيعات",
+    telephone: 55678901,
+    derniereDateFormation: "2021-02-28",
+    categorie: "ضابط صف", // وكيل
   },
   {
     id: "7",
-    name: "يوسف بن إبراهيم",
-    email: "وكيل أول",
-    department: "78901",
-    position: "محلل مالي",
-    salary: 55789012,
-    hireDate: "2023-04-18",
-    status: "active",
+    nomPrenom: "يوسف بن إبراهيم",
+    grade: "وكيل أول",
+    matricule: "78901",
+    responsabilite: "محلل مالي",
+    telephone: 55789012,
+    derniereDateFormation: "2023-04-18",
+    categorie: "ضابط صف", // وكيل أول
   },
   {
     id: "8",
-    name: "سارة القاسمي",
-    email: "وكيل",
-    department: "89012",
-    position: "مهندس عمليات التطوير",
-    salary: 55890123,
-    hireDate: "2022-09-14",
-    status: "active",
+    nomPrenom: "سارة القاسمي",
+    grade: "وكيل",
+    matricule: "89012",
+    responsabilite: "مهندس عمليات التطوير",
+    telephone: 55890123,
+    derniereDateFormation: "2022-09-14",
+    categorie: "ضابط صف", // وكيل
   },
   {
     id: "9",
-    name: "عمر بن الخطاب",
-    email: "عريف أول",
-    department: "90123",
-    position: "مدير المحتوى",
-    salary: 55901234,
-    hireDate: "2023-07-03",
-    status: "inactive",
+    nomPrenom: "عمر بن الخطاب",
+    grade: "عريف أول",
+    matricule: "90123",
+    responsabilite: "مدير المحتوى",
+    telephone: 55901234,
+    derniereDateFormation: "2023-07-03",
+    categorie: "ضابط صف", // عريف أول
   },
   {
     id: "10",
-    name: "ليلى المنصوري",
-    email: "عريف",
-    department: "10234",
-    position: "مدير العمليات",
-    salary: 56012345,
-    hireDate: "2021-12-01",
-    status: "active",
+    nomPrenom: "ليلى المنصوري",
+    grade: "عريف",
+    matricule: "10234",
+    responsabilite: "مدير العمليات",
+    telephone: 56012345,
+    derniereDateFormation: "2021-12-01",
+    categorie: "ضابط صف", // عريف
   },
   {
     id: "11",
-    name: "حسن البصري",
-    email: "وكيل",
-    department: "11345",
-    position: "مصمم منتجات",
-    salary: 56123456,
-    hireDate: "2022-05-20",
-    status: "active",
+    nomPrenom: "حسن البصري",
+    grade: "وكيل",
+    matricule: "11345",
+    responsabilite: "مصمم منتجات",
+    telephone: 56123456,
+    derniereDateFormation: "2022-05-20",
+    categorie: "ضابط صف", // وكيل
   },
   {
     id: "12",
-    name: "مريم العلوي",
-    email: "وكيل أول",
-    department: "12456",
-    position: "مطور واجهات أمامية",
-    salary: 56234567,
-    hireDate: "2023-03-08",
-    status: "active",
+    nomPrenom: "مريم العلوي",
+    grade: "وكيل أول",
+    matricule: "12456",
+    responsabilite: "مطور واجهات أمامية",
+    telephone: 56234567,
+    derniereDateFormation: "2023-03-08",
+    categorie: "ضابط صف", // وكيل أول
   },
   {
     id: "13",
-    name: "زياد الحسني",
-    email: "وكيل أول",
-    department: "13567",
-    position: "مسؤول حسابات",
-    salary: 56345678,
-    hireDate: "2022-11-15",
-    status: "active",
+    nomPrenom: "زياد الحسني",
+    grade: "وكيل أول",
+    matricule: "13567",
+    responsabilite: "مسؤول حسابات",
+    telephone: 56345678,
+    derniereDateFormation: "2022-11-15",
+    categorie: "ضابط صف", // وكيل أول
   },
   {
     id: "14",
-    name: "إلهام الشريف",
-    email: "ملازم أول",
-    department: "14678",
-    position: "محلل مالي أول",
-    salary: 56456789,
-    hireDate: "2021-04-30",
-    status: "active",
+    nomPrenom: "إلهام الشريف",
+    grade: "ملازم أول",
+    matricule: "14678",
+    responsabilite: "محلل مالي أول",
+    telephone: 56456789,
+    derniereDateFormation: "2021-04-30",
+    categorie: "ضابط", // ملازم أول
   },
   {
     id: "15",
-    name: "طارق بن زياد",
-    email: "نقيب",
-    department: "15789",
-    position: "أخصائي موارد بشرية",
-    salary: 56567890,
-    hireDate: "2023-08-12",
-    status: "active",
+    nomPrenom: "طارق بن زياد",
+    grade: "نقيب",
+    matricule: "15789",
+    responsabilite: "أخصائي موارد بشرية",
+    telephone: 56567890,
+    derniereDateFormation: "2023-08-12",
+    categorie: "ضابط", // نقيب
   },
 ]
 
-type SortField = "name" | "department" | "position" | "salary" | "hireDate"
+type SortField = "nomPrenom" | "categorie" | "derniereDateFormation" | "grade"
 type SortOrder = "asc" | "desc"
+
+// Hiérarchie des grades militaires
+const RANK_HIERARCHY: Record<string, number> = {
+  عميد: 1,
+  عقيد: 2,
+  مقدم: 3,
+  رائد: 4,
+  نقيب: 5,
+  "ملازم أول": 6,
+  "ملازم اول": 6,
+  "ملازم 1": 6,
+  ملازم: 7,
+  "وكيل أول": 8,
+  "وكيل اول": 8,
+  "وكيل 1": 8,
+  وكيل: 9,
+  "عريف أول": 10,
+  "عريف اول": 10,
+  "عريف 1": 10,
+  عريف: 11,
+  "رقيب أول": 12,
+  "رقيب اول": 12,
+  "رقيب 1": 12,
+  رقيب: 13,
+  حرس: 14,
+}
+
+// Fonction pour normaliser et obtenir la position du grade
+const getRankOrder = (rank: string): number => {
+  const normalized = rank.trim()
+  return RANK_HIERARCHY[normalized] ?? 999 // 999 pour les grades non reconnus
+}
+
+// Fonction pour normaliser les lettres arabes pour la recherche
+const normalizeArabicText = (text: string): string => {
+  return text
+    .replace(/[أإآا]/g, "ا") // Normaliser toutes les variantes de alif en alif simple
+    .toLowerCase()
+}
+
+// Fonction pour déterminer la catégorie basée sur le grade
+const getCategorieFromGrade = (grade: string): "ضابط سامي" | "ضابط" | "ضابط صف" | "هيئة الرقباء" => {
+  const normalized = grade.trim()
+
+  // ضابط سامي: عميد - عقيد - مقدم - رائد
+  if (["عميد", "عقيد", "مقدم", "رائد"].includes(normalized)) {
+    return "ضابط سامي"
+  }
+
+  // ضابط: ملازم - ملازم أول - نقيب
+  if (["ملازم", "ملازم أول", "ملازم اول", "ملازم 1", "نقيب"].includes(normalized)) {
+    return "ضابط"
+  }
+
+  // ضابط صف: وكيل أول - وكيل - عريف أول - عريف
+  if (["وكيل أول", "وكيل اول", "وكيل 1", "وكيل", "عريف أول", "عريف اول", "عريف 1", "عريف"].includes(normalized)) {
+    return "ضابط صف"
+  }
+
+  // هيئة الرقباء: حرس - رقيب أول - رقيب
+  if (["حرس", "رقيب أول", "رقيب اول", "رقيب 1", "رقيب"].includes(normalized)) {
+    return "هيئة الرقباء"
+  }
+
+  // Par défaut, retourner ضابط صف
+  return "ضابط صف"
+}
 
 export function ResizableTable({
   title = "Employee",
@@ -196,13 +263,14 @@ export function ResizableTable({
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([])
   const [mounted, setMounted] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const [sortField, setSortField] = useState<SortField | null>(null)
+  const [sortField, setSortField] = useState<SortField | null>(null) // null = tri par défaut (الرتبة)
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc")
   const [showSortMenu, setShowSortMenu] = useState(false)
   const [showFilterMenu, setShowFilterMenu] = useState(false)
   const [showExportMenu, setShowExportMenu] = useState(false)
   const [filterStatus, setFilterStatus] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>("")
+  const [searchMatricule, setSearchMatricule] = useState<string>("")
 
   const shouldReduceMotion = useReducedMotion()
   const { theme } = useTheme()
@@ -248,12 +316,17 @@ export function ResizableTable({
     }
   }
 
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+  const handleSort = (field: SortField | null) => {
+    if (field === null) {
+      setSortField(null)
+      setSortOrder("asc")
     } else {
       setSortField(field)
-      setSortOrder("asc")
+      if (field === "derniereDateFormation") {
+        setSortOrder("desc")
+      } else {
+        setSortOrder("asc")
+      }
     }
     setShowSortMenu(false)
     setCurrentPage(1)
@@ -268,35 +341,53 @@ export function ResizableTable({
   const sortedAndFilteredEmployees = useMemo(() => {
     let filtered = [...initialEmployees]
 
-    // Filter by search query
+    // Filter by search query (nom et prénom)
     if (searchQuery.trim()) {
-      filtered = filtered.filter((e) => e.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      const normalizedQuery = normalizeArabicText(searchQuery)
+      filtered = filtered.filter((e) => normalizeArabicText(e.nomPrenom).includes(normalizedQuery))
+    }
+
+    // Filter by matricule (commence par les chiffres saisis)
+    if (searchMatricule.trim()) {
+      filtered = filtered.filter((e) => e.matricule.startsWith(searchMatricule))
     }
 
     // Filter by status
     if (filterStatus) {
-      filtered = filtered.filter((e) => e.status === filterStatus)
+      filtered = filtered.filter((e) => e.categorie === filterStatus)
     }
 
     // Sort
+    // Si sortField est null, appliquer le tri par défaut selon الرتبة (grade)
     if (!sortField) {
-      return filtered
+      return filtered.sort((a, b) => {
+        const aRank = getRankOrder(a.grade)
+        const bRank = getRankOrder(b.grade)
+        return aRank - bRank // Toujours ascendant (du grade le plus élevé au plus bas)
+      })
     }
 
     return filtered.sort((a, b) => {
+      // Tri spécial pour les grades
+      if (sortField === "grade") {
+        const aRank = getRankOrder(a.grade)
+        const bRank = getRankOrder(b.grade)
+        return sortOrder === "asc" ? aRank - bRank : bRank - aRank
+      }
+
       let aVal: string | number = a[sortField]
       let bVal: string | number = b[sortField]
 
-      if (sortField === "hireDate") {
-        aVal = new Date(a.hireDate).getTime()
-        bVal = new Date(b.hireDate).getTime()
+      if (sortField === "derniereDateFormation") {
+        aVal = new Date(a.derniereDateFormation).getTime()
+        bVal = new Date(b.derniereDateFormation).getTime()
       }
 
       if (aVal < bVal) return sortOrder === "asc" ? -1 : 1
       if (aVal > bVal) return sortOrder === "asc" ? 1 : -1
       return 0
     })
-  }, [initialEmployees, sortField, sortOrder, filterStatus, searchQuery])
+  }, [initialEmployees, sortField, sortOrder, filterStatus, searchQuery, searchMatricule])
 
   const paginatedEmployees = useMemo(() => {
     const startIdx = (currentPage - 1) * ITEMS_PER_PAGE
@@ -308,46 +399,58 @@ export function ResizableTable({
   const getStatusColor = (status: string) => {
     if (!mounted) {
       const statusMap: Record<string, { bgColor: string; borderColor: string; textColor: string; dotColor: string }> = {
-        active: {
+        "ضابط سامي": {
+          bgColor: "bg-purple-500/10",
+          borderColor: "border-purple-500/30",
+          textColor: "text-purple-400",
+          dotColor: "bg-purple-400",
+        },
+        ضابط: {
+          bgColor: "bg-blue-500/10",
+          borderColor: "border-blue-500/30",
+          textColor: "text-blue-400",
+          dotColor: "bg-blue-400",
+        },
+        "ضابط صف": {
           bgColor: "bg-green-500/10",
           borderColor: "border-green-500/30",
           textColor: "text-green-400",
           dotColor: "bg-green-400",
         },
-        inactive: {
-          bgColor: "bg-red-500/10",
-          borderColor: "border-red-500/30",
-          textColor: "text-red-400",
-          dotColor: "bg-red-400",
-        },
-        "on-leave": {
-          bgColor: "bg-yellow-500/10",
-          borderColor: "border-yellow-500/30",
-          textColor: "text-yellow-400",
-          dotColor: "bg-yellow-400",
+        "هيئة الرقباء": {
+          bgColor: "bg-orange-500/10",
+          borderColor: "border-orange-500/30",
+          textColor: "text-orange-400",
+          dotColor: "bg-orange-400",
         },
       }
       return statusMap[status]
     }
 
     const statusMap: Record<string, { bgColor: string; borderColor: string; textColor: string; dotColor: string }> = {
-      active: {
+      "ضابط سامي": {
+        bgColor: isDark ? "bg-purple-500/10" : "bg-purple-50",
+        borderColor: isDark ? "border-purple-500/30" : "border-purple-200",
+        textColor: isDark ? "text-purple-400" : "text-purple-600",
+        dotColor: isDark ? "bg-purple-400" : "bg-purple-600",
+      },
+      ضابط: {
+        bgColor: isDark ? "bg-blue-500/10" : "bg-blue-50",
+        borderColor: isDark ? "border-blue-500/30" : "border-blue-200",
+        textColor: isDark ? "text-blue-400" : "text-blue-600",
+        dotColor: isDark ? "bg-blue-400" : "bg-blue-600",
+      },
+      "ضابط صف": {
         bgColor: isDark ? "bg-green-500/10" : "bg-green-50",
         borderColor: isDark ? "border-green-500/30" : "border-green-200",
         textColor: isDark ? "text-green-400" : "text-green-600",
         dotColor: isDark ? "bg-green-400" : "bg-green-600",
       },
-      inactive: {
-        bgColor: isDark ? "bg-red-500/10" : "bg-red-50",
-        borderColor: isDark ? "border-red-500/30" : "border-red-200",
-        textColor: isDark ? "text-red-400" : "text-red-600",
-        dotColor: isDark ? "bg-red-400" : "bg-red-600",
-      },
-      "on-leave": {
-        bgColor: isDark ? "bg-yellow-500/10" : "bg-yellow-50",
-        borderColor: isDark ? "border-yellow-500/30" : "border-yellow-200",
-        textColor: isDark ? "text-yellow-400" : "text-yellow-600",
-        dotColor: isDark ? "bg-yellow-400" : "bg-yellow-600",
+      "هيئة الرقباء": {
+        bgColor: isDark ? "bg-orange-500/10" : "bg-orange-50",
+        borderColor: isDark ? "border-orange-500/30" : "border-orange-200",
+        textColor: isDark ? "text-orange-400" : "text-orange-600",
+        dotColor: isDark ? "bg-orange-400" : "bg-orange-600",
       },
     }
 
@@ -384,13 +487,13 @@ export function ResizableTable({
     // Headers in RTL order (right to left)
     const headers = ["الفئة", "آخر تكوين", "رقم الهاتف", "المسؤولية", "الرقم", "الرتبة", "الإسم و اللقب"]
     const rows = sortedAndFilteredEmployees.map((employee) => [
-      employee.status,
-      employee.hireDate,
-      employee.salary,
-      employee.position,
-      employee.department,
-      employee.email,
-      employee.name,
+      employee.categorie,
+      employee.derniereDateFormation,
+      employee.telephone,
+      employee.responsabilite,
+      employee.matricule,
+      employee.grade,
+      employee.nomPrenom,
     ])
 
     // Add BOM for proper UTF-8 encoding and RTL mark
@@ -458,7 +561,7 @@ export function ResizableTable({
     <div className={`w-full max-w-7xl mx-auto ${className}`}>
       <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2 flex-1">
-          <div className="relative w-full max-w-sm">
+          <div className="relative w-full max-w-80">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
               type="text"
@@ -484,6 +587,35 @@ export function ResizableTable({
               </button>
             )}
           </div>
+
+          <div className="relative w-full max-w-[220px]">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              type="text"
+              inputMode="numeric"
+              placeholder="بــحــث حــســب الرقم . . ."
+              value={searchMatricule}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9]/g, "")
+                setSearchMatricule(value)
+                setCurrentPage(1)
+              }}
+              className="pr-9 pl-9 focus-visible:ring-1"
+              style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+            />
+            {searchMatricule && (
+              <button
+                onClick={() => {
+                  setSearchMatricule("")
+                  setCurrentPage(1)
+                }}
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                aria-label="Clear search matricule"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -504,7 +636,7 @@ export function ResizableTable({
               </svg>
               ترتــيــب{" "}
               {sortField && (
-                <span className="ml-1 text-xs bg-primary text-primary-foreground rounded-sm px-1.5 py-0.5">1</span>
+                <span className="ml-1 text-xs bg-primary text-primary-foreground rounded-sm px-1.5 pt-1">1</span>
               )}
               <ChevronDown size={14} className="opacity-50" />
             </button>
@@ -514,36 +646,44 @@ export function ResizableTable({
                 <div className="fixed inset-0 z-10" onClick={() => setShowSortMenu(false)} />
                 <div className="absolute right-0 mt-1 w-48 bg-background border border-border/50 shadow-lg rounded-md z-20 py-1">
                   <button
-                    onClick={() => handleSort("name")}
-                    className={`w-full px-3 py-2 text-start text-sm hover:bg-muted/50 transition-colors ${
-                      sortField === "name" ? "bg-muted/30" : ""
+                    onClick={() => handleSort(null)}
+                    className={`w-full px-3 py-2 text-start text-sm hover:bg-muted/50 transition-colors border-b border-border/30 flex items-center justify-between ${
+                      sortField === null ? "bg-muted/30" : ""
                     }`}
+                    style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                   >
-                    Name {sortField === "name" && `(${sortOrder === "asc" ? "A-Z" : "Z-A"})`}
+                    <span>إلغــــاء التــرتيـــب</span>
+                    {sortField === null && <Check className="h-4 w-4 text-primary" />}
                   </button>
                   <button
-                    onClick={() => handleSort("department")}
-                    className={`w-full px-3 py-2 text-start text-sm hover:bg-muted/50 transition-colors ${
-                      sortField === "department" ? "bg-muted/30" : ""
+                    onClick={() => handleSort("nomPrenom")}
+                    className={`w-full px-3 py-2 text-start text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
+                      sortField === "nomPrenom" ? "bg-muted/30" : ""
                     }`}
+                    style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                   >
-                    Department {sortField === "department" && `(${sortOrder === "asc" ? "↑" : "↓"})`}
+                    <span>الإســـم و اللــقـــب</span>
+                    {sortField === "nomPrenom" && <Check className="h-4 w-4 text-primary" />}
                   </button>
                   <button
-                    onClick={() => handleSort("salary")}
-                    className={`w-full px-3 py-2 text-start text-sm hover:bg-muted/50 transition-colors ${
-                      sortField === "salary" ? "bg-muted/30" : ""
+                    onClick={() => handleSort("categorie")}
+                    className={`w-full px-3 py-2 text-start text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
+                      sortField === "categorie" ? "bg-muted/30" : ""
                     }`}
+                    style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                   >
-                    Salary {sortField === "salary" && `(${sortOrder === "asc" ? "↑" : "↓"})`}
+                    <span>الفــــــئـــــــــــــــــة</span>
+                    {sortField === "categorie" && <Check className="h-4 w-4 text-primary" />}
                   </button>
                   <button
-                    onClick={() => handleSort("hireDate")}
-                    className={`w-full px-3 py-2 text-start text-sm hover:bg-muted/50 transition-colors ${
-                      sortField === "hireDate" ? "bg-muted/30" : ""
+                    onClick={() => handleSort("derniereDateFormation")}
+                    className={`w-full px-3 py-2 text-start text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
+                      sortField === "derniereDateFormation" ? "bg-muted/30" : ""
                     }`}
+                    style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                   >
-                    Hire Date {sortField === "hireDate" && `(${sortOrder === "asc" ? "↑" : "↓"})`}
+                    <span>آخـــــر تكـــويـــــن</span>
+                    {sortField === "derniereDateFormation" && <Check className="h-4 w-4 text-primary" />}
                   </button>
                 </div>
               </>
@@ -563,7 +703,7 @@ export function ResizableTable({
               </svg>
               تـصـفـيـة
               {filterStatus && (
-                <span className="ml-1 text-xs bg-primary text-primary-foreground rounded-sm px-1.5 py-0.5">1</span>
+                <span className="ml-1 text-xs bg-primary text-primary-foreground rounded-sm px-1.5 pt-1">1</span>
               )}
               <ChevronDown size={14} className="opacity-50" />
             </button>
@@ -574,22 +714,26 @@ export function ResizableTable({
                 <div className="absolute right-0 mt-1 w-44 bg-background border border-border/50 shadow-lg rounded-md z-20 py-1">
                   <button
                     onClick={() => handleFilter(null)}
-                    className={`w-full px-3 py-2 text-start text-sm hover:bg-muted/50 transition-colors ${
+                    className={`w-full px-3 py-2 text-start text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
                       !filterStatus ? "bg-muted/30" : ""
                     }`}
+                    style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                   >
-                    All Status
+                    <span>كل الفئات</span>
+                    {!filterStatus && <Check className="h-4 w-4 text-primary" />}
                   </button>
 
-                  {["active", "inactive", "on-leave"].map((status) => (
+                  {["ضابط سامي", "ضابط", "ضابط صف", "هيئة الرقباء"].map((status) => (
                     <button
                       key={status}
                       onClick={() => handleFilter(status)}
-                      className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2 ${
+                      className={`w-full px-3 py-2 text-start text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
                         filterStatus === status ? "bg-muted/30" : ""
                       }`}
+                      style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                     >
-                      {status.charAt(0).toUpperCase() + status.slice(1).replace("-", " ")}
+                      <span>{status}</span>
+                      {filterStatus === status && <Check className="h-4 w-4 text-primary" />}
                     </button>
                   ))}
                 </div>
@@ -689,7 +833,7 @@ export function ResizableTable({
                 }
               >
                 <div
-                  className={`flex items-center px-3 relative ${
+                  className={`flex items-center px-3 relative gap-1.5 ${
                     mounted
                       ? isDark
                         ? "border-l border-zinc-600"
@@ -699,6 +843,7 @@ export function ResizableTable({
                   style={{ width: columnWidths.name }}
                 >
                   <span>الإســم و اللـقـــب</span>
+                  {sortField === "nomPrenom" && <ArrowDown className="h-3.5 w-3.5 text-primary" />}
                 </div>
               </Resizable>
 
@@ -809,7 +954,7 @@ export function ResizableTable({
                 }
               >
                 <div
-                  className={`flex items-center px-3 relative ${
+                  className={`flex items-center px-3 relative gap-1.5 ${
                     mounted
                       ? isDark
                         ? "border-l border-zinc-600"
@@ -819,6 +964,7 @@ export function ResizableTable({
                   style={{ width: columnWidths.hireDate }}
                 >
                   <span>آخـــر تكــويــــن</span>
+                  {sortField === "derniereDateFormation" && <ArrowDown className="h-3.5 w-3.5 text-primary" />}
                 </div>
               </Resizable>
 
@@ -833,7 +979,7 @@ export function ResizableTable({
                 }
               >
                 <div
-                  className={`flex items-center px-3 relative ${
+                  className={`flex items-center px-3 relative gap-1.5 ${
                     mounted
                       ? isDark
                         ? "border-l border-zinc-600"
@@ -843,6 +989,7 @@ export function ResizableTable({
                   style={{ width: columnWidths.status }}
                 >
                   <span>الفـــئــــــة</span>
+                  {sortField === "categorie" && <ArrowDown className="h-3.5 w-3.5 text-primary" />}
                 </div>
               </Resizable>
 
@@ -875,7 +1022,7 @@ export function ResizableTable({
               <motion.div
                 key={`page-${currentPage}-filter-${filterStatus || "all"}-sort-${
                   sortField || "none"
-                }-search-${searchQuery}`}
+                }-search-${searchQuery}-matricule-${searchMatricule}`}
                 variants={shouldAnimate ? containerVariants : {}}
                 initial={shouldAnimate ? "hidden" : "visible"}
                 animate="visible"
@@ -889,13 +1036,19 @@ export function ResizableTable({
                       className="text-muted-foreground/70 text-sm"
                       style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                     >
-                      لا توجد نتائج للبحث عن "{searchQuery}"
+                      {searchQuery && searchMatricule
+                        ? `لا توجد نتائج للبحث عن "${searchQuery}" و الرقم "${searchMatricule}"`
+                        : searchQuery
+                        ? `لا توجد نتائج للبحث عن "${searchQuery}"`
+                        : searchMatricule
+                        ? `لا توجد نتائج للبحث عن الرقم "${searchMatricule}"`
+                        : "لا توجد نتائج"}
                     </div>
                     <div
                       className="text-muted-foreground/50 text-xs mt-2"
                       style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                     >
-                      حاول البحث بإسم آخر
+                      حاول البحث بمعايير أخرى
                     </div>
                   </div>
                 ) : (
@@ -952,7 +1105,7 @@ export function ResizableTable({
                               className="text-sm text-foreground truncate"
                               style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                             >
-                              {employee.name}
+                              {employee.nomPrenom}
                             </span>
                           </div>
 
@@ -970,7 +1123,7 @@ export function ResizableTable({
                               className="text-sm text-foreground/80 truncate"
                               style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                             >
-                              {employee.email}
+                              {employee.grade}
                             </span>
                           </div>
 
@@ -988,7 +1141,7 @@ export function ResizableTable({
                               className="text-sm text-foreground/80 truncate"
                               style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                             >
-                              {employee.department}
+                              {employee.matricule}
                             </span>
                           </div>
 
@@ -1006,7 +1159,7 @@ export function ResizableTable({
                               className="text-sm text-foreground/80 truncate"
                               style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                             >
-                              {employee.position}
+                              {employee.responsabilite}
                             </span>
                           </div>
 
@@ -1025,7 +1178,7 @@ export function ResizableTable({
                               style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                               dir="ltr"
                             >
-                              {formatPhoneNumber(employee.salary)}
+                              {formatPhoneNumber(employee.telephone)}
                             </span>
                           </div>
 
@@ -1043,7 +1196,7 @@ export function ResizableTable({
                               className="text-sm text-foreground/80"
                               style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                             >
-                              {employee.hireDate}
+                              {employee.derniereDateFormation}
                             </span>
                           </div>
 
@@ -1058,13 +1211,14 @@ export function ResizableTable({
                             style={{ width: columnWidths.status }}
                           >
                             {(() => {
-                              const { bgColor, textColor, dotColor } = getStatusColor(employee.status)
+                              const { bgColor, textColor, dotColor } = getStatusColor(employee.categorie)
                               return (
                                 <div
                                   className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium whitespace-nowrap ${bgColor} ${textColor} rounded-md`}
+                                  style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                                 >
                                   <div className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></div>
-                                  {employee.status.charAt(0).toUpperCase() + employee.status.slice(1).replace("-", " ")}
+                                  {employee.categorie}
                                 </div>
                               )
                             })()}
