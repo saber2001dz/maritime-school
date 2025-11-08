@@ -3,9 +3,13 @@
 import { useState, useEffect, useMemo } from "react"
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion"
 import { useTheme } from "next-themes"
-import { Download, ChevronDown, Search, X, SearchX, Eye, ArrowDown, Check } from "lucide-react"
+import { Download, ChevronDown, Search, X, SearchX, Eye, ArrowDown, Check, SquarePen } from "lucide-react"
 import { Resizable } from "react-resizable"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import NeumorphButton from "@/components/ui/neumorph-button"
 import "react-resizable/css/styles.css"
 
 export interface Employee {
@@ -271,6 +275,8 @@ export function ResizableTable({
   const [filterStatus, setFilterStatus] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [searchMatricule, setSearchMatricule] = useState<string>("")
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
+  const [editFormData, setEditFormData] = useState<Employee | null>(null)
 
   const shouldReduceMotion = useReducedMotion()
   const { theme } = useTheme()
@@ -518,6 +524,37 @@ export function ResizableTable({
     link.href = URL.createObjectURL(blob)
     link.download = `employees-${new Date().toISOString().split("T")[0]}.json`
     link.click()
+  }
+
+  const handleEditClick = (employee: Employee) => {
+    setEditingEmployee(employee)
+    setEditFormData({ ...employee })
+  }
+
+  const handleEditFormChange = (field: keyof Employee, value: string | number) => {
+    if (editFormData) {
+      setEditFormData({
+        ...editFormData,
+        [field]: value,
+      })
+    }
+  }
+
+  const handleSaveEdit = () => {
+    if (editFormData) {
+      // Ici, vous pouvez ajouter la logique pour sauvegarder les modifications
+      // Par exemple, mettre à jour dans une base de données ou un état global
+      console.log("Saving employee data:", editFormData)
+
+      // Fermer le popover
+      setEditingEmployee(null)
+      setEditFormData(null)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingEmployee(null)
+    setEditFormData(null)
   }
 
   const shouldAnimate = enableAnimations && !shouldReduceMotion
@@ -1225,7 +1262,7 @@ export function ResizableTable({
                           </div>
 
                           <div
-                            className={`flex items-center justify-center px-3 ${
+                            className={`flex items-center justify-center gap-1 px-3 ${
                               mounted
                                 ? isDark
                                   ? "border-r border-zinc-600"
@@ -1234,6 +1271,174 @@ export function ResizableTable({
                             }`}
                             style={{ width: columnWidths.actions }}
                           >
+                            <Popover
+                              open={editingEmployee?.id === employee.id}
+                              onOpenChange={(open) => {
+                                if (!open) {
+                                  handleCancelEdit()
+                                }
+                              }}
+                            >
+                              <PopoverTrigger asChild>
+                                <button
+                                  onClick={() => handleEditClick(employee)}
+                                  className="p-1.5 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
+                                  aria-label="Modifier"
+                                >
+                                  <SquarePen className="h-3.5 w-3.5 text-foreground/70 hover:text-foreground" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                className="w-[400px] p-4 bg-slate-50 dark:bg-slate-900 shadow-2xl"
+                                align="start"
+                                side="left"
+                                sideOffset={8}
+                                style={{ fontFamily: "'Noto Naskh Arabic', sans-serif", transformOrigin: "top right" }}
+                              >
+                                <div className="space-y-4">
+                                  <div className="flex items-center justify-between border-b pb-3">
+                                    <h3
+                                      className="text-lg font-semibold text-[#1071C7]"
+                                      style={{ fontFamily: "inherit" }}
+                                    >
+                                      تعديل بيانات الموظف
+                                    </h3>
+                                    <button
+                                      onClick={handleCancelEdit}
+                                      className="p-1 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </button>
+                                  </div>
+
+                                  {editFormData && (
+                                    <>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="nomPrenom">الاسم و اللقب</Label>
+                                        <Input
+                                          id="nomPrenom"
+                                          value={editFormData.nomPrenom}
+                                          onChange={(e) => handleEditFormChange("nomPrenom", e.target.value)}
+                                          className="text-right"
+                                        />
+                                      </div>
+
+                                      <div className="space-y-2">
+                                        <Label htmlFor="grade">الرتبة</Label>
+                                        <Select
+                                          dir="rtl"
+                                          value={editFormData.grade}
+                                          onValueChange={(value) => handleEditFormChange("grade", value)}
+                                        >
+                                          <SelectTrigger
+                                            className="w-full rounded"
+                                            style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                                          >
+                                            <SelectValue placeholder="اختر الرتبة" />
+                                          </SelectTrigger>
+                                          <SelectContent style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+                                            <SelectItem value="عميد" className="text-[15px]">
+                                              عميد
+                                            </SelectItem>
+                                            <SelectItem value="عقيد" className="text-[15px]">
+                                              عقيد
+                                            </SelectItem>
+                                            <SelectItem value="مقدم" className="text-[15px]">
+                                              مقدم
+                                            </SelectItem>
+                                            <SelectItem value="رائد" className="text-[15px]">
+                                              رائد
+                                            </SelectItem>
+                                            <SelectItem value="نقيب" className="text-[15px]">
+                                              نقيب
+                                            </SelectItem>
+                                            <SelectItem value="ملازم أول" className="text-[15px]">
+                                              ملازم أول
+                                            </SelectItem>
+                                            <SelectItem value="ملازم" className="text-[15px]">
+                                              ملازم
+                                            </SelectItem>
+                                            <SelectItem value="عريف أول" className="text-[15px]">
+                                              عريف أول
+                                            </SelectItem>
+                                            <SelectItem value="عريف" className="text-[15px]">
+                                              عريف
+                                            </SelectItem>
+                                            <SelectItem value="وكيل أول" className="text-[15px]">
+                                              وكيل أول
+                                            </SelectItem>
+                                            <SelectItem value="وكيل" className="text-[15px]">
+                                              وكيل
+                                            </SelectItem>
+                                            <SelectItem value="رقيب أول" className="text-[15px]">
+                                              رقيب أول
+                                            </SelectItem>
+                                            <SelectItem value="رقيب" className="text-[15px]">
+                                              رقيب
+                                            </SelectItem>
+                                            <SelectItem value="حرس" className="text-[15px]">
+                                              حرس
+                                            </SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+
+                                      <div className="space-y-2">
+                                        <Label htmlFor="matricule">الرقم</Label>
+                                        <Input
+                                          id="matricule"
+                                          value={editFormData.matricule}
+                                          onChange={(e) => handleEditFormChange("matricule", e.target.value)}
+                                          className="text-right"
+                                        />
+                                      </div>
+
+                                      <div className="space-y-2">
+                                        <Label htmlFor="responsabilite">المسؤولية</Label>
+                                        <Input
+                                          id="responsabilite"
+                                          value={editFormData.responsabilite}
+                                          onChange={(e) => handleEditFormChange("responsabilite", e.target.value)}
+                                          className="text-right"
+                                        />
+                                      </div>
+
+                                      <div className="space-y-2">
+                                        <Label htmlFor="telephone">رقم الهاتف</Label>
+                                        <Input
+                                          id="telephone"
+                                          type="number"
+                                          value={editFormData.telephone}
+                                          onChange={(e) =>
+                                            handleEditFormChange("telephone", parseInt(e.target.value) || 0)
+                                          }
+                                          className="text-right"
+                                        />
+                                      </div>
+
+                                      <div className="flex gap-2 pt-6 mt-2 border-t">
+                                        <NeumorphButton
+                                          onClick={handleCancelEdit}
+                                          intent="secondary"
+                                          size="medium"
+                                          className="flex-1 cursor-pointer"
+                                        >
+                                          إلغـــــاء
+                                        </NeumorphButton>
+                                        <NeumorphButton
+                                          onClick={handleSaveEdit}
+                                          intent="primary"
+                                          size="medium"
+                                          className="flex-1 cursor-pointer"
+                                        >
+                                          حـفـــــظ
+                                        </NeumorphButton>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </PopoverContent>
+                            </Popover>
                             <button
                               onClick={() => {
                                 // Action à définir

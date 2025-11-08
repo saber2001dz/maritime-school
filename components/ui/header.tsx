@@ -33,6 +33,14 @@ export function Header() {
       label: "تكــويــن جــديــد",
       href: "#",
     },
+    {
+      label: "قـائمـة التـربـصـات",
+      href: "#",
+    },
+    {
+      label: "مخــطط التـربـصـات",
+      href: "#",
+    },
   ]
 
   React.useEffect(() => {
