@@ -1,0 +1,53 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/db'
+
+// GET /api/formations - Récupérer toutes les formations
+export async function GET() {
+  try {
+    const formations = await prisma.formation.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+    })
+    return NextResponse.json(formations)
+  } catch (error) {
+    console.error('Erreur lors de la récupération des formations:', error)
+    return NextResponse.json(
+      { error: 'Erreur lors de la récupération des formations' },
+      { status: 500 }
+    )
+  }
+}
+
+// POST /api/formations - Créer une nouvelle formation
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { typeFormation, formation, duree } = body
+
+    // Validation basique
+    if (!typeFormation || !formation) {
+      return NextResponse.json(
+        { error: 'Les champs typeFormation et formation sont requis' },
+        { status: 400 }
+      )
+    }
+
+    const newFormation = await prisma.formation.create({
+      data: {
+        typeFormation,
+        formation,
+        duree: duree || null,
+      },
+    })
+
+    return NextResponse.json(newFormation, { status: 201 })
+  } catch (error: any) {
+    console.error('Erreur lors de la création de la formation:', error)
+
+    return NextResponse.json(
+      { error: 'Erreur lors de la création de la formation' },
+      { status: 500 }
+    )
+  }
+}

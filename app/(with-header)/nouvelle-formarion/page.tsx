@@ -54,7 +54,23 @@ export default function NouvelleFormationPage() {
     setError(null)
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const response = await fetch("/api/formations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          typeFormation: formData.typeFormation,
+          formation: formData.formation,
+          duree: formData.duree,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || "Une erreur s'est produite")
+      }
+
       setSuccess(true)
 
       // Rediriger vers la page principal apres 2 secondes

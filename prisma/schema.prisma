@@ -35,3 +35,13 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// Modèle Formation pour gérer les formations de l'école maritime
+model Formation {
+  id            String   @id @default(cuid())
+  typeFormation String   // تكوين إختصاص ou تكوين تخصصي
+  formation     String   // Nom de la formation
+  duree         String?  // Durée de la formation (optionnel)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
