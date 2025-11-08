@@ -59,6 +59,46 @@ npm run lint
 - Next.js 16.0.1
 - Tailwind CSS v4 (using the new PostCSS plugin architecture)
 - TypeScript 5
+- Prisma 6.19.0 with SQLite
+- Radix UI components (@radix-ui/react-*)
+- Framer Motion (animations)
+- Lucide React (icons)
+
+## Database (Prisma ORM)
+
+### Setup
+The project uses Prisma ORM with SQLite as the database provider.
+
+### Configuration Files
+- [prisma/schema.prisma](prisma/schema.prisma) - Database schema definition
+- [prisma.config.ts](prisma.config.ts) - Prisma configuration (requires dotenv)
+- [.env](.env) - Environment variables (DATABASE_URL)
+- [lib/db.ts](lib/db.ts) - Prisma Client singleton instance
+
+### Database Commands
+```bash
+npm run db:generate  # Generate Prisma Client
+npm run db:push      # Push schema changes without migration
+npm run db:migrate   # Create and apply a new migration
+npm run db:studio    # Open Prisma Studio (GUI for database)
+npm run db:seed      # Seed the database
+```
+
+### Current Schema Models
+- **Agent** - Maritime school agents (nom, prenom, email, telephone, poste)
+- **User** - Application users (email, name, password, role)
+
+### API Routes
+- [app/api/agents/route.ts](app/api/agents/route.ts) - GET (list), POST (create)
+- [app/api/agents/[id]/route.ts](app/api/agents/[id]/route.ts) - GET, PUT, DELETE (by ID)
+
+### Using Prisma in Code
+```typescript
+import { prisma } from '@/lib/db'
+
+// Example: Fetch all agents
+const agents = await prisma.agent.findMany()
+```
 
 ## Notes
 - This project uses Tailwind CSS v4, which has breaking changes from v3:
@@ -66,3 +106,5 @@ npm run lint
   - Configuration moved to CSS with `@theme` directive
   - Uses `@tailwindcss/postcss` plugin
 - The project uses Geist fonts (sans and mono) loaded via `next/font/google`
+- SQLite database file (dev.db) and journal files are gitignored
+- Prisma migrations are versioned and committed to the repository

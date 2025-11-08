@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -15,6 +16,7 @@ const notoNaskhArabic = localFont({
 })
 
 export default function NouveauAgentPage() {
+  const router = useRouter()
   const [formData, setFormData] = React.useState({
     nom: "",
     prenom: "",
@@ -25,6 +27,7 @@ export default function NouveauAgentPage() {
   })
   const [loading, setLoading] = React.useState(false)
   const [success, setSuccess] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
   const [errors, setErrors] = React.useState({
     nom: false,
     prenom: false,
@@ -86,12 +89,42 @@ export default function NouveauAgentPage() {
     if (!validateForm()) {
       return
     }
+
     setLoading(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    console.log("Form submitted:", formData)
-    setLoading(false)
-    setSuccess(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/agents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nom: formData.nom,
+          prenom: formData.prenom,
+          grade: formData.grade,
+          matricule: formData.numero,
+          responsabilite: formData.responsabilite,
+          telephone: formData.telephone,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur lors de la création de l\'agent')
+      }
+
+      setSuccess(true)
+
+      // Rediriger vers la page principal après 2 secondes
+      setTimeout(() => {
+        router.push('/principal')
+      }, 2000)
+    } catch (err: any) {
+      setError(err.message)
+      setLoading(false)
+    }
   }
 
   return (
@@ -280,6 +313,18 @@ export default function NouveauAgentPage() {
                   autoComplete="off"
                 />
               </motion.div>
+
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md"
+                >
+                  <p className={`text-sm text-red-600 dark:text-red-400 text-center ${notoNaskhArabic.className}`}>
+                    {error}
+                  </p>
+                </motion.div>
+              )}
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }}

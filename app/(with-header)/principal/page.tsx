@@ -1,26 +1,32 @@
-"use client"
+import { ResizableTableWrapper } from "./resizable-table-wrapper"
+import { prisma } from "@/lib/db"
 
-import { ResizableTable, type Employee } from "@/components/ui/resizable-table"
+export default async function PrincipalPage() {
+  // Récupérer les agents depuis la base de données
+  const agents = await prisma.agent.findMany({
+    orderBy: {
+      createdAt: 'desc',
+    },
+  })
 
-export default function ResizableTableDemo() {
-  const handleEmployeeSelect = (employeeId: string) => {
-    console.log(`Selected employee:`, employeeId)
-  }
-
-  const handleColumnResize = (columnKey: string, newWidth: number) => {
-    console.log(`Column ${columnKey} resized to ${newWidth}px`)
-  }
+  // Transformer les données Prisma pour correspondre à l'interface Agent
+  const agentsData = agents.map((agent: typeof agents[0]) => ({
+    id: agent.id,
+    nomPrenom: agent.nomPrenom,
+    grade: agent.grade,
+    matricule: agent.matricule,
+    responsabilite: agent.responsabilite,
+    telephone: agent.telephone,
+    derniereDateFormation: agent.derniereDateFormation,
+    categorie: agent.categorie as "ضابط سامي" | "ضابط" | "ضابط صف" | "هيئة الرقباء",
+    avatar: agent.avatar ?? undefined,
+  }))
 
   return (
     <div className="min-h-screen bg-background py-6 md:py-12">
       <div className="container mx-auto px-2 sm:px-4">
         <div className="mb-8 md:mb-12">
-          <ResizableTable
-            className="mt-10"
-            title="Employee"
-            onEmployeeSelect={handleEmployeeSelect}
-            onColumnResize={handleColumnResize}
-          />
+          <ResizableTableWrapper agents={agentsData} />
         </div>
       </div>
     </div>

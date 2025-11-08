@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import NeumorphButton from "@/components/ui/neumorph-button"
 import "react-resizable/css/styles.css"
 
-export interface Employee {
+export interface Agent {
   id: string
   nomPrenom: string
   grade: string
@@ -26,165 +26,12 @@ export interface Employee {
 
 interface ResizableTableProps {
   title?: string
-  employees?: Employee[]
-  onEmployeeSelect?: (employeeId: string) => void
+  agents: Agent[]
+  onAgentSelect?: (agentId: string) => void
   onColumnResize?: (columnKey: string, newWidth: number) => void
   className?: string
   enableAnimations?: boolean
 }
-
-const defaultEmployees: Employee[] = [
-  {
-    id: "1",
-    nomPrenom: "أحمد بن محمد",
-    grade: "مقدم",
-    matricule: "12345",
-    responsabilite: "مهندس برمجيات أول",
-    telephone: 55123456,
-    derniereDateFormation: "2022-03-15",
-    categorie: "ضابط سامي", // مقدم
-  },
-  {
-    id: "2",
-    nomPrenom: "فاطمة الزهراء",
-    grade: "رائد",
-    matricule: "23456",
-    responsabilite: "مدير التسويق",
-    telephone: 55234567,
-    derniereDateFormation: "2021-08-22",
-    categorie: "ضابط سامي", // رائد
-  },
-  {
-    id: "3",
-    nomPrenom: "محمد الأمين",
-    grade: "عريف أول",
-    matricule: "34567",
-    responsabilite: "مصمم تجربة المستخدم",
-    telephone: 55345678,
-    derniereDateFormation: "2023-01-10",
-    categorie: "ضابط صف", // عريف أول
-  },
-  {
-    id: "4",
-    nomPrenom: "خديجة بنت علي",
-    grade: "عريف",
-    matricule: "45678",
-    responsabilite: "قائد تقني",
-    telephone: 55456789,
-    derniereDateFormation: "2020-11-05",
-    categorie: "ضابط صف", // عريف
-  },
-  {
-    id: "5",
-    nomPrenom: "عبد الرحمن السعيد",
-    grade: "ملازم أول",
-    matricule: "56789",
-    responsabilite: "مدير الموارد البشرية",
-    telephone: 55567890,
-    derniereDateFormation: "2019-06-12",
-    categorie: "ضابط", // ملازم أول
-  },
-  {
-    id: "6",
-    nomPrenom: "نور الهدى",
-    grade: "وكيل",
-    matricule: "67890",
-    responsabilite: "مدير المبيعات",
-    telephone: 55678901,
-    derniereDateFormation: "2021-02-28",
-    categorie: "ضابط صف", // وكيل
-  },
-  {
-    id: "7",
-    nomPrenom: "يوسف بن إبراهيم",
-    grade: "وكيل أول",
-    matricule: "78901",
-    responsabilite: "محلل مالي",
-    telephone: 55789012,
-    derniereDateFormation: "2023-04-18",
-    categorie: "ضابط صف", // وكيل أول
-  },
-  {
-    id: "8",
-    nomPrenom: "سارة القاسمي",
-    grade: "وكيل",
-    matricule: "89012",
-    responsabilite: "مهندس عمليات التطوير",
-    telephone: 55890123,
-    derniereDateFormation: "2022-09-14",
-    categorie: "ضابط صف", // وكيل
-  },
-  {
-    id: "9",
-    nomPrenom: "عمر بن الخطاب",
-    grade: "عريف أول",
-    matricule: "90123",
-    responsabilite: "مدير المحتوى",
-    telephone: 55901234,
-    derniereDateFormation: "2023-07-03",
-    categorie: "ضابط صف", // عريف أول
-  },
-  {
-    id: "10",
-    nomPrenom: "ليلى المنصوري",
-    grade: "عريف",
-    matricule: "10234",
-    responsabilite: "مدير العمليات",
-    telephone: 56012345,
-    derniereDateFormation: "2021-12-01",
-    categorie: "ضابط صف", // عريف
-  },
-  {
-    id: "11",
-    nomPrenom: "حسن البصري",
-    grade: "وكيل",
-    matricule: "11345",
-    responsabilite: "مصمم منتجات",
-    telephone: 56123456,
-    derniereDateFormation: "2022-05-20",
-    categorie: "ضابط صف", // وكيل
-  },
-  {
-    id: "12",
-    nomPrenom: "مريم العلوي",
-    grade: "وكيل أول",
-    matricule: "12456",
-    responsabilite: "مطور واجهات أمامية",
-    telephone: 56234567,
-    derniereDateFormation: "2023-03-08",
-    categorie: "ضابط صف", // وكيل أول
-  },
-  {
-    id: "13",
-    nomPrenom: "زياد الحسني",
-    grade: "وكيل أول",
-    matricule: "13567",
-    responsabilite: "مسؤول حسابات",
-    telephone: 56345678,
-    derniereDateFormation: "2022-11-15",
-    categorie: "ضابط صف", // وكيل أول
-  },
-  {
-    id: "14",
-    nomPrenom: "إلهام الشريف",
-    grade: "ملازم أول",
-    matricule: "14678",
-    responsabilite: "محلل مالي أول",
-    telephone: 56456789,
-    derniereDateFormation: "2021-04-30",
-    categorie: "ضابط", // ملازم أول
-  },
-  {
-    id: "15",
-    nomPrenom: "طارق بن زياد",
-    grade: "نقيب",
-    matricule: "15789",
-    responsabilite: "أخصائي موارد بشرية",
-    telephone: 56567890,
-    derniereDateFormation: "2023-08-12",
-    categorie: "ضابط", // نقيب
-  },
-]
 
 type SortField = "nomPrenom" | "categorie" | "derniereDateFormation" | "grade"
 type SortOrder = "asc" | "desc"
@@ -257,17 +104,17 @@ const getCategorieFromGrade = (grade: string): "ضابط سامي" | "ضابط" 
 }
 
 export function ResizableTable({
-  title = "Employee",
-  employees: initialEmployees = defaultEmployees,
-  onEmployeeSelect,
+  title = "Agent",
+  agents: initialAgents,
+  onAgentSelect,
   onColumnResize,
   className = "",
   enableAnimations = true,
-}: ResizableTableProps = {}) {
-  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([])
+}: ResizableTableProps) {
+  const [selectedAgents, setSelectedAgents] = useState<string[]>([])
   const [mounted, setMounted] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const [sortField, setSortField] = useState<SortField | null>(null) // null = tri par défaut (الرتبة)
+  const [sortField, setSortField] = useState<SortField | null>(null)
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc")
   const [showSortMenu, setShowSortMenu] = useState(false)
   const [showFilterMenu, setShowFilterMenu] = useState(false)
@@ -275,8 +122,8 @@ export function ResizableTable({
   const [filterStatus, setFilterStatus] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [searchMatricule, setSearchMatricule] = useState<string>("")
-  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
-  const [editFormData, setEditFormData] = useState<Employee | null>(null)
+  const [editingAgent, setEditingAgent] = useState<Agent | null>(null)
+  const [editFormData, setEditFormData] = useState<Agent | null>(null)
 
   const shouldReduceMotion = useReducedMotion()
   const { theme } = useTheme()
@@ -301,24 +148,24 @@ export function ResizableTable({
     setMounted(true)
   }, [])
 
-  const handleEmployeeSelect = (employeeId: string) => {
-    setSelectedEmployees((prev) => {
-      if (prev.includes(employeeId)) {
-        return prev.filter((id) => id !== employeeId)
+  const handleAgentSelect = (agentId: string) => {
+    setSelectedAgents((prev) => {
+      if (prev.includes(agentId)) {
+        return prev.filter((id) => id !== agentId)
       } else {
-        return [...prev, employeeId]
+        return [...prev, agentId]
       }
     })
-    if (onEmployeeSelect) {
-      onEmployeeSelect(employeeId)
+    if (onAgentSelect) {
+      onAgentSelect(agentId)
     }
   }
 
   const handleSelectAll = () => {
-    if (selectedEmployees.length === paginatedEmployees.length) {
-      setSelectedEmployees([])
+    if (selectedAgents.length === paginatedAgents.length) {
+      setSelectedAgents([])
     } else {
-      setSelectedEmployees(paginatedEmployees.map((e) => e.id))
+      setSelectedAgents(paginatedAgents.map((e) => e.id))
     }
   }
 
@@ -344,8 +191,8 @@ export function ResizableTable({
     setCurrentPage(1)
   }
 
-  const sortedAndFilteredEmployees = useMemo(() => {
-    let filtered = [...initialEmployees]
+  const sortedAndFilteredAgents = useMemo(() => {
+    let filtered = [...initialAgents]
 
     // Filter by search query (nom et prénom)
     if (searchQuery.trim()) {
@@ -393,14 +240,14 @@ export function ResizableTable({
       if (aVal > bVal) return sortOrder === "asc" ? 1 : -1
       return 0
     })
-  }, [initialEmployees, sortField, sortOrder, filterStatus, searchQuery, searchMatricule])
+  }, [initialAgents, sortField, sortOrder, filterStatus, searchQuery, searchMatricule])
 
-  const paginatedEmployees = useMemo(() => {
+  const paginatedAgents = useMemo(() => {
     const startIdx = (currentPage - 1) * ITEMS_PER_PAGE
-    return sortedAndFilteredEmployees.slice(startIdx, startIdx + ITEMS_PER_PAGE)
-  }, [sortedAndFilteredEmployees, currentPage])
+    return sortedAndFilteredAgents.slice(startIdx, startIdx + ITEMS_PER_PAGE)
+  }, [sortedAndFilteredAgents, currentPage])
 
-  const totalPages = Math.ceil(sortedAndFilteredEmployees.length / ITEMS_PER_PAGE)
+  const totalPages = Math.ceil(sortedAndFilteredAgents.length / ITEMS_PER_PAGE)
 
   const getStatusColor = (status: string) => {
     if (!mounted) {
@@ -492,14 +339,14 @@ export function ResizableTable({
   const exportToCSV = () => {
     // Headers in RTL order (right to left)
     const headers = ["الفئة", "آخر تكوين", "رقم الهاتف", "المسؤولية", "الرقم", "الرتبة", "الإسم و اللقب"]
-    const rows = sortedAndFilteredEmployees.map((employee) => [
-      employee.categorie,
-      employee.derniereDateFormation,
-      employee.telephone,
-      employee.responsabilite,
-      employee.matricule,
-      employee.grade,
-      employee.nomPrenom,
+    const rows = sortedAndFilteredAgents.map((agent) => [
+      agent.categorie,
+      agent.derniereDateFormation,
+      agent.telephone,
+      agent.responsabilite,
+      agent.matricule,
+      agent.grade,
+      agent.nomPrenom,
     ])
 
     // Add BOM for proper UTF-8 encoding and RTL mark
@@ -513,25 +360,25 @@ export function ResizableTable({
     const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" })
     const link = document.createElement("a")
     link.href = URL.createObjectURL(blob)
-    link.download = `employees-${new Date().toISOString().split("T")[0]}.csv`
+    link.download = `agents-${new Date().toISOString().split("T")[0]}.csv`
     link.click()
   }
 
   const exportToJSON = () => {
-    const jsonContent = JSON.stringify(sortedAndFilteredEmployees, null, 2)
+    const jsonContent = JSON.stringify(sortedAndFilteredAgents, null, 2)
     const blob = new Blob([jsonContent], { type: "application/json;charset=utf-8;" })
     const link = document.createElement("a")
     link.href = URL.createObjectURL(blob)
-    link.download = `employees-${new Date().toISOString().split("T")[0]}.json`
+    link.download = `agents-${new Date().toISOString().split("T")[0]}.json`
     link.click()
   }
 
-  const handleEditClick = (employee: Employee) => {
-    setEditingEmployee(employee)
-    setEditFormData({ ...employee })
+  const handleEditClick = (agent: Agent) => {
+    setEditingAgent(agent)
+    setEditFormData({ ...agent })
   }
 
-  const handleEditFormChange = (field: keyof Employee, value: string | number) => {
+  const handleEditFormChange = (field: keyof Agent, value: string | number) => {
     if (editFormData) {
       setEditFormData({
         ...editFormData,
@@ -544,16 +391,16 @@ export function ResizableTable({
     if (editFormData) {
       // Ici, vous pouvez ajouter la logique pour sauvegarder les modifications
       // Par exemple, mettre à jour dans une base de données ou un état global
-      console.log("Saving employee data:", editFormData)
+      console.log("Saving agent data:", editFormData)
 
       // Fermer le popover
-      setEditingEmployee(null)
+      setEditingAgent(null)
       setEditFormData(null)
     }
   }
 
   const handleCancelEdit = () => {
-    setEditingEmployee(null)
+    setEditingAgent(null)
     setEditFormData(null)
   }
 
@@ -854,7 +701,7 @@ export function ResizableTable({
                         }
                       : {}
                   }
-                  checked={paginatedEmployees.length > 0 && selectedEmployees.length === paginatedEmployees.length}
+                  checked={paginatedAgents.length > 0 && selectedAgents.length === paginatedAgents.length}
                   onChange={handleSelectAll}
                 />
               </div>
@@ -1064,7 +911,7 @@ export function ResizableTable({
                 initial={shouldAnimate ? "hidden" : "visible"}
                 animate="visible"
               >
-                {paginatedEmployees.length === 0 ? (
+                {paginatedAgents.length === 0 ? (
                   <div className="py-12 text-center">
                     <div className="flex justify-center mb-4">
                       <SearchX className="h-8 w-8 text-muted-foreground/40" />
@@ -1090,8 +937,8 @@ export function ResizableTable({
                   </div>
                 ) : (
                   <>
-                    {paginatedEmployees.map((employee) => (
-                      <motion.div key={employee.id} variants={shouldAnimate ? rowVariants : {}}>
+                    {paginatedAgents.map((agent) => (
+                      <motion.div key={agent.id} variants={shouldAnimate ? rowVariants : {}}>
                         <div
                           className={`py-3.5 group relative transition-all duration-150 flex ${
                             mounted
@@ -1100,7 +947,7 @@ export function ResizableTable({
                                 : "border-b border-zinc-200"
                               : "border-b-2 border-border"
                           } ${
-                            selectedEmployees.includes(employee.id) ? "bg-muted/30" : "bg-muted/5 hover:bg-muted/20"
+                            selectedAgents.includes(agent.id) ? "bg-muted/30" : "bg-muted/5 hover:bg-muted/20"
                           }`}
                         >
                           <div
@@ -1123,8 +970,8 @@ export function ResizableTable({
                                     }
                                   : {}
                               }
-                              checked={selectedEmployees.includes(employee.id)}
-                              onChange={() => handleEmployeeSelect(employee.id)}
+                              checked={selectedAgents.includes(agent.id)}
+                              onChange={() => handleAgentSelect(agent.id)}
                             />
                           </div>
 
@@ -1142,7 +989,7 @@ export function ResizableTable({
                               className="text-sm text-foreground truncate"
                               style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                             >
-                              {employee.nomPrenom}
+                              {agent.nomPrenom}
                             </span>
                           </div>
 
@@ -1160,7 +1007,7 @@ export function ResizableTable({
                               className="text-sm text-foreground/80 truncate"
                               style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                             >
-                              {employee.grade}
+                              {agent.grade}
                             </span>
                           </div>
 
@@ -1178,7 +1025,7 @@ export function ResizableTable({
                               className="text-sm text-foreground/80 truncate"
                               style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                             >
-                              {employee.matricule}
+                              {agent.matricule}
                             </span>
                           </div>
 
@@ -1196,7 +1043,7 @@ export function ResizableTable({
                               className="text-sm text-foreground/80 truncate"
                               style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                             >
-                              {employee.responsabilite}
+                              {agent.responsabilite}
                             </span>
                           </div>
 
@@ -1215,7 +1062,7 @@ export function ResizableTable({
                               style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                               dir="ltr"
                             >
-                              {formatPhoneNumber(employee.telephone)}
+                              {formatPhoneNumber(agent.telephone)}
                             </span>
                           </div>
 
@@ -1233,7 +1080,7 @@ export function ResizableTable({
                               className="text-sm text-foreground/80"
                               style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                             >
-                              {employee.derniereDateFormation}
+                              {agent.derniereDateFormation}
                             </span>
                           </div>
 
@@ -1248,14 +1095,14 @@ export function ResizableTable({
                             style={{ width: columnWidths.status }}
                           >
                             {(() => {
-                              const { bgColor, textColor, dotColor } = getStatusColor(employee.categorie)
+                              const { bgColor, textColor, dotColor } = getStatusColor(agent.categorie)
                               return (
                                 <div
                                   className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium whitespace-nowrap ${bgColor} ${textColor} rounded-md`}
                                   style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                                 >
                                   <div className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></div>
-                                  {employee.categorie}
+                                  {agent.categorie}
                                 </div>
                               )
                             })()}
@@ -1272,7 +1119,7 @@ export function ResizableTable({
                             style={{ width: columnWidths.actions }}
                           >
                             <Popover
-                              open={editingEmployee?.id === employee.id}
+                              open={editingAgent?.id === agent.id}
                               onOpenChange={(open) => {
                                 if (!open) {
                                   handleCancelEdit()
@@ -1281,7 +1128,7 @@ export function ResizableTable({
                             >
                               <PopoverTrigger asChild>
                                 <button
-                                  onClick={() => handleEditClick(employee)}
+                                  onClick={() => handleEditClick(agent)}
                                   className="p-1.5 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
                                   aria-label="Modifier"
                                 >
@@ -1442,7 +1289,7 @@ export function ResizableTable({
                             <button
                               onClick={() => {
                                 // Action à définir
-                                console.log("View employee:", employee.id)
+                                console.log("View agent:", agent.id)
                               }}
                               className="p-1.5 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
                               aria-label="Voir les détails"
@@ -1464,7 +1311,7 @@ export function ResizableTable({
       {totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between px-2">
           <div className="text-xs text-muted-foreground/70" style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
-            الصفحــة {currentPage} مــن {totalPages} - {sortedAndFilteredEmployees.length} مـوظــف
+            الصفحــة {currentPage} مــن {totalPages} - {sortedAndFilteredAgents.length} مـوظــف
           </div>
 
           <div className="flex gap-1.5">
