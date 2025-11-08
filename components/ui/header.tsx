@@ -31,7 +31,7 @@ export function Header() {
     },
     {
       label: "تكــويــن جــديــد",
-      href: "#",
+      href: "/nouvelle-formarion",
     },
     {
       label: "قـائمـة التـربـصـات",
@@ -151,7 +151,9 @@ export function Header() {
               <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
               <span className="sr-only">Toggle theme</span>
             </Toggle>
-            <Button className="w-full bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors mr-1">خـــروج</Button>
+            <Button className="w-full bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors mr-1">
+              خـــروج
+            </Button>
           </div>
         </div>
       </div>

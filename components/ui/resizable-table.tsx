@@ -29,6 +29,8 @@ interface ResizableTableProps {
   agents: Agent[]
   onAgentSelect?: (agentId: string) => void
   onColumnResize?: (columnKey: string, newWidth: number) => void
+  onSaveEdit?: (agent: Agent) => Promise<{ success: boolean; error?: string }>
+  isUpdating?: boolean
   className?: string
   enableAnimations?: boolean
 }
@@ -108,6 +110,8 @@ export function ResizableTable({
   agents: initialAgents,
   onAgentSelect,
   onColumnResize,
+  onSaveEdit,
+  isUpdating = false,
   className = "",
   enableAnimations = true,
 }: ResizableTableProps) {
@@ -124,6 +128,7 @@ export function ResizableTable({
   const [searchMatricule, setSearchMatricule] = useState<string>("")
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null)
   const [editFormData, setEditFormData] = useState<Agent | null>(null)
+  const [editError, setEditError] = useState<string | null>(null)
 
   const shouldReduceMotion = useReducedMotion()
   const { theme } = useTheme()
@@ -387,13 +392,23 @@ export function ResizableTable({
     }
   }
 
-  const handleSaveEdit = () => {
-    if (editFormData) {
-      // Ici, vous pouvez ajouter la logique pour sauvegarder les modifications
-      // Par exemple, mettre à jour dans une base de données ou un état global
-      console.log("Saving agent data:", editFormData)
+  const handleSaveEdit = async () => {
+    if (editFormData && onSaveEdit) {
+      setEditError(null)
 
-      // Fermer le popover
+      const result = await onSaveEdit(editFormData)
+
+      if (result.success) {
+        // Fermer le popover
+        setEditingAgent(null)
+        setEditFormData(null)
+      } else {
+        // Afficher l'erreur
+        setEditError(result.error || "Une erreur s'est produite")
+      }
+    } else if (editFormData) {
+      // Fallback si onSaveEdit n'est pas fourni
+      console.log("Saving agent data:", editFormData)
       setEditingAgent(null)
       setEditFormData(null)
     }
@@ -402,6 +417,7 @@ export function ResizableTable({
   const handleCancelEdit = () => {
     setEditingAgent(null)
     setEditFormData(null)
+    setEditError(null)
   }
 
   const shouldAnimate = enableAnimations && !shouldReduceMotion
@@ -1263,12 +1279,21 @@ export function ResizableTable({
                                         />
                                       </div>
 
+                                      {editError && (
+                                        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                                          <p className="text-sm text-red-600 dark:text-red-400 text-center">
+                                            {editError}
+                                          </p>
+                                        </div>
+                                      )}
+
                                       <div className="flex gap-2 pt-6 mt-2 border-t">
                                         <NeumorphButton
                                           onClick={handleCancelEdit}
                                           intent="secondary"
                                           size="medium"
                                           className="flex-1 cursor-pointer"
+                                          disabled={isUpdating}
                                         >
                                           إلغـــــاء
                                         </NeumorphButton>
@@ -1277,8 +1302,9 @@ export function ResizableTable({
                                           intent="primary"
                                           size="medium"
                                           className="flex-1 cursor-pointer"
+                                          disabled={isUpdating}
                                         >
-                                          حـفـــــظ
+                                          {isUpdating ? "جاري الحفظ..." : "حـفـــــظ"}
                                         </NeumorphButton>
                                       </div>
                                     </>
@@ -1308,10 +1334,10 @@ export function ResizableTable({
         </div>
       </div>
 
-      {totalPages > 1 && (
+      {sortedAndFilteredAgents.length > 0 && (
         <div className="mt-4 flex items-center justify-between px-2">
           <div className="text-xs text-muted-foreground/70" style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
-            الصفحــة {currentPage} مــن {totalPages} - {sortedAndFilteredAgents.length} مـوظــف
+            الصفحــة {currentPage} مــن {totalPages} - ({sortedAndFilteredAgents.length} {sortedAndFilteredAgents.length < 11 ? "متربصين" : "متـربـص"})
           </div>
 
           <div className="flex gap-1.5">
