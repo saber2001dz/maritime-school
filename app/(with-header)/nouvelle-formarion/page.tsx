@@ -18,19 +18,22 @@ const notoNaskhArabic = localFont({
 export default function NouvelleFormationPage() {
   const router = useRouter()
   const [formData, setFormData] = React.useState({
-    typeFormation: "",
     formation: "",
+    typeFormation: "",
+    specialite: "",
     duree: "",
+    capaciteAbsorption: "",
   })
   const [loading, setLoading] = React.useState(false)
   const [success, setSuccess] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [errors, setErrors] = React.useState({
-    typeFormation: false,
     formation: false,
+    typeFormation: false,
   })
 
-  const typesFormation = ["تكوين إختصاص", "تكوين تخصصي"]
+  const typesFormation = ["تكوين إختصاص", "تكوين تخصصي", "تكوين مستمر"]
+  const specialites = ["بحري", "عدلي", "إداري"]
 
   const handleChange = (field: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -38,8 +41,8 @@ export default function NouvelleFormationPage() {
 
   const validateForm = () => {
     const newErrors = {
-      typeFormation: formData.typeFormation === "",
       formation: formData.formation.trim() === "",
+      typeFormation: formData.typeFormation === "",
     }
     setErrors(newErrors)
     return !Object.values(newErrors).some((error) => error)
@@ -60,9 +63,11 @@ export default function NouvelleFormationPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          typeFormation: formData.typeFormation,
           formation: formData.formation,
+          typeFormation: formData.typeFormation,
+          specialite: formData.specialite,
           duree: formData.duree,
+          capaciteAbsorption: formData.capaciteAbsorption ? parseInt(formData.capaciteAbsorption) : null,
         }),
       })
 
@@ -73,9 +78,9 @@ export default function NouvelleFormationPage() {
 
       setSuccess(true)
 
-      // Rediriger vers la page principal apres 2 secondes
+      // Rediriger vers la page liste formation apres 2 secondes
       setTimeout(() => {
-        router.push("/principal")
+        router.push("/liste-formation")
       }, 2000)
     } catch (err: any) {
       setError(err.message)
@@ -84,7 +89,7 @@ export default function NouvelleFormationPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-start justify-center bg-white dark:bg-black p-4 pt-35">
+    <div className="min-h-screen flex items-start justify-center bg-white dark:bg-black p-4 pt-25">
       <motion.div
         className="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 flex flex-col gap-6"
         transition={{ duration: 0.6 }}
@@ -105,8 +110,39 @@ export default function NouvelleFormationPage() {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3, delay: 0.05 }}
               >
+                <Label className="text-[12px]" htmlFor="formation">
+                  التـكــويــــن
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="formation"
+                    type="text"
+                    placeholder="التكوين"
+                    value={formData.formation}
+                    onChange={(e) => {
+                      handleChange("formation", e.target.value)
+                      if (errors.formation) setErrors({ ...errors, formation: false })
+                    }}
+                    className={`mt-2 ${notoNaskhArabic.className} ${
+                      errors.formation ? "border-red-500 focus-visible:ring-red-500" : ""
+                    }`}
+                    autoComplete="off"
+                    required
+                  />
+                  {errors.formation && (
+                    <X className="absolute left-3 top-1/2 -translate-y-1/2 mt-1 h-4 w-4 text-red-500" />
+                  )}
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
                 <Label className="text-[12px]" htmlFor="typeFormation">
-                  نــوع التكــويــن
+                  نـــــوع التـكــويــن
                 </Label>
                 <Select
                   dir="rtl"
@@ -138,38 +174,34 @@ export default function NouvelleFormationPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
+                transition={{ duration: 0.3, delay: 0.15 }}
               >
-                <Label className="text-[12px]" htmlFor="formation">
-                  التكــويــــن
+                <Label className="text-[12px]" htmlFor="specialite">
+                  الإخـتـصـــــاص
                 </Label>
-                <div className="relative">
-                  <Input
-                    id="formation"
-                    type="text"
-                    placeholder="التكوين"
-                    value={formData.formation}
-                    onChange={(e) => {
-                      handleChange("formation", e.target.value)
-                      if (errors.formation) setErrors({ ...errors, formation: false })
-                    }}
-                    className={`mt-2 ${notoNaskhArabic.className} ${
-                      errors.formation ? "border-red-500 focus-visible:ring-red-500" : ""
-                    }`}
-                    autoComplete="off"
-                    required
-                  />
-                  {errors.formation && (
-                    <X className="absolute left-3 top-1/2 -translate-y-1/2 mt-1 h-4 w-4 text-red-500" />
-                  )}
-                </div>
+                <Select
+                  dir="rtl"
+                  value={formData.specialite}
+                  onValueChange={(value) => handleChange("specialite", value)}
+                >
+                  <SelectTrigger className={`mt-2 w-full rounded ${notoNaskhArabic.className}`}>
+                    <SelectValue placeholder="اختر الإختصاص" />
+                  </SelectTrigger>
+                  <SelectContent className={notoNaskhArabic.className}>
+                    {specialites.map((spec) => (
+                      <SelectItem key={spec} value={spec} className="text-sm">
+                        {spec}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </motion.div>
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3, delay: 0.15 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
               >
                 <Label className="text-[12px]" htmlFor="duree">
                   مـــدة التكــويـــن
@@ -183,6 +215,29 @@ export default function NouvelleFormationPage() {
                     onChange={(e) => handleChange("duree", e.target.value)}
                     className={`mt-2 rounded ${notoNaskhArabic.className}`}
                     autoComplete="off"
+                  />
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3, delay: 0.25 }}
+              >
+                <Label className="text-[12px]" htmlFor="capaciteAbsorption">
+                  طـاقــة الاسـتـعــاب
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="capaciteAbsorption"
+                    type="number"
+                    placeholder="أدخل طاقة الاستعاب"
+                    value={formData.capaciteAbsorption}
+                    onChange={(e) => handleChange("capaciteAbsorption", e.target.value)}
+                    className={`mt-2 rounded ${notoNaskhArabic.className}`}
+                    autoComplete="off"
+                    min="0"
                   />
                 </div>
               </motion.div>
@@ -203,7 +258,7 @@ export default function NouvelleFormationPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3, delay: 0.2 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
               >
                 <Button
                   className="my-4 w-full rounded-1 bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors h-11 font-semibold"

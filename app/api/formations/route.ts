@@ -6,9 +6,16 @@ export async function GET() {
   try {
     const formations = await prisma.formation.findMany({
       orderBy: {
-        createdAt: 'desc',
+        formation: 'asc',
       },
     })
+
+    // Log pour debug
+    console.log('Formations récupérées:', formations.length)
+    if (formations.length > 0) {
+      console.log('Première formation:', JSON.stringify(formations[0], null, 2))
+    }
+
     return NextResponse.json(formations)
   } catch (error) {
     console.error('Erreur lors de la récupération des formations:', error)
@@ -23,21 +30,23 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { typeFormation, formation, duree } = body
+    const { formation, typeFormation, specialite, duree, capaciteAbsorption } = body
 
     // Validation basique
-    if (!typeFormation || !formation) {
+    if (!formation || !typeFormation) {
       return NextResponse.json(
-        { error: 'Les champs typeFormation et formation sont requis' },
+        { error: 'Les champs formation et typeFormation sont requis' },
         { status: 400 }
       )
     }
 
     const newFormation = await prisma.formation.create({
       data: {
-        typeFormation,
         formation,
+        typeFormation,
+        specialite: specialite || null,
         duree: duree || null,
+        capaciteAbsorption: capaciteAbsorption || null,
       },
     })
 

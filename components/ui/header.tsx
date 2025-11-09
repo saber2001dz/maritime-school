@@ -35,7 +35,7 @@ export function Header() {
     },
     {
       label: "قـائمـة التـربـصـات",
-      href: "#",
+      href: "/liste-formation",
     },
     {
       label: "مخــطط التـربـصـات",
