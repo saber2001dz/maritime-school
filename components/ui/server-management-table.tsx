@@ -1,9 +1,14 @@
 "use client"
 
-import { useState } from "react"
-import { motion, useReducedMotion } from "framer-motion"
-import { Pencil } from "lucide-react"
+import { useState, useEffect } from "react"
+import { motion } from "framer-motion"
+import { Pencil, X } from "lucide-react"
 import localFont from "next/font/local"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import NeumorphButton from "@/components/ui/neumorph-button"
 
 const notoNaskhArabic = localFont({
   src: "../../app/fonts/NotoNaskhArabic.woff2",
@@ -14,7 +19,6 @@ export interface Server {
   id: string
   number: string
   serviceName: string
-  osType: "windows" | "linux" | "ubuntu"
   specialite: string
   dueDate: string
   capaciteAbsorption: number
@@ -24,72 +28,89 @@ export interface Server {
 interface ServerManagementTableProps {
   title?: string
   servers?: Server[]
-  onStatusChange?: (serverId: string, newStatus: Server["status"]) => void
   className?: string
 }
 
-const defaultServers: Server[] = [
-  {
-    id: "1",
-    number: "01",
-    serviceName: "تكوين ضباط الآلات",
-    osType: "windows",
-    specialite: "بحري",
-    dueDate: "14 Oct 2027",
-    capaciteAbsorption: 40,
-    status: "active",
-  },
-  {
-    id: "2",
-    number: "02",
-    serviceName: "تكوين ضباط سطح",
-    osType: "windows",
-    specialite: "بحري",
-    dueDate: "14 Oct 2027",
-    capaciteAbsorption: 45,
-    status: "active",
-  },
-  {
-    id: "3",
-    number: "03",
-    serviceName: "تكوين تخصصي في الملاحة",
-    osType: "ubuntu",
-    specialite: "بحري",
-    dueDate: "27 Jun 2027",
-    capaciteAbsorption: 25,
-    status: "paused",
-  },
-  {
-    id: "4",
-    number: "04",
-    serviceName: "تكوين مستمر في السلامة البحرية",
-    osType: "ubuntu",
-    specialite: "عدلي",
-    dueDate: "30 May 2030",
-    capaciteAbsorption: 50,
-    status: "inactive",
-  },
-  {
-    id: "5",
-    number: "05",
-    serviceName: "تكوين إختصاص في الإدارة البحرية",
-    osType: "windows",
-    specialite: "إداري",
-    dueDate: "15 Dec 2026",
-    capaciteAbsorption: 30,
-    status: "inactive",
-  },
-]
-
 export function ServerManagementTable({
   title = "الــــدورات التـكـــويـنـيـــة :",
-  servers: initialServers = defaultServers,
-  onStatusChange,
+  servers: initialServers = [],
   className = "",
 }: ServerManagementTableProps = {}) {
   const [servers, setServers] = useState<Server[]>(initialServers)
-  const [hoveredServer, setHoveredServer] = useState<string | null>(null)
-  const shouldReduceMotion = useReducedMotion()
+  const [editingServer, setEditingServer] = useState<Server | null>(null)
+  const [editFormData, setEditFormData] = useState<Server | null>(null)
+  const [editError, setEditError] = useState<string | null>(null)
+  const [isUpdating, setIsUpdating] = useState(false)
+
+  // Synchroniser les données du serveur avec l'état local
+  useEffect(() => {
+    setServers(initialServers)
+  }, [initialServers])
+
+  const handleEditClick = (server: Server) => {
+    setEditingServer(server)
+    setEditFormData({ ...server })
+  }
+
+  const handleEditFormChange = (field: keyof Server, value: string | number) => {
+    if (editFormData) {
+      setEditFormData({
+        ...editFormData,
+        [field]: value,
+      })
+    }
+  }
+
+  const handleSaveEdit = async () => {
+    if (editFormData) {
+      setEditError(null)
+      setIsUpdating(true)
+
+      try {
+        const response = await fetch(`/api/formations/${editFormData.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            typeFormation:
+              editFormData.status === "active"
+                ? "تكوين إختصاص"
+                : editFormData.status === "paused"
+                ? "تكوين تخصصي"
+                : "تكوين مستمر",
+            formation: editFormData.serviceName,
+            specialite: editFormData.specialite,
+            duree: editFormData.dueDate,
+            capaciteAbsorption: editFormData.capaciteAbsorption,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error("Erreur lors de la mise à jour")
+        }
+
+        // Mettre à jour l'état local
+        setServers((prevServers) =>
+          prevServers.map((s) => (s.id === editFormData.id ? editFormData : s))
+        )
+
+        // Fermer le popover
+        setEditingServer(null)
+        setEditFormData(null)
+      } catch (error) {
+        setEditError("Une erreur s'est produite lors de la sauvegarde")
+      } finally {
+        setIsUpdating(false)
+      }
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingServer(null)
+    setEditFormData(null)
+    setEditError(null)
+  }
 
   const getCapacityBars = (capacity: number, status: Server["status"]) => {
     const maxCapacity = 50
@@ -231,8 +252,6 @@ export function ServerManagementTable({
                 },
               }}
               className="relative"
-              onMouseEnter={() => setHoveredServer(server.id)}
-              onMouseLeave={() => setHoveredServer(null)}
             >
               <motion.div
                 className="relative bg-muted/50 border border-border/50 rounded-xl p-4 overflow-hidden"
@@ -286,18 +305,150 @@ export function ServerManagementTable({
 
                   {/* Options d'édition */}
                   <div className="flex items-center justify-center">
-                    <motion.button
-                      className="w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        // TODO: Ajouter la logique d'édition
-                        console.log("Éditer la formation:", server.id)
+                    <Popover
+                      open={editingServer?.id === server.id}
+                      onOpenChange={(open) => {
+                        if (!open) {
+                          handleCancelEdit()
+                        }
                       }}
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
                     >
-                      <Pencil className="w-4 h-4 cursor-pointer" />
-                    </motion.button>
+                      <PopoverTrigger asChild>
+                        <button
+                          className="w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleEditClick(server)
+                          }}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-[400px] p-4 bg-slate-50 dark:bg-slate-900 shadow-2xl"
+                        align="start"
+                        side="right"
+                        sideOffset={8}
+                        style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                      >
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between border-b pb-3">
+                            <h3 className="text-lg font-semibold text-[#1071C7]" style={{ fontFamily: "inherit" }}>
+                              تعديل بيانات الدورة التكوينية
+                            </h3>
+                            <button
+                              onClick={handleCancelEdit}
+                              className="p-1 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+
+                          {editFormData && (
+                            <>
+                              <div className="space-y-2">
+                                <Label htmlFor="serviceName">الدورة التكوينية</Label>
+                                <Input
+                                  id="serviceName"
+                                  value={editFormData.serviceName}
+                                  onChange={(e) => handleEditFormChange("serviceName", e.target.value)}
+                                  className="text-right"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label htmlFor="specialite">الإختصاص</Label>
+                                <Input
+                                  id="specialite"
+                                  value={editFormData.specialite}
+                                  onChange={(e) => handleEditFormChange("specialite", e.target.value)}
+                                  className="text-right"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label htmlFor="dueDate">مدة التكوين</Label>
+                                <Input
+                                  id="dueDate"
+                                  value={editFormData.dueDate}
+                                  onChange={(e) => handleEditFormChange("dueDate", e.target.value)}
+                                  className="text-right"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label htmlFor="capaciteAbsorption">طاقة الإستعاب</Label>
+                                <Input
+                                  id="capaciteAbsorption"
+                                  type="number"
+                                  value={editFormData.capaciteAbsorption}
+                                  onChange={(e) =>
+                                    handleEditFormChange("capaciteAbsorption", parseInt(e.target.value) || 0)
+                                  }
+                                  className="text-right"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label htmlFor="status">نوع التكوين</Label>
+                                <Select
+                                  dir="rtl"
+                                  value={editFormData.status}
+                                  onValueChange={(value) =>
+                                    handleEditFormChange("status", value as "active" | "paused" | "inactive")
+                                  }
+                                >
+                                  <SelectTrigger
+                                    className="w-full rounded"
+                                    style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                                  >
+                                    <SelectValue placeholder="اختر نوع التكوين" />
+                                  </SelectTrigger>
+                                  <SelectContent style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+                                    <SelectItem value="active" className="text-[15px]">
+                                      تكوين إختصاص
+                                    </SelectItem>
+                                    <SelectItem value="paused" className="text-[15px]">
+                                      تكوين تخصصي
+                                    </SelectItem>
+                                    <SelectItem value="inactive" className="text-[15px]">
+                                      تكوين مستمر
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {editError && (
+                                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                                  <p className="text-sm text-red-600 dark:text-red-400 text-center">{editError}</p>
+                                </div>
+                              )}
+
+                              <div className="flex gap-2 pt-6 mt-2 border-t">
+                                <NeumorphButton
+                                  onClick={handleCancelEdit}
+                                  intent="secondary"
+                                  size="medium"
+                                  className="flex-1 cursor-pointer"
+                                  disabled={isUpdating}
+                                >
+                                  إلغـــــاء
+                                </NeumorphButton>
+                                <NeumorphButton
+                                  onClick={handleSaveEdit}
+                                  intent="primary"
+                                  size="medium"
+                                  className="flex-1 cursor-pointer"
+                                  disabled={isUpdating}
+                                >
+                                  {isUpdating ? "جاري الحفظ..." : "حـفـــــظ"}
+                                </NeumorphButton>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
               </motion.div>

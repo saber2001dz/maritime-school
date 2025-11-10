@@ -37,7 +37,7 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { typeFormation, formation, duree } = body
+    const { typeFormation, formation, duree, specialite, capaciteAbsorption } = body
 
     // Validation basique
     if (!typeFormation || !formation) {
@@ -53,6 +53,8 @@ export async function PUT(
         typeFormation,
         formation,
         duree: duree || null,
+        specialite: specialite || null,
+        capaciteAbsorption: capaciteAbsorption !== undefined ? capaciteAbsorption : null,
       },
     })
 

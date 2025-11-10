@@ -20,6 +20,7 @@ function getStatusFromType(typeFormation: string): "active" | "paused" | "inacti
 export default function ListeFormation() {
   const [formations, setFormations] = useState<Server[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     async function fetchFormations() {
@@ -56,7 +57,7 @@ export default function ListeFormation() {
     }
 
     fetchFormations()
-  }, [])
+  }, [refreshKey])
 
   if (loading) {
     return (
