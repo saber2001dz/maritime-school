@@ -29,6 +29,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import NeumorphButton from "@/components/ui/neumorph-button"
 import DialogueStyle from "@/components/dialogue-agent"
+import DialogueAgentFormation from "@/components/dialogue-agent-formation"
 import "react-resizable/css/styles.css"
 
 export interface Agent {
@@ -1209,147 +1210,18 @@ export function ResizableTable({
 
                               <AnimatePresence mode="wait">
                                 {addingFormationAgent?.id === agent.id && (
-                                  <Dialog open={true} modal={true}>
-                                    <DialogContent
-                                      className="w-[450px] p-6 bg-slate-50 dark:bg-slate-900 shadow-2xl"
-                                      style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
-                                      showClose={false}
-                                      onPointerDownOutside={(e) => e.preventDefault()}
-                                      onInteractOutside={(e) => e.preventDefault()}
-                                    >
-                                      <DialogHeader className="border-b pb-3">
-                                        <div className="flex items-center justify-between">
-                                          <DialogTitle className="text-lg font-semibold text-[#1071C7]">
-                                            إضافة تكوين للموظف
-                                          </DialogTitle>
-                                          <button
-                                            onClick={handleCancelFormation}
-                                            className="p-1 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
-                                          >
-                                            <X className="h-4 w-4" />
-                                          </button>
-                                        </div>
-                                      </DialogHeader>
-
-                                      {formationFormData && (
-                                        <div className="space-y-4">
-                                          <div className="space-y-2">
-                                            <Label htmlFor="formationId">الدورة التكوينية</Label>
-                                            <Select
-                                              dir="rtl"
-                                              value={formationFormData.formationId}
-                                              onValueChange={(value) => handleFormationFormChange("formationId", value)}
-                                              disabled={isLoadingFormations}
-                                            >
-                                              <SelectTrigger
-                                                className="w-full rounded"
-                                                style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
-                                              >
-                                                <SelectValue placeholder={isLoadingFormations ? "جاري التحميل..." : "اختر الدورة التكوينية"} />
-                                              </SelectTrigger>
-                                              <SelectContent style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
-                                                {availableFormations.map((formation) => (
-                                                  <SelectItem key={formation.id} value={formation.id} className="text-[15px]">
-                                                    {formation.formation}
-                                                  </SelectItem>
-                                                ))}
-                                              </SelectContent>
-                                            </Select>
-                                          </div>
-
-                                          <div className="space-y-2">
-                                            <Label htmlFor="dateDebut">تاريخ بداية التكوين</Label>
-                                            <Input
-                                              id="dateDebut"
-                                              type="date"
-                                              value={formationFormData.dateDebut}
-                                              onChange={(e) => handleFormationFormChange("dateDebut", e.target.value)}
-                                              className="text-right"
-                                            />
-                                          </div>
-
-                                          <div className="space-y-2">
-                                            <Label htmlFor="dateFin">تاريخ نهاية التكوين</Label>
-                                            <Input
-                                              id="dateFin"
-                                              type="date"
-                                              value={formationFormData.dateFin}
-                                              onChange={(e) => handleFormationFormChange("dateFin", e.target.value)}
-                                              className="text-right"
-                                            />
-                                          </div>
-
-                                          <div className="space-y-2">
-                                            <Label htmlFor="reference">المرجع</Label>
-                                            <Input
-                                              id="reference"
-                                              type="text"
-                                              value={formationFormData.reference}
-                                              onChange={(e) => handleFormationFormChange("reference", e.target.value)}
-                                              className="text-right"
-                                              placeholder="أدخل المرجع"
-                                            />
-                                          </div>
-
-                                          <div className="space-y-2">
-                                            <Label htmlFor="resultat">النتيجة</Label>
-                                            <Input
-                                              id="resultat"
-                                              type="text"
-                                              value={formationFormData.resultat}
-                                              onChange={(e) => handleFormationFormChange("resultat", e.target.value)}
-                                              className="text-right"
-                                              placeholder="أدخل النتيجة"
-                                            />
-                                          </div>
-
-                                          <div className="space-y-2">
-                                            <Label htmlFor="moyenne">المعدل (0-20)</Label>
-                                            <Input
-                                              id="moyenne"
-                                              type="number"
-                                              min="0"
-                                              max="20"
-                                              step="0.01"
-                                              value={formationFormData.moyenne}
-                                              onChange={(e) =>
-                                                handleFormationFormChange("moyenne", parseFloat(e.target.value) || 0)
-                                              }
-                                              className="text-right"
-                                              placeholder="0.00"
-                                            />
-                                          </div>
-
-                                          {formationError && (
-                                            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                                              <p className="text-sm text-red-600 dark:text-red-400 text-center">
-                                                {formationError}
-                                              </p>
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
-
-                                      <DialogFooter className="flex gap-2 pt-6 mt-2 border-t">
-                                        <NeumorphButton
-                                          onClick={handleCancelFormation}
-                                          intent="secondary"
-                                          size="medium"
-                                          className="flex-1 cursor-pointer"
-                                        >
-                                          إلغـــــاء
-                                        </NeumorphButton>
-                                        <NeumorphButton
-                                          onClick={handleSaveFormation}
-                                          intent="primary"
-                                          size="medium"
-                                          className="flex-1 cursor-pointer"
-                                        >
-                                          حـفـــــظ
-                                        </NeumorphButton>
-                                      </DialogFooter>
-                                    </DialogContent>
-                                  </Dialog>
+                                  <DialogueAgentFormation
+                                    agent={addingFormationAgent}
+                                    formations={availableFormations}
+                                    formationData={formationFormData}
+                                    isOpen={true}
+                                    onClose={handleCancelFormation}
+                                    onChange={handleFormationFormChange}
+                                    onSave={handleSaveFormation}
+                                    isUpdating={false}
+                                    isLoadingFormations={isLoadingFormations}
+                                    error={formationError || undefined}
+                                  />
                                 )}
                               </AnimatePresence>
                             </div>
