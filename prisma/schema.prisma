@@ -12,17 +12,18 @@ datasource db {
 
 // Modèle Agent adapté à l'interface Employee
 model Agent {
-  id                      String   @id @default(cuid())
+  id                      String            @id @default(cuid())
   nomPrenom               String
   grade                   String
-  matricule               String   @unique
+  matricule               String            @unique
   responsabilite          String
   telephone               Int
   derniereDateFormation   String
   categorie               String
   avatar                  String?
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  formations              AgentFormation[]  // Relation vers les formations de l'agent
 }
 
 // Modèle exemple pour un Utilisateur
@@ -38,12 +39,34 @@ model User {
 
 // Modèle Formation pour gérer les formations de l'école maritime
 model Formation {
-  id                  String   @id @default(cuid())
-  formation           String   // Nom de la formation
-  typeFormation       String   // تكوين إختصاص, تكوين تخصصي, تكوين مستمر
-  specialite          String?  // بحري, عدلي, إداري (optionnel)
-  duree               String?  // Durée de la formation (optionnel)
-  capaciteAbsorption  Int?     // طاقة الاستعاب - Capacité d'absorption (optionnel)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                  String            @id @default(cuid())
+  formation           String            // Nom de la formation
+  typeFormation       String            // تكوين إختصاص, تكوين تخصصي, تكوين مستمر
+  specialite          String?           // بحري, عدلي, إداري (optionnel)
+  duree               String?           // Durée de la formation (optionnel)
+  capaciteAbsorption  Int?              // طاقة الاستعاب - Capacité d'absorption (optionnel)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  agentFormations     AgentFormation[]  // Relation vers les agents qui ont suivi cette formation
+}
+
+// Modèle AgentFormation pour lier les agents aux formations
+model AgentFormation {
+  id            String    @id @default(cuid())
+  agentId       String    // Clé étrangère vers Agent
+  formationId   String    // Clé étrangère vers Formation
+  dateDebut     String    // تاريخ بداية التكوين - Date de début de la formation
+  dateFin       String    // تاريخ نهاية التكوين - Date de fin de la formation
+  reference     String?   // المرجع - Référence (optionnel)
+  resultat      String?   // النتيجة - Résultat (optionnel)
+  moyenne       Float     // المعدل - Moyenne (0-20)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  agent         Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  formation     Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+  @@index([formationId])
 }

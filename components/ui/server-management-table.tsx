@@ -1,14 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
-import { Pencil, X } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Pencil } from "lucide-react"
 import localFont from "next/font/local"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import NeumorphButton from "@/components/ui/neumorph-button"
+import DialogueFormation, { type FormationData } from "@/components/dialogue-formation"
 
 const notoNaskhArabic = localFont({
   src: "../../app/fonts/NotoNaskhArabic.woff2",
@@ -37,9 +33,7 @@ export function ServerManagementTable({
   className = "",
 }: ServerManagementTableProps = {}) {
   const [servers, setServers] = useState<Server[]>(initialServers)
-  const [editingServer, setEditingServer] = useState<Server | null>(null)
-  const [editFormData, setEditFormData] = useState<Server | null>(null)
-  const [editError, setEditError] = useState<string | null>(null)
+  const [editingFormation, setEditingFormation] = useState<FormationData | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
 
   // Synchroniser les données du serveur avec l'état local
@@ -47,69 +41,86 @@ export function ServerManagementTable({
     setServers(initialServers)
   }, [initialServers])
 
+  // Convertir Server en FormationData
+  const serverToFormationData = (server: Server): FormationData => {
+    const typeFormation =
+      server.status === "active"
+        ? "تكوين إختصاص"
+        : server.status === "paused"
+        ? "تكوين تخصصي"
+        : "تكوين مستمر"
+
+    return {
+      id: server.id,
+      formation: server.serviceName,
+      typeFormation,
+      specialite: server.specialite || null,
+      duree: server.dueDate || null,
+      capaciteAbsorption: server.capaciteAbsorption || null,
+    }
+  }
+
+  // Convertir FormationData en status
+  const getStatusFromType = (typeFormation: string): Server["status"] => {
+    if (typeFormation === "تكوين إختصاص") return "active"
+    if (typeFormation === "تكوين تخصصي") return "paused"
+    return "inactive"
+  }
+
   const handleEditClick = (server: Server) => {
-    setEditingServer(server)
-    setEditFormData({ ...server })
+    const formationData = serverToFormationData(server)
+    setEditingFormation(formationData)
   }
 
-  const handleEditFormChange = (field: keyof Server, value: string | number) => {
-    if (editFormData) {
-      setEditFormData({
-        ...editFormData,
-        [field]: value,
+  const handleSaveFormation = async (data: FormationData) => {
+    setIsUpdating(true)
+
+    try {
+      const response = await fetch(`/api/formations/${data.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          typeFormation: data.typeFormation,
+          formation: data.formation,
+          specialite: data.specialite,
+          duree: data.duree,
+          capaciteAbsorption: data.capaciteAbsorption,
+        }),
       })
-    }
-  }
 
-  const handleSaveEdit = async () => {
-    if (editFormData) {
-      setEditError(null)
-      setIsUpdating(true)
-
-      try {
-        const response = await fetch(`/api/formations/${editFormData.id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            typeFormation:
-              editFormData.status === "active"
-                ? "تكوين إختصاص"
-                : editFormData.status === "paused"
-                ? "تكوين تخصصي"
-                : "تكوين مستمر",
-            formation: editFormData.serviceName,
-            specialite: editFormData.specialite,
-            duree: editFormData.dueDate,
-            capaciteAbsorption: editFormData.capaciteAbsorption,
-          }),
-        })
-
-        if (!response.ok) {
-          throw new Error("Erreur lors de la mise à jour")
-        }
-
-        // Mettre à jour l'état local
-        setServers((prevServers) =>
-          prevServers.map((s) => (s.id === editFormData.id ? editFormData : s))
-        )
-
-        // Fermer le popover
-        setEditingServer(null)
-        setEditFormData(null)
-      } catch (error) {
-        setEditError("Une erreur s'est produite lors de la sauvegarde")
-      } finally {
-        setIsUpdating(false)
+      if (!response.ok) {
+        throw new Error("Erreur lors de la mise à jour")
       }
+
+      // Mettre à jour l'état local en convertissant FormationData en Server
+      setServers((prevServers) =>
+        prevServers.map((s) =>
+          s.id === data.id
+            ? {
+                ...s,
+                serviceName: data.formation,
+                status: getStatusFromType(data.typeFormation),
+                specialite: data.specialite || "",
+                dueDate: data.duree || "",
+                capaciteAbsorption: data.capaciteAbsorption || 0,
+              }
+            : s
+        )
+      )
+
+      // Fermer le dialogue
+      setEditingFormation(null)
+    } catch (error) {
+      console.error("Erreur lors de la sauvegarde:", error)
+    } finally {
+      setIsUpdating(false)
     }
   }
 
-  const handleCancelEdit = () => {
-    setEditingServer(null)
-    setEditFormData(null)
-    setEditError(null)
+  const handleCloseDialog = () => {
+    setEditingFormation(null)
   }
 
   const getCapacityBars = (capacity: number, status: Server["status"]) => {
@@ -121,11 +132,11 @@ export function ServerManagementTable({
       if (index < filledBars) {
         switch (status) {
           case "active":
-            return "bg-green-500/70"
+            return "bg-yellow-600/70"
           case "paused":
-            return "bg-orange-500/70"
+            return "bg-[#06417F]/70 dark:bg-blue-400/70"
           case "inactive":
-            return "bg-red-500/70"
+            return "bg-purple-500/70"
           default:
             return "bg-foreground/60"
         }
@@ -151,20 +162,20 @@ export function ServerManagementTable({
     switch (status) {
       case "active":
         return (
-          <div className="px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/30 flex items-center justify-center">
-            <span className={`text-green-400 text-sm font-medium ${notoNaskhArabic.className}`}>تكوين إختصاص</span>
+          <div className="px-3 py-1.5 rounded-lg bg-yellow-600/10 border border-yellow-600/30 flex items-center justify-center">
+            <span className={`text-yellow-600 text-sm font-medium ${notoNaskhArabic.className}`}>تكوين إختصاص</span>
           </div>
         )
       case "paused":
         return (
-          <div className="px-3 py-1.5 rounded-lg bg-orange-500/10 border border-orange-500/30 flex items-center justify-center">
-            <span className={`text-orange-500 text-sm font-medium ${notoNaskhArabic.className}`}>تكوين تخصصي</span>
+          <div className="px-3 py-1.5 rounded-lg bg-[#06417F]/10 dark:bg-blue-400/10 border border-[#06417F]/30 dark:border-blue-400/30 flex items-center justify-center">
+            <span className={`text-[#06417F] dark:text-blue-400 text-sm font-medium ${notoNaskhArabic.className}`}>تكوين تخصصي</span>
           </div>
         )
       case "inactive":
         return (
-          <div className="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 flex items-center justify-center">
-            <span className={`text-red-400 text-sm font-medium ${notoNaskhArabic.className}`}>تكوين مستمر</span>
+          <div className="px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center">
+            <span className={`text-purple-500 text-sm font-medium ${notoNaskhArabic.className}`}>تكوين مستمر</span>
           </div>
         )
     }
@@ -173,11 +184,11 @@ export function ServerManagementTable({
   const getStatusGradient = (status: Server["status"]) => {
     switch (status) {
       case "active":
-        return "from-green-500/10 to-transparent"
+        return "from-yellow-600/10 to-transparent"
       case "paused":
-        return "from-orange-500/10 to-transparent"
+        return "from-[#06417F]/10 dark:from-blue-400/10 to-transparent"
       case "inactive":
-        return "from-red-500/10 to-transparent"
+        return "from-purple-500/10 to-transparent"
     }
   }
 
@@ -188,7 +199,7 @@ export function ServerManagementTable({
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <div className="w-2 h-2 rounded-full bg-yellow-600 animate-pulse" />
               <h1 className={`text-xl font-bold text-foreground ${notoNaskhArabic.className}`}>{title}</h1>
             </div>
             <div className={`text-xs text-muted-foreground ${notoNaskhArabic.className}`}>
@@ -305,150 +316,15 @@ export function ServerManagementTable({
 
                   {/* Options d'édition */}
                   <div className="flex items-center justify-center">
-                    <Popover
-                      open={editingServer?.id === server.id}
-                      onOpenChange={(open) => {
-                        if (!open) {
-                          handleCancelEdit()
-                        }
+                    <button
+                      className="w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleEditClick(server)
                       }}
                     >
-                      <PopoverTrigger asChild>
-                        <button
-                          className="w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleEditClick(server)
-                          }}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="w-[400px] p-4 bg-slate-50 dark:bg-slate-900 shadow-2xl"
-                        align="start"
-                        side="right"
-                        sideOffset={8}
-                        style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
-                      >
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between border-b pb-3">
-                            <h3 className="text-lg font-semibold text-[#1071C7]" style={{ fontFamily: "inherit" }}>
-                              تعديل بيانات الدورة التكوينية
-                            </h3>
-                            <button
-                              onClick={handleCancelEdit}
-                              className="p-1 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-
-                          {editFormData && (
-                            <>
-                              <div className="space-y-2">
-                                <Label htmlFor="serviceName">الدورة التكوينية</Label>
-                                <Input
-                                  id="serviceName"
-                                  value={editFormData.serviceName}
-                                  onChange={(e) => handleEditFormChange("serviceName", e.target.value)}
-                                  className="text-right"
-                                />
-                              </div>
-
-                              <div className="space-y-2">
-                                <Label htmlFor="specialite">الإختصاص</Label>
-                                <Input
-                                  id="specialite"
-                                  value={editFormData.specialite}
-                                  onChange={(e) => handleEditFormChange("specialite", e.target.value)}
-                                  className="text-right"
-                                />
-                              </div>
-
-                              <div className="space-y-2">
-                                <Label htmlFor="dueDate">مدة التكوين</Label>
-                                <Input
-                                  id="dueDate"
-                                  value={editFormData.dueDate}
-                                  onChange={(e) => handleEditFormChange("dueDate", e.target.value)}
-                                  className="text-right"
-                                />
-                              </div>
-
-                              <div className="space-y-2">
-                                <Label htmlFor="capaciteAbsorption">طاقة الإستعاب</Label>
-                                <Input
-                                  id="capaciteAbsorption"
-                                  type="number"
-                                  value={editFormData.capaciteAbsorption}
-                                  onChange={(e) =>
-                                    handleEditFormChange("capaciteAbsorption", parseInt(e.target.value) || 0)
-                                  }
-                                  className="text-right"
-                                />
-                              </div>
-
-                              <div className="space-y-2">
-                                <Label htmlFor="status">نوع التكوين</Label>
-                                <Select
-                                  dir="rtl"
-                                  value={editFormData.status}
-                                  onValueChange={(value) =>
-                                    handleEditFormChange("status", value as "active" | "paused" | "inactive")
-                                  }
-                                >
-                                  <SelectTrigger
-                                    className="w-full rounded"
-                                    style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
-                                  >
-                                    <SelectValue placeholder="اختر نوع التكوين" />
-                                  </SelectTrigger>
-                                  <SelectContent style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
-                                    <SelectItem value="active" className="text-[15px]">
-                                      تكوين إختصاص
-                                    </SelectItem>
-                                    <SelectItem value="paused" className="text-[15px]">
-                                      تكوين تخصصي
-                                    </SelectItem>
-                                    <SelectItem value="inactive" className="text-[15px]">
-                                      تكوين مستمر
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-
-                              {editError && (
-                                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                                  <p className="text-sm text-red-600 dark:text-red-400 text-center">{editError}</p>
-                                </div>
-                              )}
-
-                              <div className="flex gap-2 pt-6 mt-2 border-t">
-                                <NeumorphButton
-                                  onClick={handleCancelEdit}
-                                  intent="secondary"
-                                  size="medium"
-                                  className="flex-1 cursor-pointer"
-                                  disabled={isUpdating}
-                                >
-                                  إلغـــــاء
-                                </NeumorphButton>
-                                <NeumorphButton
-                                  onClick={handleSaveEdit}
-                                  intent="primary"
-                                  size="medium"
-                                  className="flex-1 cursor-pointer"
-                                  disabled={isUpdating}
-                                >
-                                  {isUpdating ? "جاري الحفظ..." : "حـفـــــظ"}
-                                </NeumorphButton>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                      <Pencil className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </motion.div>
@@ -456,6 +332,19 @@ export function ServerManagementTable({
           ))}
         </motion.div>
       </div>
+
+      {/* Dialogue d'édition de formation */}
+      <AnimatePresence mode="wait">
+        {editingFormation && (
+          <DialogueFormation
+            formation={editingFormation}
+            isOpen={true}
+            onClose={handleCloseDialog}
+            onSave={handleSaveFormation}
+            isUpdating={isUpdating}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -38,7 +38,7 @@ export function Header() {
       href: "/liste-formation",
     },
     {
-      label: "مخــطط التـربـصـات",
+      label: "قـائمـة المكــونيــن",
       href: "#",
     },
   ]
@@ -90,7 +90,7 @@ export function Header() {
                 className={cn(
                   buttonVariants({ variant: "ghost" }),
                   "transition-colors duration-300",
-                  isActive && "bg-[#06417F] text-white hover:bg-[#06417F] hover:text-white"
+                  isActive && "bg-[#06417F] text-yellow-400 hover:bg-[#2C4E6E] hover:text-yellow-400"
                 )}
                 href={link.href}
               >

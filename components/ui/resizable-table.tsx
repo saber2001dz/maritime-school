@@ -3,13 +3,32 @@
 import { useState, useEffect, useMemo } from "react"
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion"
 import { useTheme } from "next-themes"
-import { Download, ChevronDown, Search, X, SearchX, Eye, ArrowDown, Check, SquarePen } from "lucide-react"
+import {
+  Download,
+  ChevronDown,
+  Search,
+  X,
+  SearchX,
+  ArrowDown,
+  Check,
+  SquarePen,
+  GraduationCap,
+  CirclePlus,
+} from "lucide-react"
 import { Resizable } from "react-resizable"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import NeumorphButton from "@/components/ui/neumorph-button"
+import DialogueStyle from "@/components/dialogue-agent"
 import "react-resizable/css/styles.css"
 
 export interface Agent {
@@ -115,7 +134,6 @@ export function ResizableTable({
   className = "",
   enableAnimations = true,
 }: ResizableTableProps) {
-  const [selectedAgents, setSelectedAgents] = useState<string[]>([])
   const [mounted, setMounted] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [sortField, setSortField] = useState<SortField | null>(null)
@@ -127,8 +145,18 @@ export function ResizableTable({
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [searchMatricule, setSearchMatricule] = useState<string>("")
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null)
-  const [editFormData, setEditFormData] = useState<Agent | null>(null)
-  const [editError, setEditError] = useState<string | null>(null)
+  const [addingFormationAgent, setAddingFormationAgent] = useState<Agent | null>(null)
+  const [formationFormData, setFormationFormData] = useState<{
+    formationId: string
+    dateDebut: string
+    dateFin: string
+    reference: string
+    resultat: string
+    moyenne: number
+  } | null>(null)
+  const [formationError, setFormationError] = useState<string | null>(null)
+  const [availableFormations, setAvailableFormations] = useState<Array<{ id: string; formation: string }>>([])
+  const [isLoadingFormations, setIsLoadingFormations] = useState(false)
 
   const shouldReduceMotion = useReducedMotion()
   const { theme } = useTheme()
@@ -136,7 +164,7 @@ export function ResizableTable({
 
   // Column width state with default values
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
-    checkbox: 60,
+    number: 60, // Colonne de numérotation
     name: 206, // Increased for name (الإسم و اللقب)
     email: 116, // Reduced for rank (الرتبة)
     department: 120, // Reduced for department (الرقم)
@@ -152,27 +180,6 @@ export function ResizableTable({
   useEffect(() => {
     setMounted(true)
   }, [])
-
-  const handleAgentSelect = (agentId: string) => {
-    setSelectedAgents((prev) => {
-      if (prev.includes(agentId)) {
-        return prev.filter((id) => id !== agentId)
-      } else {
-        return [...prev, agentId]
-      }
-    })
-    if (onAgentSelect) {
-      onAgentSelect(agentId)
-    }
-  }
-
-  const handleSelectAll = () => {
-    if (selectedAgents.length === paginatedAgents.length) {
-      setSelectedAgents([])
-    } else {
-      setSelectedAgents(paginatedAgents.map((e) => e.id))
-    }
-  }
 
   const handleSort = (field: SortField | null) => {
     if (field === null) {
@@ -380,44 +387,82 @@ export function ResizableTable({
 
   const handleEditClick = (agent: Agent) => {
     setEditingAgent(agent)
-    setEditFormData({ ...agent })
   }
 
-  const handleEditFormChange = (field: keyof Agent, value: string | number) => {
-    if (editFormData) {
-      setEditFormData({
-        ...editFormData,
+  const handleCancelEdit = () => {
+    setEditingAgent(null)
+  }
+
+  const handleAddFormationClick = async (agent: Agent) => {
+    setAddingFormationAgent(agent)
+    setFormationFormData({
+      formationId: "",
+      dateDebut: "",
+      dateFin: "",
+      reference: "",
+      resultat: "",
+      moyenne: 0,
+    })
+
+    // Charger les formations disponibles
+    setIsLoadingFormations(true)
+    try {
+      const response = await fetch("/api/formations")
+      if (response.ok) {
+        const formations = await response.json()
+        setAvailableFormations(formations)
+      }
+    } catch (error) {
+      console.error("Error loading formations:", error)
+    } finally {
+      setIsLoadingFormations(false)
+    }
+  }
+
+  const handleFormationFormChange = (field: string, value: string | number) => {
+    if (formationFormData) {
+      setFormationFormData({
+        ...formationFormData,
         [field]: value,
       })
     }
   }
 
-  const handleSaveEdit = async () => {
-    if (editFormData && onSaveEdit) {
-      setEditError(null)
+  const handleSaveFormation = async () => {
+    if (formationFormData && addingFormationAgent) {
+      setFormationError(null)
 
-      const result = await onSaveEdit(editFormData)
-
-      if (result.success) {
-        // Fermer le popover
-        setEditingAgent(null)
-        setEditFormData(null)
-      } else {
-        // Afficher l'erreur
-        setEditError(result.error || "Une erreur s'est produite")
+      // Validation
+      if (!formationFormData.formationId) {
+        setFormationError("الرجاء اختيار الدورة التكوينية")
+        return
       }
-    } else if (editFormData) {
-      // Fallback si onSaveEdit n'est pas fourni
-      console.log("Saving agent data:", editFormData)
-      setEditingAgent(null)
-      setEditFormData(null)
+      if (!formationFormData.dateDebut) {
+        setFormationError("الرجاء إدخال تاريخ بداية التكوين")
+        return
+      }
+      if (!formationFormData.dateFin) {
+        setFormationError("الرجاء إدخال تاريخ نهاية التكوين")
+        return
+      }
+      if (formationFormData.moyenne < 0 || formationFormData.moyenne > 20) {
+        setFormationError("المعدل يجب أن يكون بين 0 و 20")
+        return
+      }
+
+      // TODO: Implémenter l'API pour enregistrer la formation
+      console.log("Saving formation for agent:", addingFormationAgent.id, formationFormData)
+
+      // Fermer le dialog
+      setAddingFormationAgent(null)
+      setFormationFormData(null)
     }
   }
 
-  const handleCancelEdit = () => {
-    setEditingAgent(null)
-    setEditFormData(null)
-    setEditError(null)
+  const handleCancelFormation = () => {
+    setAddingFormationAgent(null)
+    setFormationFormData(null)
+    setFormationError(null)
   }
 
   const shouldAnimate = enableAnimations && !shouldReduceMotion
@@ -519,6 +564,8 @@ export function ResizableTable({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <DialogueStyle />
+
           <div className="relative">
             <button
               onClick={() => setShowSortMenu(!showSortMenu)}
@@ -705,21 +752,9 @@ export function ResizableTable({
                       : "border-l border-zinc-200"
                     : "border-l-2 border-border"
                 }`}
-                style={{ width: columnWidths.checkbox }}
+                style={{ width: columnWidths.number }}
               >
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 rounded border-border/40 cursor-pointer"
-                  style={
-                    mounted
-                      ? {
-                          accentColor: isDark ? "rgb(113, 113, 122)" : "rgb(161, 161, 170)",
-                        }
-                      : {}
-                  }
-                  checked={paginatedAgents.length > 0 && selectedAgents.length === paginatedAgents.length}
-                  onChange={handleSelectAll}
-                />
+                <span className="text-xs font-semibold">#</span>
               </div>
 
               <Resizable
@@ -953,379 +988,375 @@ export function ResizableTable({
                   </div>
                 ) : (
                   <>
-                    {paginatedAgents.map((agent) => (
-                      <motion.div key={agent.id} variants={shouldAnimate ? rowVariants : {}}>
-                        <div
-                          className={`py-3.5 group relative transition-all duration-150 flex ${
-                            mounted
-                              ? isDark
-                                ? "border-b border-zinc-600"
-                                : "border-b border-zinc-200"
-                              : "border-b-2 border-border"
-                          } ${
-                            selectedAgents.includes(agent.id) ? "bg-muted/30" : "bg-muted/5 hover:bg-muted/20"
-                          }`}
-                        >
+                    {paginatedAgents.map((agent, index) => {
+                      // Calcul du numéro global en tenant compte de la page actuelle
+                      const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + index + 1
+                      return (
+                        <motion.div key={agent.id} variants={shouldAnimate ? rowVariants : {}}>
                           <div
-                            className={`flex items-center justify-center ${
+                            className={`py-3.5 group relative transition-all duration-150 flex bg-muted/5 hover:bg-muted/20 ${
                               mounted
                                 ? isDark
-                                  ? "border-l border-zinc-600"
-                                  : "border-l border-zinc-200"
-                                : "border-l-2 border-border"
+                                  ? "border-b border-zinc-600"
+                                  : "border-b border-zinc-200"
+                                : "border-b-2 border-border"
                             }`}
-                            style={{ width: columnWidths.checkbox }}
                           >
-                            <input
-                              type="checkbox"
-                              className="w-4 h-4 rounded border-border/40 cursor-pointer"
-                              style={
+                            <div
+                              className={`flex items-center justify-center ${
                                 mounted
-                                  ? {
-                                      accentColor: isDark ? "rgb(113, 113, 122)" : "rgb(161, 161, 170)",
-                                    }
-                                  : {}
-                              }
-                              checked={selectedAgents.includes(agent.id)}
-                              onChange={() => handleAgentSelect(agent.id)}
-                            />
-                          </div>
-
-                          <div
-                            className={`flex items-center min-w-0 px-3 ${
-                              mounted
-                                ? isDark
-                                  ? "border-l border-zinc-600"
-                                  : "border-l border-zinc-200"
-                                : "border-l-2 border-border"
-                            }`}
-                            style={{ width: columnWidths.name }}
-                          >
-                            <span
-                              className="text-sm text-foreground truncate"
-                              style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                                  ? isDark
+                                    ? "border-l border-zinc-600"
+                                    : "border-l border-zinc-200"
+                                  : "border-l-2 border-border"
+                              }`}
+                              style={{ width: columnWidths.number }}
                             >
-                              {agent.nomPrenom}
-                            </span>
-                          </div>
+                              <span className="text-sm text-foreground/70 font-bold">{globalIndex}</span>
+                            </div>
 
-                          <div
-                            className={`flex items-center min-w-0 px-3 ${
-                              mounted
-                                ? isDark
-                                  ? "border-l border-zinc-600"
-                                  : "border-l border-zinc-200"
-                                : "border-l-2 border-border"
-                            }`}
-                            style={{ width: columnWidths.email }}
-                          >
-                            <span
-                              className="text-sm text-foreground/80 truncate"
-                              style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                            <div
+                              className={`flex items-center min-w-0 px-3 ${
+                                mounted
+                                  ? isDark
+                                    ? "border-l border-zinc-600"
+                                    : "border-l border-zinc-200"
+                                  : "border-l-2 border-border"
+                              }`}
+                              style={{ width: columnWidths.name }}
                             >
-                              {agent.grade}
-                            </span>
-                          </div>
-
-                          <div
-                            className={`flex items-center px-3 ${
-                              mounted
-                                ? isDark
-                                  ? "border-l border-zinc-600"
-                                  : "border-l border-zinc-200"
-                                : "border-l-2 border-border"
-                            }`}
-                            style={{ width: columnWidths.department }}
-                          >
-                            <span
-                              className="text-sm text-foreground/80 truncate"
-                              style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
-                            >
-                              {agent.matricule}
-                            </span>
-                          </div>
-
-                          <div
-                            className={`flex items-center min-w-0 px-3 ${
-                              mounted
-                                ? isDark
-                                  ? "border-l border-zinc-600"
-                                  : "border-l border-zinc-200"
-                                : "border-l-2 border-border"
-                            }`}
-                            style={{ width: columnWidths.position }}
-                          >
-                            <span
-                              className="text-sm text-foreground/80 truncate"
-                              style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
-                            >
-                              {agent.responsabilite}
-                            </span>
-                          </div>
-
-                          <div
-                            className={`flex items-center px-3 ${
-                              mounted
-                                ? isDark
-                                  ? "border-l border-zinc-600"
-                                  : "border-l border-zinc-200"
-                                : "border-l-2 border-border"
-                            }`}
-                            style={{ width: columnWidths.salary }}
-                          >
-                            <span
-                              className="text-sm text-foreground/90"
-                              style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
-                              dir="ltr"
-                            >
-                              {formatPhoneNumber(agent.telephone)}
-                            </span>
-                          </div>
-
-                          <div
-                            className={`flex items-center px-3 ${
-                              mounted
-                                ? isDark
-                                  ? "border-l border-zinc-600"
-                                  : "border-l border-zinc-200"
-                                : "border-l-2 border-border"
-                            }`}
-                            style={{ width: columnWidths.hireDate }}
-                          >
-                            <span
-                              className="text-sm text-foreground/80"
-                              style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
-                            >
-                              {agent.derniereDateFormation}
-                            </span>
-                          </div>
-
-                          <div
-                            className={`flex items-center px-3 ${
-                              mounted
-                                ? isDark
-                                  ? "border-l border-zinc-600"
-                                  : "border-l border-zinc-200"
-                                : "border-l-2 border-border"
-                            }`}
-                            style={{ width: columnWidths.status }}
-                          >
-                            {(() => {
-                              const { bgColor, textColor, dotColor } = getStatusColor(agent.categorie)
-                              return (
-                                <div
-                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium whitespace-nowrap ${bgColor} ${textColor} rounded-md`}
-                                  style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
-                                >
-                                  <div className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></div>
-                                  {agent.categorie}
-                                </div>
-                              )
-                            })()}
-                          </div>
-
-                          <div
-                            className={`flex items-center justify-center gap-1 px-3 ${
-                              mounted
-                                ? isDark
-                                  ? "border-r border-zinc-600"
-                                  : "border-r border-zinc-200"
-                                : "border-r-2 border-border"
-                            }`}
-                            style={{ width: columnWidths.actions }}
-                          >
-                            <Popover
-                              open={editingAgent?.id === agent.id}
-                              onOpenChange={(open) => {
-                                if (!open) {
-                                  handleCancelEdit()
-                                }
-                              }}
-                            >
-                              <PopoverTrigger asChild>
-                                <button
-                                  onClick={() => handleEditClick(agent)}
-                                  className="p-1.5 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
-                                  aria-label="Modifier"
-                                >
-                                  <SquarePen className="h-3.5 w-3.5 text-foreground/70 hover:text-foreground" />
-                                </button>
-                              </PopoverTrigger>
-                              <PopoverContent
-                                className="w-[400px] p-4 bg-slate-50 dark:bg-slate-900 shadow-2xl"
-                                align="start"
-                                side="left"
-                                sideOffset={8}
-                                style={{ fontFamily: "'Noto Naskh Arabic', sans-serif", transformOrigin: "top right" }}
+                              <span
+                                className="text-sm text-foreground truncate"
+                                style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                               >
-                                <div className="space-y-4">
-                                  <div className="flex items-center justify-between border-b pb-3">
-                                    <h3
-                                      className="text-lg font-semibold text-[#1071C7]"
-                                      style={{ fontFamily: "inherit" }}
-                                    >
-                                      تعديل بيانات الموظف
-                                    </h3>
-                                    <button
-                                      onClick={handleCancelEdit}
-                                      className="p-1 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </button>
+                                {agent.nomPrenom}
+                              </span>
+                            </div>
+
+                            <div
+                              className={`flex items-center min-w-0 px-3 ${
+                                mounted
+                                  ? isDark
+                                    ? "border-l border-zinc-600"
+                                    : "border-l border-zinc-200"
+                                  : "border-l-2 border-border"
+                              }`}
+                              style={{ width: columnWidths.email }}
+                            >
+                              <span
+                                className="text-sm text-foreground/80 truncate"
+                                style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                              >
+                                {agent.grade}
+                              </span>
+                            </div>
+
+                            <div
+                              className={`flex items-center px-3 ${
+                                mounted
+                                  ? isDark
+                                    ? "border-l border-zinc-600"
+                                    : "border-l border-zinc-200"
+                                  : "border-l-2 border-border"
+                              }`}
+                              style={{ width: columnWidths.department }}
+                            >
+                              <span
+                                className="text-sm text-foreground/80 truncate"
+                                style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                              >
+                                {agent.matricule}
+                              </span>
+                            </div>
+
+                            <div
+                              className={`flex items-center min-w-0 px-3 ${
+                                mounted
+                                  ? isDark
+                                    ? "border-l border-zinc-600"
+                                    : "border-l border-zinc-200"
+                                  : "border-l-2 border-border"
+                              }`}
+                              style={{ width: columnWidths.position }}
+                            >
+                              <span
+                                className="text-sm text-foreground/80 truncate"
+                                style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                              >
+                                {agent.responsabilite}
+                              </span>
+                            </div>
+
+                            <div
+                              className={`flex items-center px-3 ${
+                                mounted
+                                  ? isDark
+                                    ? "border-l border-zinc-600"
+                                    : "border-l border-zinc-200"
+                                  : "border-l-2 border-border"
+                              }`}
+                              style={{ width: columnWidths.salary }}
+                            >
+                              <span
+                                className="text-sm text-foreground/90"
+                                style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                                dir="ltr"
+                              >
+                                {formatPhoneNumber(agent.telephone)}
+                              </span>
+                            </div>
+
+                            <div
+                              className={`flex items-center px-3 ${
+                                mounted
+                                  ? isDark
+                                    ? "border-l border-zinc-600"
+                                    : "border-l border-zinc-200"
+                                  : "border-l-2 border-border"
+                              }`}
+                              style={{ width: columnWidths.hireDate }}
+                            >
+                              <span
+                                className="text-sm text-foreground/80"
+                                style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                              >
+                                {agent.derniereDateFormation}
+                              </span>
+                            </div>
+
+                            <div
+                              className={`flex items-center px-3 ${
+                                mounted
+                                  ? isDark
+                                    ? "border-l border-zinc-600"
+                                    : "border-l border-zinc-200"
+                                  : "border-l-2 border-border"
+                              }`}
+                              style={{ width: columnWidths.status }}
+                            >
+                              {(() => {
+                                const { bgColor, textColor, dotColor } = getStatusColor(agent.categorie)
+                                return (
+                                  <div
+                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium whitespace-nowrap ${bgColor} ${textColor} rounded-md`}
+                                    style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                                  >
+                                    <div className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></div>
+                                    {agent.categorie}
                                   </div>
+                                )
+                              })()}
+                            </div>
 
-                                  {editFormData && (
-                                    <>
-                                      <div className="space-y-2">
-                                        <Label htmlFor="nomPrenom">الاسم و اللقب</Label>
-                                        <Input
-                                          id="nomPrenom"
-                                          value={editFormData.nomPrenom}
-                                          onChange={(e) => handleEditFormChange("nomPrenom", e.target.value)}
-                                          className="text-right"
-                                        />
-                                      </div>
+                            <div
+                              className={`flex items-center justify-center gap-1 px-3 ${
+                                mounted
+                                  ? isDark
+                                    ? "border-r border-zinc-600"
+                                    : "border-r border-zinc-200"
+                                  : "border-r-2 border-border"
+                              }`}
+                              style={{ width: columnWidths.actions }}
+                            >
+                              <button
+                                onClick={() => handleEditClick(agent)}
+                                className="p-1.5 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
+                                aria-label="Modifier"
+                              >
+                                <SquarePen className="h-3.5 w-3.5 text-foreground/70 hover:text-foreground" />
+                              </button>
 
-                                      <div className="space-y-2">
-                                        <Label htmlFor="grade">الرتبة</Label>
-                                        <Select
-                                          dir="rtl"
-                                          value={editFormData.grade}
-                                          onValueChange={(value) => handleEditFormChange("grade", value)}
-                                        >
-                                          <SelectTrigger
-                                            className="w-full rounded"
-                                            style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                              <AnimatePresence mode="wait">
+                                {editingAgent?.id === agent.id && (
+                                  <DialogueStyle
+                                    agent={editingAgent}
+                                    isOpen={true}
+                                    onClose={handleCancelEdit}
+                                    onSave={async (data) => {
+                                      if (onSaveEdit) {
+                                        await onSaveEdit({
+                                          ...data,
+                                          derniereDateFormation: editingAgent.derniereDateFormation,
+                                          categorie: editingAgent.categorie,
+                                          avatar: editingAgent.avatar,
+                                        })
+                                      }
+                                      handleCancelEdit()
+                                    }}
+                                    isUpdating={isUpdating}
+                                  />
+                                )}
+                              </AnimatePresence>
+
+                              <button
+                                onClick={() => {
+                                  // Action à définir
+                                  console.log("View agent:", agent.id)
+                                }}
+                                className="p-1.5 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
+                                aria-label="Voir les détails"
+                              >
+                                <GraduationCap className="h-4.5 w-4.5 text-foreground/70 hover:text-foreground" />
+                              </button>
+
+                              <button
+                                onClick={() => handleAddFormationClick(agent)}
+                                className="p-1.5 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
+                                aria-label="Ajouter une formation"
+                              >
+                                <CirclePlus className="h-4 w-4 text-foreground/70 hover:text-foreground" />
+                              </button>
+
+                              <AnimatePresence mode="wait">
+                                {addingFormationAgent?.id === agent.id && (
+                                  <Dialog open={true} modal={true}>
+                                    <DialogContent
+                                      className="w-[450px] p-6 bg-slate-50 dark:bg-slate-900 shadow-2xl"
+                                      style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                                      showClose={false}
+                                      onPointerDownOutside={(e) => e.preventDefault()}
+                                      onInteractOutside={(e) => e.preventDefault()}
+                                    >
+                                      <DialogHeader className="border-b pb-3">
+                                        <div className="flex items-center justify-between">
+                                          <DialogTitle className="text-lg font-semibold text-[#1071C7]">
+                                            إضافة تكوين للموظف
+                                          </DialogTitle>
+                                          <button
+                                            onClick={handleCancelFormation}
+                                            className="p-1 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
                                           >
-                                            <SelectValue placeholder="اختر الرتبة" />
-                                          </SelectTrigger>
-                                          <SelectContent style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
-                                            <SelectItem value="عميد" className="text-[15px]">
-                                              عميد
-                                            </SelectItem>
-                                            <SelectItem value="عقيد" className="text-[15px]">
-                                              عقيد
-                                            </SelectItem>
-                                            <SelectItem value="مقدم" className="text-[15px]">
-                                              مقدم
-                                            </SelectItem>
-                                            <SelectItem value="رائد" className="text-[15px]">
-                                              رائد
-                                            </SelectItem>
-                                            <SelectItem value="نقيب" className="text-[15px]">
-                                              نقيب
-                                            </SelectItem>
-                                            <SelectItem value="ملازم أول" className="text-[15px]">
-                                              ملازم أول
-                                            </SelectItem>
-                                            <SelectItem value="ملازم" className="text-[15px]">
-                                              ملازم
-                                            </SelectItem>
-                                            <SelectItem value="عريف أول" className="text-[15px]">
-                                              عريف أول
-                                            </SelectItem>
-                                            <SelectItem value="عريف" className="text-[15px]">
-                                              عريف
-                                            </SelectItem>
-                                            <SelectItem value="وكيل أول" className="text-[15px]">
-                                              وكيل أول
-                                            </SelectItem>
-                                            <SelectItem value="وكيل" className="text-[15px]">
-                                              وكيل
-                                            </SelectItem>
-                                            <SelectItem value="رقيب أول" className="text-[15px]">
-                                              رقيب أول
-                                            </SelectItem>
-                                            <SelectItem value="رقيب" className="text-[15px]">
-                                              رقيب
-                                            </SelectItem>
-                                            <SelectItem value="حرس" className="text-[15px]">
-                                              حرس
-                                            </SelectItem>
-                                          </SelectContent>
-                                        </Select>
-                                      </div>
+                                            <X className="h-4 w-4" />
+                                          </button>
+                                        </div>
+                                      </DialogHeader>
 
-                                      <div className="space-y-2">
-                                        <Label htmlFor="matricule">الرقم</Label>
-                                        <Input
-                                          id="matricule"
-                                          value={editFormData.matricule}
-                                          onChange={(e) => handleEditFormChange("matricule", e.target.value)}
-                                          className="text-right"
-                                        />
-                                      </div>
+                                      {formationFormData && (
+                                        <div className="space-y-4">
+                                          <div className="space-y-2">
+                                            <Label htmlFor="formationId">الدورة التكوينية</Label>
+                                            <Select
+                                              dir="rtl"
+                                              value={formationFormData.formationId}
+                                              onValueChange={(value) => handleFormationFormChange("formationId", value)}
+                                              disabled={isLoadingFormations}
+                                            >
+                                              <SelectTrigger
+                                                className="w-full rounded"
+                                                style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                                              >
+                                                <SelectValue placeholder={isLoadingFormations ? "جاري التحميل..." : "اختر الدورة التكوينية"} />
+                                              </SelectTrigger>
+                                              <SelectContent style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+                                                {availableFormations.map((formation) => (
+                                                  <SelectItem key={formation.id} value={formation.id} className="text-[15px]">
+                                                    {formation.formation}
+                                                  </SelectItem>
+                                                ))}
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
 
-                                      <div className="space-y-2">
-                                        <Label htmlFor="responsabilite">المسؤولية</Label>
-                                        <Input
-                                          id="responsabilite"
-                                          value={editFormData.responsabilite}
-                                          onChange={(e) => handleEditFormChange("responsabilite", e.target.value)}
-                                          className="text-right"
-                                        />
-                                      </div>
+                                          <div className="space-y-2">
+                                            <Label htmlFor="dateDebut">تاريخ بداية التكوين</Label>
+                                            <Input
+                                              id="dateDebut"
+                                              type="date"
+                                              value={formationFormData.dateDebut}
+                                              onChange={(e) => handleFormationFormChange("dateDebut", e.target.value)}
+                                              className="text-right"
+                                            />
+                                          </div>
 
-                                      <div className="space-y-2">
-                                        <Label htmlFor="telephone">رقم الهاتف</Label>
-                                        <Input
-                                          id="telephone"
-                                          type="number"
-                                          value={editFormData.telephone}
-                                          onChange={(e) =>
-                                            handleEditFormChange("telephone", parseInt(e.target.value) || 0)
-                                          }
-                                          className="text-right"
-                                        />
-                                      </div>
+                                          <div className="space-y-2">
+                                            <Label htmlFor="dateFin">تاريخ نهاية التكوين</Label>
+                                            <Input
+                                              id="dateFin"
+                                              type="date"
+                                              value={formationFormData.dateFin}
+                                              onChange={(e) => handleFormationFormChange("dateFin", e.target.value)}
+                                              className="text-right"
+                                            />
+                                          </div>
 
-                                      {editError && (
-                                        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                                          <p className="text-sm text-red-600 dark:text-red-400 text-center">
-                                            {editError}
-                                          </p>
+                                          <div className="space-y-2">
+                                            <Label htmlFor="reference">المرجع</Label>
+                                            <Input
+                                              id="reference"
+                                              type="text"
+                                              value={formationFormData.reference}
+                                              onChange={(e) => handleFormationFormChange("reference", e.target.value)}
+                                              className="text-right"
+                                              placeholder="أدخل المرجع"
+                                            />
+                                          </div>
+
+                                          <div className="space-y-2">
+                                            <Label htmlFor="resultat">النتيجة</Label>
+                                            <Input
+                                              id="resultat"
+                                              type="text"
+                                              value={formationFormData.resultat}
+                                              onChange={(e) => handleFormationFormChange("resultat", e.target.value)}
+                                              className="text-right"
+                                              placeholder="أدخل النتيجة"
+                                            />
+                                          </div>
+
+                                          <div className="space-y-2">
+                                            <Label htmlFor="moyenne">المعدل (0-20)</Label>
+                                            <Input
+                                              id="moyenne"
+                                              type="number"
+                                              min="0"
+                                              max="20"
+                                              step="0.01"
+                                              value={formationFormData.moyenne}
+                                              onChange={(e) =>
+                                                handleFormationFormChange("moyenne", parseFloat(e.target.value) || 0)
+                                              }
+                                              className="text-right"
+                                              placeholder="0.00"
+                                            />
+                                          </div>
+
+                                          {formationError && (
+                                            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                                              <p className="text-sm text-red-600 dark:text-red-400 text-center">
+                                                {formationError}
+                                              </p>
+                                            </div>
+                                          )}
                                         </div>
                                       )}
 
-                                      <div className="flex gap-2 pt-6 mt-2 border-t">
+                                      <DialogFooter className="flex gap-2 pt-6 mt-2 border-t">
                                         <NeumorphButton
-                                          onClick={handleCancelEdit}
+                                          onClick={handleCancelFormation}
                                           intent="secondary"
                                           size="medium"
                                           className="flex-1 cursor-pointer"
-                                          disabled={isUpdating}
                                         >
                                           إلغـــــاء
                                         </NeumorphButton>
                                         <NeumorphButton
-                                          onClick={handleSaveEdit}
+                                          onClick={handleSaveFormation}
                                           intent="primary"
                                           size="medium"
                                           className="flex-1 cursor-pointer"
-                                          disabled={isUpdating}
                                         >
-                                          {isUpdating ? "جاري الحفظ..." : "حـفـــــظ"}
+                                          حـفـــــظ
                                         </NeumorphButton>
-                                      </div>
-                                    </>
-                                  )}
-                                </div>
-                              </PopoverContent>
-                            </Popover>
-                            <button
-                              onClick={() => {
-                                // Action à définir
-                                console.log("View agent:", agent.id)
-                              }}
-                              className="p-1.5 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
-                              aria-label="Voir les détails"
-                            >
-                              <Eye className="h-4 w-4 text-foreground/70 hover:text-foreground" />
-                            </button>
+                                      </DialogFooter>
+                                    </DialogContent>
+                                  </Dialog>
+                                )}
+                              </AnimatePresence>
+                            </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
+                        </motion.div>
+                      )
+                    })}
                   </>
                 )}
               </motion.div>
@@ -1337,7 +1368,8 @@ export function ResizableTable({
       {sortedAndFilteredAgents.length > 0 && (
         <div className="mt-4 flex items-center justify-between px-2">
           <div className="text-xs text-muted-foreground/70" style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
-            الصفحــة {currentPage} مــن {totalPages} - ({sortedAndFilteredAgents.length} {sortedAndFilteredAgents.length < 11 ? "متربصين" : "متـربـص"})
+            الصفحــة {currentPage} مــن {totalPages} - ({sortedAndFilteredAgents.length}{" "}
+            {sortedAndFilteredAgents.length < 11 ? "متربصين" : "متـربـص"})
           </div>
 
           <div className="flex gap-1.5">

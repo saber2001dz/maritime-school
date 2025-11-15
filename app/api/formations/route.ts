@@ -10,12 +10,6 @@ export async function GET() {
       },
     })
 
-    // Log pour debug
-    console.log('Formations récupérées:', formations.length)
-    if (formations.length > 0) {
-      console.log('Première formation:', JSON.stringify(formations[0], null, 2))
-    }
-
     return NextResponse.json(formations)
   } catch (error) {
     console.error('Erreur lors de la récupération des formations:', error)
