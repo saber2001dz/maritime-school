@@ -199,7 +199,7 @@ export function ServerManagementTable({
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-yellow-600 animate-pulse" />
+              <div className="w-2 h-2 rounded-full bg-[#00ff00] shadow-[0_0_8px_#00ff00,0_0_12px_#00ff00] animate-pulse" />
               <h1 className={`text-xl font-bold text-foreground ${notoNaskhArabic.className}`}>{title}</h1>
             </div>
             <div className={`text-xs text-muted-foreground ${notoNaskhArabic.className}`}>

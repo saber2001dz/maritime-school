@@ -70,7 +70,7 @@ interface Agent {
   matricule: string
 }
 
-interface DialogueAgentFormationProps {
+interface DialogueEditionFormationProps {
   agent?: Agent
   formations?: Formation[]
   formationData?: AgentFormationData | null
@@ -83,7 +83,7 @@ interface DialogueAgentFormationProps {
   error?: string
 }
 
-export default function DialogueAgentFormation({
+export default function DialogueEditionFormation({
   agent,
   formations = [],
   formationData,
@@ -94,7 +94,7 @@ export default function DialogueAgentFormation({
   isUpdating = false,
   isLoadingFormations = false,
   error,
-}: DialogueAgentFormationProps = {}) {
+}: DialogueEditionFormationProps = {}) {
   const id = useId()
 
   // Utiliser les données contrôlées si disponibles, sinon utiliser l'état interne
@@ -117,9 +117,17 @@ export default function DialogueAgentFormation({
   const resultat = formationData?.resultat ?? internalResultat
   const moyenne = formationData?.moyenne ?? internalMoyenne
 
-  // Réinitialiser les champs internes quand le dialogue s'ouvre en mode non contrôlé
+  // Initialiser les champs avec les données existantes quand le dialogue s'ouvre
   useEffect(() => {
-    if (isOpen && !formationData) {
+    if (isOpen && formationData) {
+      setInternalFormationId(formationData.formationId)
+      setInternalDateDebut(formationData.dateDebut)
+      setInternalDateFin(formationData.dateFin)
+      setInternalReference(formationData.reference)
+      setInternalResultat(formationData.resultat)
+      setInternalMoyenne(formationData.moyenne)
+    } else if (isOpen && !formationData) {
+      // Réinitialiser si pas de données
       setInternalFormationId("")
       setInternalDateDebut("")
       setInternalDateFin("")
@@ -192,11 +200,11 @@ export default function DialogueAgentFormation({
             <DialogTitle className={`text-start font-bold text-md ${notoNaskhArabic.className}`}>
               {agent ? (
                 <>
-                  <span className="text-[#1071c7]">إضافة تكوين للموظف: </span>
+                  <span className="text-[#1071c7]">تعديل تكوين الموظف: </span>
                   <span className="text-foreground/60 dark:text-foreground/50">ال{agent.grade} {agent.nomPrenom}</span>
                 </>
               ) : (
-                <span className="text-[#1071c7]">إضافة تكوين للموظف</span>
+                <span className="text-[#1071c7]">تعديل تكوين الموظف</span>
               )}
             </DialogTitle>
             <button
@@ -208,7 +216,7 @@ export default function DialogueAgentFormation({
           </div>
         </DialogHeader>
         <DialogDescription className="sr-only">
-          {agent ? `إضافة تكوين للموظف: ال${agent.grade} ${agent.nomPrenom}` : "إضافة تكوين للموظف"}
+          {agent ? `تعديل تكوين الموظف: ال${agent.grade} ${agent.nomPrenom}` : "تعديل تكوين الموظف"}
         </DialogDescription>
 
         <div className="overflow-y-auto">

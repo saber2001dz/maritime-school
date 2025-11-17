@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion"
 import { useTheme } from "next-themes"
 import {
@@ -29,7 +30,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import NeumorphButton from "@/components/ui/neumorph-button"
 import DialogueStyle from "@/components/dialogue-agent"
-import DialogueAgentFormation from "@/components/dialogue-agent-formation"
+import DialogueAgentFormation, { type Formation } from "@/components/dialogue-agent-formation"
 import "react-resizable/css/styles.css"
 
 export interface Agent {
@@ -50,6 +51,7 @@ interface ResizableTableProps {
   onAgentSelect?: (agentId: string) => void
   onColumnResize?: (columnKey: string, newWidth: number) => void
   onSaveEdit?: (agent: Agent) => Promise<{ success: boolean; error?: string }>
+  onFormationSaved?: () => void
   isUpdating?: boolean
   className?: string
   enableAnimations?: boolean
@@ -131,6 +133,7 @@ export function ResizableTable({
   onAgentSelect,
   onColumnResize,
   onSaveEdit,
+  onFormationSaved,
   isUpdating = false,
   className = "",
   enableAnimations = true,
@@ -156,9 +159,11 @@ export function ResizableTable({
     moyenne: number
   } | null>(null)
   const [formationError, setFormationError] = useState<string | null>(null)
-  const [availableFormations, setAvailableFormations] = useState<Array<{ id: string; formation: string }>>([])
+  const [availableFormations, setAvailableFormations] = useState<Formation[]>([])
   const [isLoadingFormations, setIsLoadingFormations] = useState(false)
+  const [isSavingFormation, setIsSavingFormation] = useState(false)
 
+  const router = useRouter()
   const shouldReduceMotion = useReducedMotion()
   const { theme } = useTheme()
   const isDark = theme === "dark"
@@ -451,12 +456,43 @@ export function ResizableTable({
         return
       }
 
-      // TODO: Implémenter l'API pour enregistrer la formation
-      console.log("Saving formation for agent:", addingFormationAgent.id, formationFormData)
+      // Enregistrer la formation dans la base de données
+      setIsSavingFormation(true)
+      try {
+        const response = await fetch("/api/agent-formations", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            agentId: addingFormationAgent.id,
+            formationId: formationFormData.formationId,
+            dateDebut: formationFormData.dateDebut,
+            dateFin: formationFormData.dateFin,
+            reference: formationFormData.reference,
+            resultat: formationFormData.resultat,
+            moyenne: formationFormData.moyenne,
+          }),
+        })
 
-      // Fermer le dialog
-      setAddingFormationAgent(null)
-      setFormationFormData(null)
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || "Erreur lors de l'enregistrement de la formation")
+        }
+
+        // Succès - fermer le dialog
+        setAddingFormationAgent(null)
+        setFormationFormData(null)
+
+        // Rafraîchir les données de la page sans reload complet
+        if (onFormationSaved) {
+          onFormationSaved()
+        }
+      } catch (error: any) {
+        setFormationError(error.message || "حدث خطأ أثناء حفظ البيانات")
+      } finally {
+        setIsSavingFormation(false)
+      }
     }
   }
 
@@ -1161,7 +1197,7 @@ export function ResizableTable({
                             >
                               <button
                                 onClick={() => handleEditClick(agent)}
-                                className="p-1.5 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
+                                className="p-1.5 hover:bg-muted/30 rounded-md transition-colors cursor-pointer"
                                 aria-label="Modifier"
                               >
                                 <SquarePen className="h-3.5 w-3.5 text-foreground/70 hover:text-foreground" />
@@ -1191,18 +1227,17 @@ export function ResizableTable({
 
                               <button
                                 onClick={() => {
-                                  // Action à définir
-                                  console.log("View agent:", agent.id)
+                                  router.push(`/formation-agent?agentId=${agent.id}`)
                                 }}
-                                className="p-1.5 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
-                                aria-label="Voir les détails"
+                                className="p-1.5 hover:bg-muted/30 rounded-md transition-colors cursor-pointer"
+                                aria-label="Voir les formations de l'agent"
                               >
                                 <GraduationCap className="h-4.5 w-4.5 text-foreground/70 hover:text-foreground" />
                               </button>
 
                               <button
                                 onClick={() => handleAddFormationClick(agent)}
-                                className="p-1.5 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
+                                className="p-1.5 hover:bg-muted/30 rounded-md transition-colors cursor-pointer"
                                 aria-label="Ajouter une formation"
                               >
                                 <CirclePlus className="h-4 w-4 text-foreground/70 hover:text-foreground" />
@@ -1218,7 +1253,7 @@ export function ResizableTable({
                                     onClose={handleCancelFormation}
                                     onChange={handleFormationFormChange}
                                     onSave={handleSaveFormation}
-                                    isUpdating={false}
+                                    isUpdating={isSavingFormation}
                                     isLoadingFormations={isLoadingFormations}
                                     error={formationError || undefined}
                                   />

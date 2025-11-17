@@ -54,6 +54,11 @@ export function ResizableTableWrapper({ agents }: ResizableTableWrapperProps) {
     }
   }
 
+  const handleFormationSaved = () => {
+    // Rafraîchir les données de la page après l'ajout d'une formation
+    router.refresh()
+  }
+
   return (
     <ResizableTable
       className="mt-10"
@@ -62,6 +67,7 @@ export function ResizableTableWrapper({ agents }: ResizableTableWrapperProps) {
       onAgentSelect={handleAgentSelect}
       onColumnResize={handleColumnResize}
       onSaveEdit={handleSaveEdit}
+      onFormationSaved={handleFormationSaved}
       isUpdating={isUpdating}
     />
   )

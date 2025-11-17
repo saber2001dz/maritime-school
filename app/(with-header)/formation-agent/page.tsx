@@ -1,118 +1,108 @@
-"use client";
+import { prisma } from "@/lib/db";
+import { Project } from "@/components/ui/project-data-table";
+import FormationAgentClient from "@/components/formation-agent-client";
+import localFont from "next/font/local";
 
-import React, { useState, useMemo } from "react";
-import { ProjectDataTable, Project } from "@/components/ui/project-data-table"; // Adjust path as needed
-import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { ListFilter, Columns } from "lucide-react";
+const notoNaskhArabic = localFont({
+  src: "../../fonts/NotoNaskhArabic.woff2",
+  display: "swap",
+});
 
-// --- MOCK DATA ---
-const mockProjects: Project[] = [
-    { id: "proj-01", name: "ShadCN Clone", repository: "https://github.com/ruixenui/ruixen-buttons", team: "UI Guild", tech: "Next.js", createdAt: "2024-06-01", contributors: "20/15", status: { text: "نجاح", variant: "success" } },
-    { id: "proj-02", name: "RUIXEN Components", repository: "https://github.com/ruixenui/ruixen-buttons", team: "Component Devs", tech: "React", createdAt: "2024-05-22", contributors: "20/18", status: { text: "قيد التكوين", variant: "inProgress" } },
-    { id: "proj-03", name: "CV Jobs Platform", repository: "https://github.com/ruixenui/ruixen-buttons", team: "CV Core", tech: "Spring Boot", createdAt: "2024-06-05", contributors: "20/12", status: { text: "نجاح", variant: "success" } },
-    { id: "proj-04", name: "Ruixen UI Docs", repository: "https://github.com/ruixenui/ruixen-buttons", team: "Tech Writers", tech: "Markdown", createdAt: "2024-04-19", contributors: "20/16", status: { text: "انقطع", variant: "interrupted" } },
-    { id: "proj-05", name: "Job Portal Analytics", repository: "https://github.com/ruixenui/ruixen-buttons", team: "Data Squad", tech: "Python", createdAt: "2024-03-30", contributors: "20/14", status: { text: "نجاح", variant: "success" } },
-    { id: "proj-06", name: "Ui Ux Design", repository: "https://github.com/ruixenui/ruixen-buttons", team: "Infra", tech: "Socket.io", createdAt: "2024-06-03", contributors: "20/17", status: { text: "لم يلتحق", variant: "notJoined" } },
-    { id: "proj-07", name: "ShadCN Clone", repository: "https://github.com/ruixenui/ruixen-buttons", team: "UI Guild", tech: "Next.js", createdAt: "2024-06-01", contributors: "20/13", status: { text: "قيد التكوين", variant: "inProgress" } },
-    { id: "proj-08", name: "RUIXEN Components", repository: "https://github.com/ruixenui/ruixen-buttons", team: "Component Devs", tech: "React", createdAt: "2024-05-22", contributors: "20/19", status: { text: "نجاح", variant: "success" } },
-    { id: "proj-09", name: "CV Jobs Platform", repository: "https://github.com/ruixenui/ruixen-buttons", team: "CV Core", tech: "Spring Boot", createdAt: "2024-06-05", contributors: "20/11", status: { text: "انقطع", variant: "interrupted" } },
-    { id: "proj-10", name: "Ruixen UI Docs", repository: "https://github.com/ruixenui/ruixen-buttons", team: "Tech Writers", tech: "Markdown", createdAt: "2024-04-19", contributors: "20/16", status: { text: "لم يلتحق", variant: "notJoined" } },
-];
-
-const allColumns: (keyof Project)[] = ["name", "repository", "team", "tech", "createdAt", "contributors", "status"];
-
-const Demo = () => {
-  const [techFilter, setTechFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [visibleColumns, setVisibleColumns] = useState<Set<keyof Project>>(new Set(allColumns));
-
-  const filteredProjects = useMemo(() => {
-    return mockProjects.filter((project) => {
-      const techMatch = techFilter === "" || project.tech.toLowerCase().includes(techFilter.toLowerCase());
-      const statusMatch = statusFilter === "all" || project.status.variant === statusFilter;
-      return techMatch && statusMatch;
-    });
-  }, [techFilter, statusFilter]);
-
-  const toggleColumn = (column: keyof Project) => {
-    setVisibleColumns((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(column)) {
-        newSet.delete(column);
-      } else {
-        newSet.add(column);
-      }
-      return newSet;
-    });
+// Interface pour les données de Prisma (SQLite stocke les dates comme des strings)
+interface AgentFormationData {
+  id: string;
+  agentId: string;
+  formationId: string;
+  dateDebut: string;
+  dateFin: string;
+  reference: string | null;
+  resultat: string | null;
+  moyenne: number;
+  formation: {
+    id: string;
+    formation: string;
   };
+  agent: {
+    id: string;
+    nomPrenom: string;
+  };
+}
 
-  return (
-    <div className="min-h-screen bg-background py-6 md:py-12">
-      <div className="container mx-auto px-2 sm:px-4 max-w-7xl">
-        <div className="mb-8 md:mb-12">
-          <div className="mt-10 flex flex-col gap-4 mb-6 sm:flex-row sm:items-center">
-            <div className="flex flex-1 gap-4">
-              <Input
-                placeholder="Filter by technology..."
-                value={techFilter}
-                onChange={(e) => setTechFilter(e.target.value)}
-                className="max-w-xs"
-              />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <ListFilter className="h-4 w-4" />
-                    <span>Status</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuCheckboxItem checked={statusFilter === "all"} onCheckedChange={() => setStatusFilter("all")}>All</DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem checked={statusFilter === "active"} onCheckedChange={() => setStatusFilter("active")}>Active</DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem checked={statusFilter === "inProgress"} onCheckedChange={() => setStatusFilter("inProgress")}>In Progress</DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem checked={statusFilter === "onHold"} onCheckedChange={() => setStatusFilter("onHold")}>On Hold</DropdownMenuCheckboxItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Columns className="h-4 w-4" />
-                  <span>Columns</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {allColumns.map((column) => (
-                  <DropdownMenuCheckboxItem
-                    key={column}
-                    className="capitalize"
-                    checked={visibleColumns.has(column)}
-                    onCheckedChange={() => toggleColumn(column)}
-                  >
-                    {column}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+// Fonction pour mapper les résultats vers les variantes de status
+function getStatusVariant(resultat: string | null): "success" | "inProgress" | "interrupted" | "notJoined" {
+  if (!resultat) return "notJoined";
 
-          <ProjectDataTable projects={filteredProjects} visibleColumns={visibleColumns} />
-        </div>
-      </div>
-    </div>
-  );
-};
+  const resultLower = resultat.toLowerCase();
+  if (resultLower.includes("نجاح") || resultLower.includes("success")) return "success";
+  if (resultLower.includes("قيد التكوين") || resultLower.includes("progress")) return "inProgress";
+  if (resultLower.includes("انقطع") || resultLower.includes("interrupted")) return "interrupted";
+  if (resultLower.includes("لم يلتحق") || resultLower.includes("not joined")) return "notJoined";
 
-export default Demo;
+  return "notJoined";
+}
+
+// Fonction pour transformer les données de Prisma vers le format Project
+function transformAgentFormations(data: AgentFormationData[]): Project[] {
+  const transformedData: Project[] = data.map((item) => ({
+    id: item.id,
+    name: item.formation.formation,
+    repository: item.formation.formation, // الدورة - Nom de la formation
+    team: item.dateDebut, // تاريخ البداية - Date de début
+    tech: item.dateFin, // تاريخ النهاية - Date de fin
+    createdAt: item.reference || "-", // المرجع - Référence
+    contributors: item.moyenne.toString(), // المعدل - Moyenne
+    status: {
+      text: item.resultat || "لم يلتحق", // النتيجة - Résultat
+      variant: getStatusVariant(item.resultat),
+    },
+    formationId: item.formationId, // ID de la formation pour l'édition
+  }));
+
+  // Trier par date de début du plus récent au moins récent
+  transformedData.sort((a, b) => {
+    const dateA = new Date(a.team);
+    const dateB = new Date(b.team);
+    return dateB.getTime() - dateA.getTime();
+  });
+
+  return transformedData;
+}
+
+interface PageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function FormationAgentPage({ searchParams }: PageProps) {
+  // Attendre les searchParams (Next.js 15+)
+  const params = await searchParams;
+  const agentId = params.agentId as string | undefined;
+
+  // Récupérer les informations de l'agent si un agentId est fourni
+  let agentInfo = null;
+  if (agentId) {
+    agentInfo = await prisma.agent.findUnique({
+      where: { id: agentId },
+      select: {
+        grade: true,
+        nomPrenom: true,
+      },
+    });
+  }
+
+  // Récupérer les données directement depuis la base de données
+  const agentFormations = await prisma.agentFormation.findMany({
+    where: agentId ? { agentId } : undefined,
+    include: {
+      formation: true,
+      agent: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  // Transformer les données pour le format attendu par le composant client
+  const transformedData = transformAgentFormations(agentFormations);
+
+  return <FormationAgentClient initialData={transformedData} agentInfo={agentInfo} notoNaskhArabicClassName={notoNaskhArabic.className} />;
+}

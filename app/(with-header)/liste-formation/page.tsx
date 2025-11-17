@@ -61,14 +61,14 @@ export default function ListeFormation() {
 
   if (loading) {
     return (
-      <div className="pt-15 flex items-center justify-center min-h-screen">
+      <div className="pt-20 flex items-center justify-center min-h-screen">
         <div className="text-muted-foreground">جاري التحميل...</div>
       </div>
     )
   }
 
   return (
-    <div className="pt-15">
+    <div className="pt-20">
       <ServerManagementTable servers={formations} />
     </div>
   )
