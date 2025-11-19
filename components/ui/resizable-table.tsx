@@ -31,6 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import NeumorphButton from "@/components/ui/neumorph-button"
 import DialogueStyle from "@/components/dialogue-agent"
 import DialogueAgentFormation, { type Formation } from "@/components/dialogue-agent-formation"
+import { ToastProvider, useToast } from "@/components/ui/ultra-quality-toast"
 import "react-resizable/css/styles.css"
 
 export interface Agent {
@@ -167,6 +168,7 @@ export function ResizableTable({
   const shouldReduceMotion = useReducedMotion()
   const { theme } = useTheme()
   const isDark = theme === "dark"
+  const { addToast } = useToast()
 
   // Column width state with default values
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
@@ -440,19 +442,35 @@ export function ResizableTable({
 
       // Validation
       if (!formationFormData.formationId) {
-        setFormationError("الرجاء اختيار الدورة التكوينية")
+        addToast({
+          variant: "warning",
+          title: "تحذير",
+          description: "الرجاء اختيار الدورة التكوينية",
+        })
         return
       }
       if (!formationFormData.dateDebut) {
-        setFormationError("الرجاء إدخال تاريخ بداية التكوين")
+        addToast({
+          variant: "warning",
+          title: "تحذير",
+          description: "الرجاء إدخال تاريخ بداية التكوين",
+        })
         return
       }
       if (!formationFormData.dateFin) {
-        setFormationError("الرجاء إدخال تاريخ نهاية التكوين")
+        addToast({
+          variant: "warning",
+          title: "تحذير",
+          description: "الرجاء إدخال تاريخ نهاية التكوين",
+        })
         return
       }
       if (formationFormData.moyenne < 0 || formationFormData.moyenne > 20) {
-        setFormationError("المعدل يجب أن يكون بين 0 و 20")
+        addToast({
+          variant: "warning",
+          title: "تحذير",
+          description: "المعدل يجب أن يكون بين 0 و 20",
+        })
         return
       }
 
@@ -480,7 +498,13 @@ export function ResizableTable({
           throw new Error(errorData.error || "Erreur lors de l'enregistrement de la formation")
         }
 
-        // Succès - fermer le dialog
+        // Succès - afficher toast et fermer le dialog
+        addToast({
+          variant: "success",
+          title: "نجـاح العمليـة",
+          description: "تم حفظ البيانات بنجاح",
+        })
+
         setAddingFormationAgent(null)
         setFormationFormData(null)
 
@@ -489,7 +513,11 @@ export function ResizableTable({
           onFormationSaved()
         }
       } catch (error: any) {
-        setFormationError(error.message || "حدث خطأ أثناء حفظ البيانات")
+        addToast({
+          variant: "error",
+          title: "خطأ",
+          description: "حدث خطأ أثناء حفظ البيانات",
+        })
       } finally {
         setIsSavingFormation(false)
       }
@@ -1210,15 +1238,63 @@ export function ResizableTable({
                                     isOpen={true}
                                     onClose={handleCancelEdit}
                                     onSave={async (data) => {
+                                      // Validation
+                                      if (!data.nomPrenom.trim()) {
+                                        addToast({
+                                          variant: "warning",
+                                          title: "تحذير",
+                                          description: "الرجاء إدخال الإسم و اللقب",
+                                        })
+                                        return
+                                      }
+                                      if (!data.grade.trim()) {
+                                        addToast({
+                                          variant: "warning",
+                                          title: "تحذير",
+                                          description: "الرجاء اختيار الرتبة",
+                                        })
+                                        return
+                                      }
+                                      if (!data.matricule.trim()) {
+                                        addToast({
+                                          variant: "warning",
+                                          title: "تحذير",
+                                          description: "الرجاء إدخال الرقم",
+                                        })
+                                        return
+                                      }
+                                      if (!data.telephone || data.telephone === 0) {
+                                        addToast({
+                                          variant: "warning",
+                                          title: "تحذير",
+                                          description: "الرجاء إدخال رقم الهاتف",
+                                        })
+                                        return
+                                      }
+
                                       if (onSaveEdit) {
-                                        await onSaveEdit({
+                                        const result = await onSaveEdit({
                                           ...data,
                                           derniereDateFormation: editingAgent.derniereDateFormation,
                                           categorie: editingAgent.categorie,
                                           avatar: editingAgent.avatar,
                                         })
+
+                                        if (result.success) {
+                                          addToast({
+                                            variant: "success",
+                                            title: "نجح",
+                                            description: "تم تحديث البيانات بنجاح",
+                                          })
+                                          handleCancelEdit()
+                                        } else {
+                                          addToast({
+                                            variant: "error",
+                                            title: "خطأ",
+                                            description: "حدث خطأ أثناء تحديث البيانات",
+                                          })
+                                        }
                                       }
-                                      handleCancelEdit()
                                     }}
                                     isUpdating={isUpdating}
                                   />
@@ -1300,5 +1376,14 @@ export function ResizableTable({
         </div>
       )}
     </div>
+  )
+}
+
+// Wrapper component that provides toast context
+export function ResizableTableWithToast(props: ResizableTableProps) {
+  return (
+    <ToastProvider>
+      <ResizableTable {...props} />
+    </ToastProvider>
   )
 }

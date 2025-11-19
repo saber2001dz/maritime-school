@@ -1,11 +1,16 @@
+"use client"
+import { ToastProvider } from "@/components/ui/ultra-quality-toast"
+
 export default function LoginLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <div dir="ltr" className="min-h-screen">
-      {children}
-    </div>
+    <ToastProvider>
+      <div dir="ltr" className="min-h-screen">
+        {children}
+      </div>
+    </ToastProvider>
   );
 }

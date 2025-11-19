@@ -1,6 +1,6 @@
 "use client"
 
-import { ResizableTable, type Agent } from "@/components/ui/resizable-table"
+import { ResizableTableWithToast, type Agent } from "@/components/ui/resizable-table"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
@@ -60,7 +60,7 @@ export function ResizableTableWrapper({ agents }: ResizableTableWrapperProps) {
   }
 
   return (
-    <ResizableTable
+    <ResizableTableWithToast
       className="mt-10"
       title="Agent"
       agents={agents}

@@ -316,7 +316,7 @@ export default function DialogueAgentFormation({
 
               <div className="space-y-2">
                 <Label htmlFor={`${id}-resultat`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
-                  النتيجة :
+                  الــوضـعـيـــة :
                 </Label>
                 <Select dir="rtl" value={resultat} onValueChange={(value) => handleChange("resultat", value)}>
                   <SelectTrigger className={`w-full rounded ${notoNaskhArabic.className}`}>

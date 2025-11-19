@@ -327,7 +327,7 @@ export default function DialogueEditionFormation({
 
               <div className="space-y-2">
                 <Label htmlFor={`${id}-resultat`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
-                  النتيجة :
+                  الــوضـعـيـــة :
                 </Label>
                 <Select
                   dir="rtl"

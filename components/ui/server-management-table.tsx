@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Pencil } from "lucide-react"
 import localFont from "next/font/local"
 import DialogueFormation, { type FormationData } from "@/components/dialogue-formation"
+import { ToastProvider, useToast } from "@/components/ui/ultra-quality-toast"
 
 const notoNaskhArabic = localFont({
   src: "../../app/fonts/NotoNaskhArabic.woff2",
@@ -27,7 +28,7 @@ interface ServerManagementTableProps {
   className?: string
 }
 
-export function ServerManagementTable({
+function ServerManagementTableContent({
   title = "الــــدورات التـكـــويـنـيـــة :",
   servers: initialServers = [],
   className = "",
@@ -35,6 +36,7 @@ export function ServerManagementTable({
   const [servers, setServers] = useState<Server[]>(initialServers)
   const [editingFormation, setEditingFormation] = useState<FormationData | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
+  const { addToast } = useToast()
 
   // Synchroniser les données du serveur avec l'état local
   useEffect(() => {
@@ -110,10 +112,24 @@ export function ServerManagementTable({
         )
       )
 
+      // Afficher le toast de succès
+      addToast({
+        variant: "success",
+        title: "نجـاح العمليـة",
+        description: "تم حفظ البيانات بنجاح",
+      })
+
       // Fermer le dialogue
       setEditingFormation(null)
     } catch (error) {
       console.error("Erreur lors de la sauvegarde:", error)
+
+      // Afficher le toast d'erreur
+      addToast({
+        variant: "error",
+        title: "خطأ في العملية",
+        description: "حدث خطأ أثناء حفظ البيانات",
+      })
     } finally {
       setIsUpdating(false)
     }
@@ -346,5 +362,14 @@ export function ServerManagementTable({
         )}
       </AnimatePresence>
     </div>
+  )
+}
+
+// Wrapper component that provides toast context
+export function ServerManagementTable(props: ServerManagementTableProps) {
+  return (
+    <ToastProvider>
+      <ServerManagementTableContent {...props} />
+    </ToastProvider>
   )
 }
