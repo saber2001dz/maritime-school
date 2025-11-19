@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { verifySession } from '@/lib/dal'
 
 // GET /api/formations/[id] - Récupérer une formation par ID
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const session = await verifySession()
+  if (!session.isAuth) {
+    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+  }
+
   try {
     const { id } = await params
     const formation = await prisma.formation.findUnique({
@@ -34,6 +40,11 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const session = await verifySession()
+  if (!session.isAuth) {
+    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+  }
+
   try {
     const { id } = await params
     const body = await request.json()
@@ -82,6 +93,11 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const session = await verifySession()
+  if (!session.isAuth) {
+    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+  }
+
   try {
     const { id } = await params
     await prisma.formation.delete({

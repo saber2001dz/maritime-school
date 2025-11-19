@@ -105,6 +105,7 @@ export default function DialogueEditionFormation({
   const [internalResultat, setInternalResultat] = useState("")
   const [internalMoyenne, setInternalMoyenne] = useState(0)
   const [internalIsOpen, setInternalIsOpen] = useState(false)
+  const [dateError, setDateError] = useState("")
 
   // Utiliser controlledIsOpen si fourni, sinon utiliser l'état interne
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen
@@ -126,6 +127,7 @@ export default function DialogueEditionFormation({
       setInternalReference(formationData.reference)
       setInternalResultat(formationData.resultat)
       setInternalMoyenne(formationData.moyenne)
+      setDateError("")
     } else if (isOpen && !formationData) {
       // Réinitialiser si pas de données
       setInternalFormationId("")
@@ -134,8 +136,18 @@ export default function DialogueEditionFormation({
       setInternalReference("")
       setInternalResultat("")
       setInternalMoyenne(0)
+      setDateError("")
     }
   }, [isOpen, formationData])
+
+  // Valider la date de fin quand elle change ou quand la date de début change
+  const validateDateFin = (dateDebutValue: string, dateFinValue: string) => {
+    if (dateDebutValue && dateFinValue && dateFinValue < dateDebutValue) {
+      setDateError("* تاريخ نهاية التكوين غير صحيح")
+    } else {
+      setDateError("")
+    }
+  }
 
   const handleClose = () => {
     if (onClose) {
@@ -156,6 +168,8 @@ export default function DialogueEditionFormation({
           break
         case "dateDebut":
           setInternalDateDebut(value as string)
+          // Valider la date de fin quand la date de début change
+          validateDateFin(value as string, dateFin)
           break
         case "dateFin":
           setInternalDateFin(value as string)
@@ -173,7 +187,19 @@ export default function DialogueEditionFormation({
     }
   }
 
+  const handleDateFinBlur = () => {
+    validateDateFin(dateDebut, dateFin)
+  }
+
   const handleSave = () => {
+    // Valider la date avant l'enregistrement
+    validateDateFin(dateDebut, dateFin)
+
+    // Ne pas enregistrer si la date est invalide
+    if (dateDebut && dateFin && dateFin < dateDebut) {
+      return
+    }
+
     if (onSave) {
       onSave({
         formationId,
@@ -260,7 +286,7 @@ export default function DialogueEditionFormation({
                     value={dateDebut}
                     onChange={(e) => handleChange("dateDebut", e.target.value)}
                     required
-                    className="text-right"
+                    className="text-start"
                   />
                 </div>
                 <div className="flex-1 space-y-2">
@@ -272,9 +298,15 @@ export default function DialogueEditionFormation({
                     type="date"
                     value={dateFin}
                     onChange={(e) => handleChange("dateFin", e.target.value)}
+                    onBlur={handleDateFinBlur}
                     required
-                    className="text-right"
+                    className={`text-start ${dateError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
+                  {dateError && (
+                    <p className={`text-xs text-red-500 leading-tight -mb-6 ${notoNaskhArabic.className}`}>
+                      {dateError}
+                    </p>
+                  )}
                 </div>
               </div>
 

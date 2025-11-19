@@ -1,7 +1,7 @@
 "use client"
 import React from "react"
 import Image from "next/image"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon"
@@ -9,15 +9,30 @@ import { useScroll } from "@/components/ui/use-scroll"
 import { Toggle } from "@/components/ui/toggle"
 import { Sun, Moon } from "lucide-react"
 import { useTheme } from "next-themes"
+import { useSession, signOut } from "@/lib/auth-client"
+import { toast } from "sonner"
 
 export function Header() {
   const [open, setOpen] = React.useState(false)
   const scrolled = useScroll(10)
   const { theme, setTheme } = useTheme()
   const pathname = usePathname()
+  const router = useRouter()
+  const { data: session } = useSession()
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark")
+  }
+
+  const handleLogout = async () => {
+    try {
+      await signOut()
+      toast.success("Déconnexion réussie")
+      router.push("/login")
+      router.refresh()
+    } catch (error) {
+      toast.error("Erreur lors de la déconnexion")
+    }
   }
 
   const links = [
@@ -104,7 +119,7 @@ export function Header() {
             <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             <span className="sr-only">Toggle theme</span>
           </Toggle>
-          <Button className="bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors">خـــروج</Button>
+          <Button onClick={handleLogout} className="bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors">خـــروج</Button>
         </div>
         <Button size="icon" variant="outline" onClick={() => setOpen(!open)} className="md:hidden">
           <MenuToggleIcon open={open} className="size-5" duration={300} />
@@ -151,7 +166,7 @@ export function Header() {
               <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
               <span className="sr-only">Toggle theme</span>
             </Toggle>
-            <Button className="w-full bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors mr-1">
+            <Button onClick={handleLogout} className="w-full bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors mr-1">
               خـــروج
             </Button>
           </div>

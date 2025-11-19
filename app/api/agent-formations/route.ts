@@ -1,9 +1,15 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
+import { verifySession } from "@/lib/dal";
 
 // GET - Récupérer toutes les AgentFormation avec leurs formations associées
 // Supporte le filtrage par agentId via query param: ?agentId=xxx
 export async function GET(request: NextRequest) {
+  const session = await verifySession()
+  if (!session.isAuth) {
+    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+  }
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const agentId = searchParams.get('agentId');
@@ -31,6 +37,11 @@ export async function GET(request: NextRequest) {
 
 // POST - Créer une nouvelle AgentFormation
 export async function POST(request: Request) {
+  const session = await verifySession()
+  if (!session.isAuth) {
+    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+  }
+
   try {
     const body = await request.json();
     const { agentId, formationId, dateDebut, dateFin, reference, resultat, moyenne } = body;

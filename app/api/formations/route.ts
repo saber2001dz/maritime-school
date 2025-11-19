@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { verifySession } from '@/lib/dal'
 
 // GET /api/formations - Récupérer toutes les formations
 export async function GET() {
+  const session = await verifySession()
+  if (!session.isAuth) {
+    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+  }
+
   try {
     const formations = await prisma.formation.findMany({
       orderBy: {
@@ -22,6 +28,11 @@ export async function GET() {
 
 // POST /api/formations - Créer une nouvelle formation
 export async function POST(request: NextRequest) {
+  const session = await verifySession()
+  if (!session.isAuth) {
+    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+  }
+
   try {
     const body = await request.json()
     const { formation, typeFormation, specialite, duree, capaciteAbsorption } = body

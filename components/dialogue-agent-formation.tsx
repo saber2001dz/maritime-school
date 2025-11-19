@@ -105,6 +105,7 @@ export default function DialogueAgentFormation({
   const [internalResultat, setInternalResultat] = useState("")
   const [internalMoyenne, setInternalMoyenne] = useState(0)
   const [internalIsOpen, setInternalIsOpen] = useState(false)
+  const [dateError, setDateError] = useState("")
 
   // Utiliser controlledIsOpen si fourni, sinon utiliser l'état interne
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen
@@ -126,8 +127,18 @@ export default function DialogueAgentFormation({
       setInternalReference("")
       setInternalResultat("")
       setInternalMoyenne(0)
+      setDateError("")
     }
   }, [isOpen, formationData])
+
+  // Valider la date de fin quand elle change ou quand la date de début change
+  const validateDateFin = (dateDebutValue: string, dateFinValue: string) => {
+    if (dateDebutValue && dateFinValue && dateFinValue < dateDebutValue) {
+      setDateError("* تاريخ نهاية التكوين غير صحيح")
+    } else {
+      setDateError("")
+    }
+  }
 
   const handleClose = () => {
     if (onClose) {
@@ -148,6 +159,8 @@ export default function DialogueAgentFormation({
           break
         case "dateDebut":
           setInternalDateDebut(value as string)
+          // Valider la date de fin quand la date de début change
+          validateDateFin(value as string, dateFin)
           break
         case "dateFin":
           setInternalDateFin(value as string)
@@ -165,7 +178,19 @@ export default function DialogueAgentFormation({
     }
   }
 
+  const handleDateFinBlur = () => {
+    validateDateFin(dateDebut, dateFin)
+  }
+
   const handleSave = () => {
+    // Valider la date avant l'enregistrement
+    validateDateFin(dateDebut, dateFin)
+
+    // Ne pas enregistrer si la date est invalide
+    if (dateDebut && dateFin && dateFin < dateDebut) {
+      return
+    }
+
     if (onSave) {
       onSave({
         formationId,
@@ -193,16 +218,15 @@ export default function DialogueAgentFormation({
               {agent ? (
                 <>
                   <span className="text-[#1071c7]">إضافة تكوين للموظف: </span>
-                  <span className="text-foreground/60 dark:text-foreground/50">ال{agent.grade} {agent.nomPrenom}</span>
+                  <span className="text-foreground/60 dark:text-foreground/50">
+                    ال{agent.grade} {agent.nomPrenom}
+                  </span>
                 </>
               ) : (
                 <span className="text-[#1071c7]">إضافة تكوين للموظف</span>
               )}
             </DialogTitle>
-            <button
-              onClick={handleClose}
-              className="p-1 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
-            >
+            <button onClick={handleClose} className="p-1 hover:bg-muted/50 rounded-md transition-colors cursor-pointer">
               <XIcon className="h-4 w-4" />
             </button>
           </div>
@@ -227,9 +251,7 @@ export default function DialogueAgentFormation({
                   disabled={isLoadingFormations}
                 >
                   <SelectTrigger className={`w-full rounded ${notoNaskhArabic.className}`}>
-                    <SelectValue
-                      placeholder={isLoadingFormations ? "جاري التحميل..." : "اختر الدورة التكوينية"}
-                    />
+                    <SelectValue placeholder={isLoadingFormations ? "جاري التحميل..." : "اختر الدورة التكوينية"} />
                   </SelectTrigger>
                   <SelectContent className={notoNaskhArabic.className}>
                     {formations.map((formation) => (
@@ -252,21 +274,28 @@ export default function DialogueAgentFormation({
                     value={dateDebut}
                     onChange={(e) => handleChange("dateDebut", e.target.value)}
                     required
-                    className="text-right"
+                    className="text-start"
                   />
                 </div>
                 <div className="flex-1 space-y-2">
                   <Label htmlFor={`${id}-date-fin`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
                     تاريخ نهاية التكوين :
                   </Label>
+
                   <Input
                     id={`${id}-date-fin`}
                     type="date"
                     value={dateFin}
                     onChange={(e) => handleChange("dateFin", e.target.value)}
+                    onBlur={handleDateFinBlur}
                     required
-                    className="text-right"
+                    className={`text-start ${dateError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
+                  {dateError && (
+                    <p className={`text-xs text-red-500 leading-tight -mb-6 ${notoNaskhArabic.className}`}>
+                      {dateError}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -289,19 +318,23 @@ export default function DialogueAgentFormation({
                 <Label htmlFor={`${id}-resultat`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
                   النتيجة :
                 </Label>
-                <Select
-                  dir="rtl"
-                  value={resultat}
-                  onValueChange={(value) => handleChange("resultat", value)}
-                >
+                <Select dir="rtl" value={resultat} onValueChange={(value) => handleChange("resultat", value)}>
                   <SelectTrigger className={`w-full rounded ${notoNaskhArabic.className}`}>
                     <SelectValue placeholder="اختر النتيجة" />
                   </SelectTrigger>
                   <SelectContent className={notoNaskhArabic.className}>
-                    <SelectItem value="نجاح" className="text-[15px]">نجاح</SelectItem>
-                    <SelectItem value="قيد التكوين" className="text-[15px]">قيد التكوين</SelectItem>
-                    <SelectItem value="انقطع" className="text-[15px]">انقطع</SelectItem>
-                    <SelectItem value="لم يلتحق" className="text-[15px]">لم يلتحق</SelectItem>
+                    <SelectItem value="نجاح" className="text-[15px]">
+                      نجاح
+                    </SelectItem>
+                    <SelectItem value="قيد التكوين" className="text-[15px]">
+                      قيد التكوين
+                    </SelectItem>
+                    <SelectItem value="انقطع" className="text-[15px]">
+                      انقطع
+                    </SelectItem>
+                    <SelectItem value="لم يلتحق" className="text-[15px]">
+                      لم يلتحق
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>

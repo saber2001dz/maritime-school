@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,62 +7,105 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Modèle Agent adapté à l'interface Employee
 model Agent {
-  id                      String            @id @default(cuid())
-  nomPrenom               String
-  grade                   String
-  matricule               String            @unique
-  responsabilite          String
-  telephone               Int
-  derniereDateFormation   String
-  categorie               String
-  avatar                  String?
-  createdAt               DateTime          @default(now())
-  updatedAt               DateTime          @updatedAt
-  formations              AgentFormation[]  // Relation vers les formations de l'agent
+  id                    String           @id @default(cuid())
+  nomPrenom             String
+  grade                 String
+  matricule             String           @unique
+  responsabilite        String
+  telephone             Int
+  derniereDateFormation String
+  categorie             String
+  avatar                String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  formations            AgentFormation[]
 }
 
-// Modèle exemple pour un Utilisateur
+// Modèle User pour Better-Auth
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  password  String
-  role      String   @default("user")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// Modèle Formation pour gérer les formations de l'école maritime
-model Formation {
-  id                  String            @id @default(cuid())
-  formation           String            // Nom de la formation
-  typeFormation       String            // تكوين إختصاص, تكوين تخصصي, تكوين مستمر
-  specialite          String?           // بحري, عدلي, إداري (optionnel)
-  duree               String?           // Durée de la formation (optionnel)
-  capaciteAbsorption  Int?              // طاقة الاستعاب - Capacité d'absorption (optionnel)
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-  agentFormations     AgentFormation[]  // Relation vers les agents qui ont suivi cette formation
-}
-
-// Modèle AgentFormation pour lier les agents aux formations
-model AgentFormation {
   id            String    @id @default(cuid())
-  agentId       String    // Clé étrangère vers Agent
-  formationId   String    // Clé étrangère vers Formation
-  dateDebut     String    // تاريخ بداية التكوين - Date de début de la formation
-  dateFin       String    // تاريخ نهاية التكوين - Date de fin de la formation
-  reference     String?   // المرجع - Référence (optionnel)
-  resultat      String?   // النتيجة - Résultat (optionnel)
-  moyenne       Float     // المعدل - Moyenne (0-20)
+  email         String    @unique
+  name          String
+  emailVerified Boolean   @default(false)
+  image         String?
+  role          String    @default("user")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+}
 
-  // Relations
-  agent         Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  formation     Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
+// Modèle Session pour Better-Auth
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Modèle Account pour Better-Auth
+model Account {
+  id                      String    @id @default(cuid())
+  userId                  String
+  accountId               String
+  providerId              String
+  password                String?
+  accessToken             String?
+  refreshToken            String?
+  accessTokenExpiresAt    DateTime?
+  refreshTokenExpiresAt   DateTime?
+  scope                   String?
+  idToken                 String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Modèle Verification pour Better-Auth
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Formation {
+  id                 String           @id @default(cuid())
+  typeFormation      String
+  formation          String
+  duree              String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  capaciteAbsorption Int?
+  specialite         String?
+  agentFormations    AgentFormation[]
+}
+
+model AgentFormation {
+  id          String    @id @default(cuid())
+  agentId     String
+  formationId String
+  dateDebut   String
+  dateFin     String
+  reference   String?
+  resultat    String?
+  moyenne     Float
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  formation   Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
+  agent       Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
 
   @@index([agentId])
   @@index([formationId])
