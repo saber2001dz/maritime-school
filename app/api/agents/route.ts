@@ -89,9 +89,6 @@ export async function POST(request: NextRequest) {
     // Convertir le téléphone en nombre (retirer les espaces)
     const telephoneNumber = telephone ? parseInt(telephone.replace(/\s/g, '')) : 0
 
-    // Date actuelle pour derniereDateFormation (peut être modifiée plus tard)
-    const derniereDateFormation = new Date().toISOString().split('T')[0]
-
     const agent = await prisma.agent.create({
       data: {
         nomPrenom,
@@ -99,7 +96,6 @@ export async function POST(request: NextRequest) {
         matricule,
         responsabilite: responsabilite || '',
         telephone: telephoneNumber,
-        derniereDateFormation,
         categorie,
       },
     })

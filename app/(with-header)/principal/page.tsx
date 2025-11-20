@@ -2,8 +2,15 @@ import { ResizableTableWrapper } from "./resizable-table-wrapper"
 import { prisma } from "@/lib/db"
 
 export default async function PrincipalPage() {
-  // Récupérer les agents depuis la base de données
+  // Récupérer les agents depuis la base de données avec leur formation la plus récente
   const agents = await prisma.agent.findMany({
+    include: {
+      formations: {
+        orderBy: { dateDebut: 'desc' },
+        take: 1,
+        select: { dateDebut: true }
+      }
+    },
     orderBy: {
       createdAt: 'desc',
     },
@@ -17,7 +24,7 @@ export default async function PrincipalPage() {
     matricule: agent.matricule,
     responsabilite: agent.responsabilite,
     telephone: agent.telephone,
-    derniereDateFormation: agent.derniereDateFormation,
+    derniereDateFormation: agent.formations[0]?.dateDebut || "-",
     categorie: agent.categorie as "ضابط سامي" | "ضابط" | "ضابط صف" | "هيئة الرقباء",
     avatar: agent.avatar ?? undefined,
   }))

@@ -10,7 +10,6 @@ const defaultEmployees = [
     matricule: "12345",
     responsabilite: "مهندس برمجيات أول",
     telephone: 55123456,
-    derniereDateFormation: "2022-03-15",
     categorie: "ضابط سامي",
   },
   {
@@ -20,7 +19,6 @@ const defaultEmployees = [
     matricule: "23456",
     responsabilite: "مدير التسويق",
     telephone: 55234567,
-    derniereDateFormation: "2021-08-22",
     categorie: "ضابط سامي",
   },
   {
@@ -30,7 +28,6 @@ const defaultEmployees = [
     matricule: "34567",
     responsabilite: "مصمم تجربة المستخدم",
     telephone: 55345678,
-    derniereDateFormation: "2023-01-10",
     categorie: "ضابط صف",
   },
   {
@@ -40,7 +37,6 @@ const defaultEmployees = [
     matricule: "45678",
     responsabilite: "قائد تقني",
     telephone: 55456789,
-    derniereDateFormation: "2020-11-05",
     categorie: "ضابط صف",
   },
   {
@@ -50,7 +46,6 @@ const defaultEmployees = [
     matricule: "56789",
     responsabilite: "مدير الموارد البشرية",
     telephone: 55567890,
-    derniereDateFormation: "2019-06-12",
     categorie: "ضابط",
   },
   {
@@ -60,7 +55,6 @@ const defaultEmployees = [
     matricule: "67890",
     responsabilite: "مدير المبيعات",
     telephone: 55678901,
-    derniereDateFormation: "2021-02-28",
     categorie: "ضابط صف",
   },
   {
@@ -70,7 +64,6 @@ const defaultEmployees = [
     matricule: "78901",
     responsabilite: "محلل مالي",
     telephone: 55789012,
-    derniereDateFormation: "2023-04-18",
     categorie: "ضابط صف",
   },
   {
@@ -80,7 +73,6 @@ const defaultEmployees = [
     matricule: "89012",
     responsabilite: "مهندس عمليات التطوير",
     telephone: 55890123,
-    derniereDateFormation: "2022-09-14",
     categorie: "ضابط صف",
   },
   {
@@ -90,7 +82,6 @@ const defaultEmployees = [
     matricule: "90123",
     responsabilite: "مدير المحتوى",
     telephone: 55901234,
-    derniereDateFormation: "2023-07-03",
     categorie: "ضابط صف",
   },
   {
@@ -100,7 +91,6 @@ const defaultEmployees = [
     matricule: "10234",
     responsabilite: "مدير العمليات",
     telephone: 56012345,
-    derniereDateFormation: "2021-12-01",
     categorie: "ضابط صف",
   },
   {
@@ -110,7 +100,6 @@ const defaultEmployees = [
     matricule: "11345",
     responsabilite: "مصمم منتجات",
     telephone: 56123456,
-    derniereDateFormation: "2022-05-20",
     categorie: "ضابط صف",
   },
   {
@@ -120,7 +109,6 @@ const defaultEmployees = [
     matricule: "12456",
     responsabilite: "مطور واجهات أمامية",
     telephone: 56234567,
-    derniereDateFormation: "2023-03-08",
     categorie: "ضابط صف",
   },
   {
@@ -130,7 +118,6 @@ const defaultEmployees = [
     matricule: "13567",
     responsabilite: "مسؤول حسابات",
     telephone: 56345678,
-    derniereDateFormation: "2022-11-15",
     categorie: "ضابط صف",
   },
   {
@@ -140,7 +127,6 @@ const defaultEmployees = [
     matricule: "14678",
     responsabilite: "محلل مالي أول",
     telephone: 56456789,
-    derniereDateFormation: "2021-04-30",
     categorie: "ضابط",
   },
   {
@@ -150,7 +136,6 @@ const defaultEmployees = [
     matricule: "15789",
     responsabilite: "أخصائي موارد بشرية",
     telephone: 56567890,
-    derniereDateFormation: "2023-08-12",
     categorie: "ضابط",
   },
 ]

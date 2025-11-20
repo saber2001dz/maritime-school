@@ -8,18 +8,17 @@ datasource db {
 }
 
 model Agent {
-  id                    String           @id @default(cuid())
-  nomPrenom             String
-  grade                 String
-  matricule             String           @unique
-  responsabilite        String
-  telephone             Int
-  derniereDateFormation String
-  categorie             String
-  avatar                String?
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-  formations            AgentFormation[]
+  id             String           @id @default(cuid())
+  nomPrenom      String
+  grade          String
+  matricule      String           @unique
+  responsabilite String
+  telephone      Int
+  categorie      String
+  avatar         String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  formations     AgentFormation[]
 }
 
 // Modèle User pour Better-Auth
