@@ -6,14 +6,36 @@ import { useTheme } from "next-themes"
 import {
   Download,
   ChevronDown,
-  X,
   Phone,
   User as UserIcon,
   Mail,
   Briefcase,
   Calendar,
   MoreVertical,
+  Edit,
+  Trash2,
+  Hash,
+  ClipboardList,
+  Layers,
+  Check,
 } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { DialogueEditAgent } from "./dialogue-edit-agent"
 
 export interface Agent {
   id: string
@@ -33,6 +55,9 @@ interface AgentsTableProps {
   onAgentSelect?: (agentId: string) => void
   className?: string
   enableAnimations?: boolean
+  onSaveEdit?: (agent: Agent) => Promise<{ success: boolean; error?: string }>
+  onDeleteAgent?: (agentId: string) => Promise<{ success: boolean; error?: string }>
+  isUpdating?: boolean
 }
 
 type SortField = "nomPrenom" | "grade" | "matricule" | "categorie" | "createdAt" | "updatedAt"
@@ -43,6 +68,9 @@ export function AgentsTable({
   onAgentSelect,
   className = "",
   enableAnimations = true,
+  onSaveEdit,
+  onDeleteAgent,
+  isUpdating = false,
 }: AgentsTableProps) {
   const [selectedAgents, setSelectedAgents] = useState<string[]>([])
   const [mounted, setMounted] = useState(false)
@@ -50,10 +78,11 @@ export function AgentsTable({
   const [sortField, setSortField] = useState<SortField | null>(null)
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc")
   const [showSortMenu, setShowSortMenu] = useState(false)
-  const [showFilterMenu, setShowFilterMenu] = useState(false)
   const [showExportMenu, setShowExportMenu] = useState(false)
-  const [filterCategorie, setFilterCategorie] = useState<string | null>(null)
-  const [selectedAgentDetail, setSelectedAgentDetail] = useState<Agent | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [agentToEdit, setAgentToEdit] = useState<Agent | null>(null)
   const shouldReduceMotion = useReducedMotion()
   const { theme } = useTheme()
   const isDark = theme === "dark"
@@ -96,18 +125,8 @@ export function AgentsTable({
     setCurrentPage(1)
   }
 
-  const handleFilter = (categorie: string | null) => {
-    setFilterCategorie(categorie)
-    setShowFilterMenu(false)
-    setCurrentPage(1)
-  }
-
   const sortedAndFilteredAgents = useMemo(() => {
     let filtered = [...initialAgents]
-
-    if (filterCategorie) {
-      filtered = filtered.filter((a) => a.categorie === filterCategorie)
-    }
 
     if (!sortField) {
       return filtered
@@ -136,7 +155,7 @@ export function AgentsTable({
     })
 
     return sorted
-  }, [initialAgents, sortField, sortOrder, filterCategorie])
+  }, [initialAgents, sortField, sortOrder])
 
   const paginatedAgents = useMemo(() => {
     const startIdx = (currentPage - 1) * ITEMS_PER_PAGE
@@ -198,6 +217,78 @@ export function AgentsTable({
     link.click()
   }
 
+  const handleDeleteClick = (agent: Agent) => {
+    if (!selectedAgents.includes(agent.id)) {
+      // Si la checkbox n'est pas cochée, ne rien faire
+      return
+    }
+    setAgentToDelete(agent)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!agentToDelete) return
+
+    try {
+      if (onDeleteAgent) {
+        const result = await onDeleteAgent(agentToDelete.id)
+
+        if (result.success) {
+          // Retirer l'agent de la sélection
+          setSelectedAgents((prev) => prev.filter((id) => id !== agentToDelete.id))
+          // Fermer le dialogue
+          setDeleteDialogOpen(false)
+          setAgentToDelete(null)
+        } else {
+          console.error("Erreur lors de la suppression:", result.error)
+        }
+      }
+    } catch (error) {
+      console.error("Erreur lors de la suppression:", error)
+    }
+  }
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false)
+    setAgentToDelete(null)
+  }
+
+  const handleEditClick = (agent: Agent) => {
+    if (!selectedAgents.includes(agent.id)) {
+      // Si la checkbox n'est pas cochée, ne rien faire
+      return
+    }
+    setAgentToEdit(agent)
+    setEditDialogOpen(true)
+  }
+
+  const handleSaveEdit = async (data: Partial<Agent>) => {
+    if (!agentToEdit) return
+
+    try {
+      if (onSaveEdit) {
+        const result = await onSaveEdit({
+          ...agentToEdit,
+          ...data,
+        } as Agent)
+
+        if (result.success) {
+          setEditDialogOpen(false)
+          setAgentToEdit(null)
+        } else {
+          console.error("Erreur lors de la modification:", result.error)
+        }
+      }
+    } catch (error) {
+      console.error("Erreur lors de la modification:", error)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditDialogOpen(false)
+    setAgentToEdit(null)
+  }
+
   const shouldAnimate = enableAnimations && !shouldReduceMotion
 
   const containerVariants = {
@@ -243,51 +334,6 @@ export function AgentsTable({
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
             <button
-              onClick={() => setShowFilterMenu(!showFilterMenu)}
-              className={`px-3 py-1.5 bg-background border border-border/50 text-foreground text-sm hover:bg-muted/30 transition-colors flex items-center gap-2 rounded-md ${
-                filterCategorie ? "ring-2 ring-primary/30" : ""
-              }`}
-            >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                <path d="M2 3H14M4 8H12M6 13H10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-              Filtrer
-              {filterCategorie && (
-                <span className="ml-1 text-xs bg-primary text-primary-foreground rounded-sm px-1.5 py-0.5">1</span>
-              )}
-            </button>
-
-            {showFilterMenu && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowFilterMenu(false)} />
-                <div className="absolute right-0 mt-1 w-44 bg-background border border-border/50 shadow-lg rounded-md z-20 py-1">
-                  <button
-                    onClick={() => handleFilter(null)}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors ${
-                      !filterCategorie ? "bg-muted/30" : ""
-                    }`}
-                  >
-                    Toutes les catégories
-                  </button>
-                  <div className="h-px bg-border/30 my-1" />
-                  {["A", "B", "C", "D"].map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => handleFilter(cat)}
-                      className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2 ${
-                        filterCategorie === cat ? "bg-muted/30" : ""
-                      }`}
-                    >
-                      Catégorie {cat}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="relative">
-            <button
               onClick={() => setShowSortMenu(!showSortMenu)}
               className="px-3 py-1.5 bg-background border border-border/50 text-foreground text-sm hover:bg-muted/30 transition-colors flex items-center gap-2 rounded-md"
             >
@@ -312,44 +358,63 @@ export function AgentsTable({
                 <div className="fixed inset-0 z-10" onClick={() => setShowSortMenu(false)} />
                 <div className="absolute right-0 mt-1 w-48 bg-background border border-border/50 shadow-lg rounded-md z-20 py-1">
                   <button
+                    onClick={() => {
+                      setSortField(null)
+                      setShowSortMenu(false)
+                      setCurrentPage(1)
+                    }}
+                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
+                      !sortField ? "bg-muted/30" : ""
+                    }`}
+                  >
+                    <span>Annuler le tri</span>
+                    {!sortField && <Check size={14} className="text-primary" />}
+                  </button>
+                  <div className="h-px bg-border/30 my-1" />
+                  <button
                     onClick={() => handleSort("nomPrenom")}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors ${
+                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
                       sortField === "nomPrenom" ? "bg-muted/30" : ""
                     }`}
                   >
-                    Nom {sortField === "nomPrenom" && `(${sortOrder === "asc" ? "A-Z" : "Z-A"})`}
+                    <span>Nom {sortField === "nomPrenom" && `(${sortOrder === "asc" ? "A-Z" : "Z-A"})`}</span>
+                    {sortField === "nomPrenom" && <Check size={14} className="text-primary" />}
                   </button>
                   <button
                     onClick={() => handleSort("grade")}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors ${
+                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
                       sortField === "grade" ? "bg-muted/30" : ""
                     }`}
                   >
-                    Grade {sortField === "grade" && `(${sortOrder === "asc" ? "↑" : "↓"})`}
+                    <span>Grade {sortField === "grade" && `(${sortOrder === "asc" ? "↑" : "↓"})`}</span>
+                    {sortField === "grade" && <Check size={14} className="text-primary" />}
                   </button>
                   <button
                     onClick={() => handleSort("categorie")}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors ${
+                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
                       sortField === "categorie" ? "bg-muted/30" : ""
                     }`}
                   >
-                    Catégorie {sortField === "categorie" && `(${sortOrder === "asc" ? "↑" : "↓"})`}
+                    <span>Catégorie {sortField === "categorie" && `(${sortOrder === "asc" ? "↑" : "↓"})`}</span>
+                    {sortField === "categorie" && <Check size={14} className="text-primary" />}
                   </button>
                   <button
                     onClick={() => handleSort("createdAt")}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors ${
+                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
                       sortField === "createdAt" ? "bg-muted/30" : ""
                     }`}
                   >
-                    Date création {sortField === "createdAt" && `(${sortOrder === "asc" ? "↑" : "↓"})`}
+                    <span>Date création {sortField === "createdAt" && `(${sortOrder === "asc" ? "↑" : "↓"})`}</span>
+                    {sortField === "createdAt" && <Check size={14} className="text-primary" />}
                   </button>
                   <button
                     onClick={() => handleSort("updatedAt")}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors ${
+                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
                       sortField === "updatedAt" ? "bg-muted/30" : ""
                     }`}
                   >
-                    Date modification {sortField === "updatedAt" && `(${sortOrder === "asc" ? "↑" : "↓"})`}
+                    <span>Date modification {sortField === "updatedAt" && `(${sortOrder === "asc" ? "↑" : "↓"})`}</span>
+                    {sortField === "updatedAt" && <Check size={14} className="text-primary" />}
                   </button>
                 </div>
               </>
@@ -399,11 +464,12 @@ export function AgentsTable({
         <div className="overflow-x-auto">
           <div>
             <div
-              className="px-3 py-3 text-xs font-semibold text-foreground bg-muted/10 border-b border-border text-left"
+              className="px-3 py-3 text-xs font-semibold text-foreground border-b border-border text-left"
               style={{
                 display: "grid",
-                gridTemplateColumns: "40px 250px 160px 120px 180px 140px 200px 200px 1fr 0fr 22px",
+                gridTemplateColumns: "40px 250px 160px 120px 180px 140px 200px 200px 1fr 40px",
                 columnGap: "0px",
+                backgroundColor: "#F3F3F3",
               }}
             >
               <div className="flex items-center justify-center border-r border-border pr-3">
@@ -424,15 +490,20 @@ export function AgentsTable({
               <div className="flex items-center gap-1.5 border-r border-border px-3">
                 <UserIcon className="w-3.5 h-3.5 opacity-50" />
                 <span>Nom et Prénom</span>
+                {sortField === "nomPrenom" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
               </div>
               <div className="flex items-center gap-1.5 border-r border-border px-3">
                 <Briefcase className="w-3.5 h-3.5 opacity-50" />
                 <span>Grade</span>
+                {sortField === "grade" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
               </div>
               <div className="flex items-center gap-1.5 border-r border-border px-3">
+                <Hash className="w-3.5 h-3.5 opacity-50" />
                 <span>Matricule</span>
+                {sortField === "matricule" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
               </div>
               <div className="flex items-center gap-1.5 border-r border-border px-3">
+                <ClipboardList className="w-3.5 h-3.5 opacity-50" />
                 <span>Responsabilité</span>
               </div>
               <div className="flex items-center gap-1.5 border-r border-border px-3">
@@ -440,17 +511,21 @@ export function AgentsTable({
                 <span>Téléphone</span>
               </div>
               <div className="flex items-center gap-1.5 border-r border-border px-3">
+                <Layers className="w-3.5 h-3.5 opacity-50" />
                 <span>Catégorie</span>
+                {sortField === "categorie" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
               </div>
               <div className="flex items-center gap-1.5 border-r border-border px-3">
                 <Calendar className="w-3.5 h-3.5 opacity-50" />
                 <span>Créé le</span>
+                {sortField === "createdAt" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
               </div>
               <div className="flex items-center gap-1.5 border-r border-border px-3">
                 <Calendar className="w-3.5 h-3.5 opacity-50" />
                 <span>Modifié le</span>
+                {sortField === "updatedAt" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
               </div>
-              <div className="flex items-center justify-center px-0">
+              <div className="flex items-center justify-center pl-3">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="opacity-50">
                   <circle cx="8" cy="8" r="1" fill="currentColor" />
                   <circle cx="13" cy="8" r="1" fill="currentColor" />
@@ -461,7 +536,7 @@ export function AgentsTable({
 
             <AnimatePresence mode="wait">
               <motion.div
-                key={`page-${currentPage}`}
+                key={`page-${currentPage}-sort-${sortField || "none"}-order-${sortOrder}`}
                 variants={shouldAnimate ? containerVariants : {}}
                 initial={shouldAnimate ? "hidden" : "visible"}
                 animate="visible"
@@ -470,11 +545,11 @@ export function AgentsTable({
                   <motion.div key={agent.id} variants={shouldAnimate ? rowVariants : {}}>
                     <div
                       className={`px-3 py-3.5 group relative transition-all duration-150 border-b border-border ${
-                        selectedAgents.includes(agent.id) ? "bg-muted/30" : "bg-muted/5 hover:bg-muted/20"
+                        selectedAgents.includes(agent.id) ? "bg-slate-100 dark:bg-slate-800" : "bg-muted/5 hover:bg-muted/20"
                       }`}
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "40px 250px 160px 120px 180px 140px  200px 200px 1fr 0fr 22px",
+                        gridTemplateColumns: "40px 250px 160px 120px 180px 140px 200px 200px 1fr 40px",
                         columnGap: "0px",
                         alignItems: "center",
                       }}
@@ -547,13 +622,32 @@ export function AgentsTable({
                         <span className="text-xs text-foreground/70">{formatDate(agent.updatedAt)}</span>
                       </div>
 
-                      <div className="flex items-center justify-center">
-                        <button
-                          onClick={() => setSelectedAgentDetail(agent)}
-                          className="opacity-60 hover:opacity-100 transition-opacity cursor-pointer flex items-center"
-                        >
-                          <MoreVertical size={16} />
-                        </button>
+                      <div className="flex items-center justify-center pl-3">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="opacity-60 hover:opacity-100 transition-opacity cursor-pointer flex items-center">
+                              <MoreVertical size={16} />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              className="gap-2 cursor-pointer"
+                              onClick={() => handleEditClick(agent)}
+                              disabled={!selectedAgents.includes(agent.id)}
+                            >
+                              <Edit size={14} />
+                              <span>Édition</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="gap-2 cursor-pointer text-red-600 focus:text-red-600"
+                              onClick={() => handleDeleteClick(agent)}
+                              disabled={!selectedAgents.includes(agent.id)}
+                            >
+                              <Trash2 size={14} />
+                              <span>Supprimer</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   </motion.div>
@@ -562,114 +656,6 @@ export function AgentsTable({
             </AnimatePresence>
           </div>
         </div>
-
-        <AnimatePresence>
-          {selectedAgentDetail && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center z-10"
-              onClick={() => setSelectedAgentDetail(null)}
-            >
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.8, opacity: 0, y: 20 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30, mass: 0.8 }}
-                className="bg-card border border-border rounded-xl p-6 mx-6 shadow-lg relative max-w-md w-full"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button
-                  onClick={() => setSelectedAgentDetail(null)}
-                  className="absolute top-3 right-3 w-6 h-6 rounded-full bg-muted/50 hover:bg-muted/70 flex items-center justify-center transition-colors"
-                >
-                  <X className="w-3 h-3 text-muted-foreground cursor-pointer" />
-                </button>
-
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <UserIcon className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <h3
-                        className="text-lg font-semibold text-foreground"
-                        style={{ fontFamily: "'Noto Naskh Arabic', serif" }}
-                      >
-                        {selectedAgentDetail.nomPrenom}
-                      </h3>
-                      <p
-                        className="text-sm text-muted-foreground mt-1"
-                        style={{ fontFamily: "'Noto Naskh Arabic', serif" }}
-                      >
-                        Catégorie {selectedAgentDetail.categorie}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground uppercase tracking-wide">Grade</span>
-                      </div>
-                      <p
-                        className="text-sm font-medium text-foreground"
-                        style={{ fontFamily: "'Noto Naskh Arabic', serif" }}
-                      >
-                        {selectedAgentDetail.grade}
-                      </p>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-xs text-muted-foreground uppercase tracking-wide">Matricule</span>
-                      </div>
-                      <p className="text-sm font-medium text-foreground">{selectedAgentDetail.matricule}</p>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-xs text-muted-foreground uppercase tracking-wide">Responsabilité</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground" style={{ fontFamily: "'Noto Naskh Arabic', serif" }}>
-                        {selectedAgentDetail.responsabilite}
-                      </p>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <Phone className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground uppercase tracking-wide">Téléphone</span>
-                      </div>
-                      <p className="text-sm font-medium text-foreground">{selectedAgentDetail.telephone}</p>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground uppercase tracking-wide">Date de création</span>
-                      </div>
-                      <p className="text-xs text-foreground">{formatDate(selectedAgentDetail.createdAt)}</p>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground uppercase tracking-wide">
-                          Dernière modification
-                        </span>
-                      </div>
-                      <p className="text-xs text-foreground">{formatDate(selectedAgentDetail.updatedAt)}</p>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       {totalPages > 1 && (
@@ -696,6 +682,34 @@ export function AgentsTable({
           </div>
         </div>
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmation de suppression</AlertDialogTitle>
+            <AlertDialogDescription className="py-3" dir="ltr">
+              Êtes-vous sûr de vouloir supprimer l'agent sélectionné dans la table ?
+              <br />
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-start cursor-pointer">
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700 text-white cursor-pointer">
+              Supprimer
+            </AlertDialogAction>
+            <AlertDialogCancel onClick={handleCancelDelete} className="cursor-pointer">
+              Annuler
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <DialogueEditAgent
+        agent={agentToEdit}
+        isOpen={editDialogOpen}
+        onClose={handleCancelEdit}
+        onSave={handleSaveEdit}
+      />
     </div>
   )
 }

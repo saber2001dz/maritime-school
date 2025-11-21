@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db'
-import { AgentsTable } from './agents-table'
+import { AgentsTableWrapper } from './agents-table-wrapper'
 
 async function getAgents() {
   const agents = await prisma.agent.findMany({
@@ -24,10 +24,8 @@ export default async function ListeAgentsPage() {
       </div>
 
       <div className='px-8'>
-        <AgentsTable
+        <AgentsTableWrapper
           agents={agents}
-          enableAnimations={true}
-          className='max-w-none'
         />
       </div>
     </div>

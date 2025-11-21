@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   LayoutDashboard,
@@ -17,7 +17,7 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { useSession, signOut } from "@/lib/auth-client"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -82,12 +82,35 @@ const CollapsibleSection = ({
   title,
   icon,
   children,
+  defaultOpen = false,
 }: {
   title: string
   icon?: React.ReactNode
   children: React.ReactNode
+  defaultOpen?: boolean
 }) => {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(defaultOpen)
+
+  useEffect(() => {
+    setOpen(defaultOpen)
+  }, [defaultOpen])
+
+  useEffect(() => {
+    // Sauvegarder l'état d'ouverture dans localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`sidebar-${title}`, JSON.stringify(open))
+    }
+  }, [open, title])
+
+  useEffect(() => {
+    // Restaurer l'état d'ouverture depuis localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`sidebar-${title}`)
+      if (saved !== null) {
+        setOpen(JSON.parse(saved))
+      }
+    }
+  }, [title])
 
   return (
     <div className="mb-2">
@@ -119,12 +142,29 @@ const CollapsibleSection = ({
 }
 
 const Sidebar = () => {
-  const [isOpen, setIsOpen] = useState(false)
-  const [selectedItem, setSelectedItem] = useState("Dashboard")
   const { data: session } = useSession()
   const router = useRouter()
+  const pathname = usePathname()
 
-  const toggleSidebar = () => setIsOpen(!isOpen)
+  // Déterminer l'élément sélectionné et si Database doit être ouvert en fonction de l'URL
+  const getSelectedItemFromPath = (path: string) => {
+    if (path.includes('/admin/database/liste-agents')) return 'Agent'
+    if (path.includes('/admin/database/liste-formations')) return 'Formation'
+    if (path.includes('/admin/database/formations-agent')) return 'AgentFormation'
+    if (path.includes('/admin/user-management')) return 'User Management'
+    if (path.includes('/admin/import-data')) return 'Import data'
+    if (path.includes('/admin/export-data')) return 'Export data'
+    if (path.includes('/admin/logs')) return 'Logs'
+    if (path.includes('/admin/connections')) return 'Connections'
+    return 'Dashboard'
+  }
+
+  const shouldDatabaseBeOpen = (path: string) => {
+    return path.includes('/admin/database/')
+  }
+
+  const selectedItem = getSelectedItemFromPath(pathname)
+  const databaseOpen = shouldDatabaseBeOpen(pathname)
 
   const handleLogout = async () => {
     await signOut()
@@ -156,10 +196,7 @@ const Sidebar = () => {
         <ul>
           <li className="mb-2">
             <button
-              onClick={() => {
-                setSelectedItem("Dashboard")
-                router.push("/admin/dashboard")
-              }}
+              onClick={() => router.push("/admin/dashboard")}
               className={`flex gap-2 font-medium text-sm items-center w-full py-2 px-4 rounded-sm cursor-pointer ${
                 selectedItem === "Dashboard" ? "bg-[#EFF6FF] text-[#06407F]" : "hover:bg-gray-100"
               }`}
@@ -168,14 +205,11 @@ const Sidebar = () => {
               Dashboard
             </button>
           </li>
-          <CollapsibleSection title="Database" icon={<Database className="h-4 w-4" />}>
+          <CollapsibleSection title="Database" icon={<Database className="h-4 w-4" />} defaultOpen={databaseOpen}>
             <ul>
               <li>
                 <button
-                  onClick={() => {
-                    setSelectedItem("Agent")
-                    router.push("/admin/database/liste-agents")
-                  }}
+                  onClick={() => router.push("/admin/database/liste-agents")}
                   className={`w-full font-medium text-[13px] text-left p-2 rounded-sm cursor-pointer ${
                     selectedItem === "Agent" ? "bg-[#EFF6FF] text-[#06407F]" : "hover:bg-gray-100"
                   }`}
@@ -185,10 +219,7 @@ const Sidebar = () => {
               </li>
               <li>
                 <button
-                  onClick={() => {
-                    setSelectedItem("Formation")
-                    router.push("/admin/database/liste-formations")
-                  }}
+                  onClick={() => router.push("/admin/database/liste-formations")}
                   className={`w-full font-medium text-[13px] text-left p-2 rounded-sm cursor-pointer ${
                     selectedItem === "Formation" ? "bg-[#EFF6FF] text-[#06407F]" : "hover:bg-gray-100"
                   }`}
@@ -198,10 +229,7 @@ const Sidebar = () => {
               </li>
               <li>
                 <button
-                  onClick={() => {
-                    setSelectedItem("AgentFormation")
-                    router.push("/admin/database/formations-agent")
-                  }}
+                  onClick={() => router.push("/admin/database/formations-agent")}
                   className={`w-full font-medium text-[13px] text-left p-2 rounded-sm cursor-pointer ${
                     selectedItem === "AgentFormation" ? "bg-[#EFF6FF] text-[#06407F]" : "hover:bg-gray-100"
                   }`}
@@ -213,10 +241,7 @@ const Sidebar = () => {
           </CollapsibleSection>
           <li className="mb-2">
             <button
-              onClick={() => {
-                setSelectedItem("User Management")
-                router.push("/admin/user-management")
-              }}
+              onClick={() => router.push("/admin/user-management")}
               className={`flex gap-2 font-medium text-sm items-center w-full py-2 px-4 rounded-sm cursor-pointer ${
                 selectedItem === "User Management" ? "bg-[#EFF6FF] text-[#06407F]" : "hover:bg-gray-100"
               }`}
@@ -227,10 +252,7 @@ const Sidebar = () => {
           </li>
           <li className="mb-2">
             <button
-              onClick={() => {
-                setSelectedItem("Import data")
-                router.push("/admin/import-data")
-              }}
+              onClick={() => router.push("/admin/import-data")}
               className={`flex gap-2 font-medium text-sm items-center w-full py-2 px-4 rounded-sm cursor-pointer ${
                 selectedItem === "Import data" ? "bg-[#EFF6FF] text-[#06407F]" : "hover:bg-gray-100"
               }`}
@@ -241,10 +263,7 @@ const Sidebar = () => {
           </li>
           <li className="mb-2">
             <button
-              onClick={() => {
-                setSelectedItem("Export data")
-                router.push("/admin/export-data")
-              }}
+              onClick={() => router.push("/admin/export-data")}
               className={`flex gap-2 font-medium text-sm items-center w-full py-2 px-4 rounded-sm cursor-pointer ${
                 selectedItem === "Export data" ? "bg-[#EFF6FF] text-[#06407F]" : "hover:bg-gray-100"
               }`}
@@ -255,10 +274,7 @@ const Sidebar = () => {
           </li>
           <li className="mb-2">
             <button
-              onClick={() => {
-                setSelectedItem("Logs")
-                router.push("/admin/logs")
-              }}
+              onClick={() => router.push("/admin/logs")}
               className={`flex gap-2 font-medium text-sm items-center w-full py-2 px-4 rounded-sm cursor-pointer ${
                 selectedItem === "Logs" ? "bg-[#EFF6FF] text-[#06407F]" : "hover:bg-gray-100"
               }`}
@@ -269,10 +285,7 @@ const Sidebar = () => {
           </li>
           <li className="mb-2">
             <button
-              onClick={() => {
-                setSelectedItem("Connections")
-                router.push("/admin/connections")
-              }}
+              onClick={() => router.push("/admin/connections")}
               className={`flex gap-2 font-medium text-sm items-center w-full py-2 px-4 rounded-sm cursor-pointer ${
                 selectedItem === "Connections" ? "bg-[#EFF6FF] text-[#06407F]" : "hover:bg-gray-100"
               }`}
