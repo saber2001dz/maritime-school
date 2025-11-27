@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Agent {
+  id             String           @id @default(cuid())
+  nomPrenom      String
+  grade          String
+  matricule      String           @unique
+  responsabilite String
+  telephone      Int
+  categorie      String
+  avatar         String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  formations     AgentFormation[]
+}
+
+// Modèle User pour Better-Auth
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  emailVerified Boolean   @default(false)
+  image         String?
+  role          String    @default("agent")
+  lastLogin     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  banned        Boolean?
+  banReason     String?
+  banExpires    DateTime?
+  sessions      Session[]
+  accounts      Account[]
+}
+
+// Modèle Session pour Better-Auth
+model Session {
+  id             String   @id @default(cuid())
+  userId         String
+  token          String   @unique
+  expiresAt      DateTime
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  impersonatedBy String?
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Modèle Account pour Better-Auth
+model Account {
+  id                      String    @id @default(cuid())
+  userId                  String
+  accountId               String
+  providerId              String
+  password                String?
+  accessToken             String?
+  refreshToken            String?
+  accessTokenExpiresAt    DateTime?
+  refreshTokenExpiresAt   DateTime?
+  scope                   String?
+  idToken                 String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Modèle Verification pour Better-Auth
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Formation {
+  id                 String           @id @default(cuid())
+  typeFormation      String
+  formation          String
+  duree              String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  capaciteAbsorption Int?
+  specialite         String?
+  agentFormations    AgentFormation[]
+}
+
+model AgentFormation {
+  id          String    @id @default(cuid())
+  agentId     String
+  formationId String
+  dateDebut   String
+  dateFin     String
+  reference   String?
+  resultat    String?
+  moyenne     Float
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  formation   Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
+  agent       Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+  @@index([formationId])
+}
