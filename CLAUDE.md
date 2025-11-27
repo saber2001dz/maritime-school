@@ -107,7 +107,7 @@ npm run lint
 - react-use-measure 2.1.7 (element measurements)
 
 ### Database & Backend
-- Prisma 6.19.0 with SQLite database
+- Prisma 6.19.0 with PostgreSQL database
 - @prisma/client 6.19.0
 
 ### Authentication & Authorization
@@ -127,7 +127,7 @@ npm run lint
 ## Database (Prisma ORM)
 
 ### Setup
-The project uses Prisma ORM with SQLite as the database provider.
+The project uses Prisma ORM with PostgreSQL as the database provider.
 
 ### Configuration Files
 - [prisma/schema.prisma](prisma/schema.prisma) - Database schema definition
@@ -322,7 +322,7 @@ const agent = await prisma.agent.create({
 ### Better-Auth Configuration
 - [lib/auth.ts](lib/auth.ts) - Server-side Better-Auth configuration
   - Email/password authentication enabled
-  - Prisma adapter for SQLite
+  - Prisma adapter for PostgreSQL
   - Admin plugin with role-based access control (RBAC)
   - Custom hooks for tracking last login
 - [lib/auth-client.ts](lib/auth-client.ts) - Client-side authentication hooks
@@ -346,7 +346,7 @@ Defined in [lib/auth.ts](lib/auth.ts) using Better-Auth access control:
 
 ### Environment Variables
 Required in `.env`:
-- `DATABASE_URL` - SQLite database connection string
+- `DATABASE_URL` - PostgreSQL database connection string (format: `postgresql://user:password@host:port/database?schema=public`)
 - `BETTER_AUTH_SECRET` - Secret key for Better-Auth
 - `BETTER_AUTH_URL` / `NEXT_PUBLIC_BETTER_AUTH_URL` - Base URL for authentication
 
@@ -442,10 +442,12 @@ This project uses Tailwind CSS v4 with breaking changes from v3:
 - Text direction: `dir="ltr"` for admin panel, `dir="rtl"` support for Arabic content
 
 ### Database & Migrations
-- SQLite database file (dev.db) and journal files are gitignored
+- PostgreSQL database running locally on port 5432
+- Database name: `maritime_school`, User: `maritime`
 - Prisma migrations are versioned and committed to the repository
 - Use `npm run db:migrate` to create new migrations
 - Use `npm run db:push` for quick schema prototyping (no migration files)
+- Current migration: `20251127151746_init_postgresql` (PostgreSQL schema)
 
 ### Component Architecture
 - Route groups: `(with-header)` for shared header layout
