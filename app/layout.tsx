@@ -27,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
-      <body className={`${cairo.variable} ${notoNaskhArabic.variable} antialiased font-sans`} style={{ fontFamily: "var(--font-cairo)" }}>
+      <body className={`${cairo.variable} ${notoNaskhArabic.variable} antialiased font-sans`} style={{ fontFamily: "var(--font-cairo)" }} suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}
         </ThemeProvider>

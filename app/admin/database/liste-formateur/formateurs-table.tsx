@@ -1,21 +1,22 @@
 "use client"
-
+// Updated: reduced last column width
 import { useState, useEffect, useMemo } from "react"
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion"
 import { useTheme } from "next-themes"
 import {
   Download,
   ChevronDown,
+  Phone,
+  User as UserIcon,
+  Briefcase,
   Calendar,
   MoreVertical,
   Edit,
   Trash2,
+  ClipboardList,
   Check,
-  User,
-  BookOpen,
-  Hash,
-  Award,
-  TrendingUp,
+  Building2,
+  CreditCard,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -33,53 +34,43 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { DialogueEditAgentFormation } from "./dialogue-edit-agent-formation"
+import { DialogueEditFormateur } from "./dialogue-edit-formateur"
 
-export interface AgentFormationWithRelations {
+export interface Formateur {
   id: string
-  agentId: string
-  formationId: string
-  dateDebut: string
-  dateFin: string
-  reference?: string | null
-  resultat?: string | null
-  moyenne: number
+  nomPrenom: string
+  grade: string
+  unite: string
+  responsabilite: string
+  telephone: number
+  RIB: string
   createdAt: Date | string
   updatedAt: Date | string
-  agent: {
-    id: string
-    nomPrenom: string
-    grade: string
-  }
-  formation: {
-    id: string
-    formation: string
-  }
 }
 
-interface FormationsAgentTableProps {
-  agentFormations?: AgentFormationWithRelations[]
-  onAgentFormationSelect?: (agentFormationId: string) => void
+interface FormateursTableProps {
+  formateurs?: Formateur[]
+  onFormateurSelect?: (formateurId: string) => void
   className?: string
   enableAnimations?: boolean
-  onSaveEdit?: (agentFormation: AgentFormationWithRelations) => Promise<{ success: boolean; error?: string }>
-  onDeleteAgentFormation?: (agentFormationId: string) => Promise<{ success: boolean; error?: string }>
+  onSaveEdit?: (formateur: Formateur) => Promise<{ success: boolean; error?: string }>
+  onDeleteFormateur?: (formateurId: string) => Promise<{ success: boolean; error?: string }>
   isUpdating?: boolean
 }
 
-type SortField = "agentName" | "formationName" | "dateDebut" | "dateFin" | "moyenne" | "createdAt" | "updatedAt"
+type SortField = "nomPrenom" | "grade" | "unite" | "responsabilite" | "createdAt" | "updatedAt"
 type SortOrder = "asc" | "desc"
 
-export function FormationsAgentTable({
-  agentFormations: initialAgentFormations = [],
-  onAgentFormationSelect,
+export function FormateursTable({
+  formateurs: initialFormateurs = [],
+  onFormateurSelect,
   className = "",
   enableAnimations = true,
   onSaveEdit,
-  onDeleteAgentFormation,
+  onDeleteFormateur,
   isUpdating = false,
-}: FormationsAgentTableProps) {
-  const [selectedAgentFormations, setSelectedAgentFormations] = useState<string[]>([])
+}: FormateursTableProps) {
+  const [selectedFormateurs, setSelectedFormateurs] = useState<string[]>([])
   const [mounted, setMounted] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [sortField, setSortField] = useState<SortField | null>(null)
@@ -87,9 +78,9 @@ export function FormationsAgentTable({
   const [showSortMenu, setShowSortMenu] = useState(false)
   const [showExportMenu, setShowExportMenu] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [agentFormationToDelete, setAgentFormationToDelete] = useState<AgentFormationWithRelations | null>(null)
+  const [formateurToDelete, setFormateurToDelete] = useState<Formateur | null>(null)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [agentFormationToEdit, setAgentFormationToEdit] = useState<AgentFormationWithRelations | null>(null)
+  const [formateurToEdit, setFormateurToEdit] = useState<Formateur | null>(null)
   const shouldReduceMotion = useReducedMotion()
   const { theme } = useTheme()
   const isDark = theme === "dark"
@@ -100,24 +91,24 @@ export function FormationsAgentTable({
     setMounted(true)
   }, [])
 
-  const handleAgentFormationSelect = (agentFormationId: string) => {
-    setSelectedAgentFormations((prev) => {
-      if (prev.includes(agentFormationId)) {
-        return prev.filter((id) => id !== agentFormationId)
+  const handleFormateurSelect = (formateurId: string) => {
+    setSelectedFormateurs((prev) => {
+      if (prev.includes(formateurId)) {
+        return prev.filter((id) => id !== formateurId)
       } else {
-        return [...prev, agentFormationId]
+        return [...prev, formateurId]
       }
     })
-    if (onAgentFormationSelect) {
-      onAgentFormationSelect(agentFormationId)
+    if (onFormateurSelect) {
+      onFormateurSelect(formateurId)
     }
   }
 
   const handleSelectAll = () => {
-    if (selectedAgentFormations.length === paginatedAgentFormations.length) {
-      setSelectedAgentFormations([])
+    if (selectedFormateurs.length === paginatedFormateurs.length) {
+      setSelectedFormateurs([])
     } else {
-      setSelectedAgentFormations(paginatedAgentFormations.map((af) => af.id))
+      setSelectedFormateurs(paginatedFormateurs.map((f) => f.id))
     }
   }
 
@@ -132,48 +123,28 @@ export function FormationsAgentTable({
     setCurrentPage(1)
   }
 
-  const sortedAndFilteredAgentFormations = useMemo(() => {
-    let filtered = [...initialAgentFormations]
+  const sortedAndFilteredFormateurs = useMemo(() => {
+    let filtered = [...initialFormateurs]
 
     if (!sortField) {
       return filtered
     }
 
     const sorted = filtered.sort((a, b) => {
-      let aVal: string | number | Date
-      let bVal: string | number | Date
+      let aVal: string | number | Date = a[sortField]
+      let bVal: string | number | Date = b[sortField]
 
-      switch (sortField) {
-        case "agentName":
-          aVal = a.agent.nomPrenom
-          bVal = b.agent.nomPrenom
-          break
-        case "formationName":
-          aVal = a.formation.formation
-          bVal = b.formation.formation
-          break
-        case "dateDebut":
-          aVal = new Date(a.dateDebut).getTime()
-          bVal = new Date(b.dateDebut).getTime()
-          break
-        case "dateFin":
-          aVal = new Date(a.dateFin).getTime()
-          bVal = new Date(b.dateFin).getTime()
-          break
-        case "moyenne":
-          aVal = a.moyenne
-          bVal = b.moyenne
-          break
-        case "createdAt":
-          aVal = new Date(a.createdAt).getTime()
-          bVal = new Date(b.createdAt).getTime()
-          break
-        case "updatedAt":
-          aVal = new Date(a.updatedAt).getTime()
-          bVal = new Date(b.updatedAt).getTime()
-          break
-        default:
-          return 0
+      // Convertir les dates en timestamps pour la comparaison
+      if (aVal instanceof Date) {
+        aVal = aVal.getTime()
+      } else if (sortField === "createdAt" || sortField === "updatedAt") {
+        aVal = new Date(aVal as string).getTime()
+      }
+
+      if (bVal instanceof Date) {
+        bVal = bVal.getTime()
+      } else if (sortField === "createdAt" || sortField === "updatedAt") {
+        bVal = new Date(bVal as string).getTime()
       }
 
       if (aVal < bVal) return sortOrder === "asc" ? -1 : 1
@@ -182,14 +153,14 @@ export function FormationsAgentTable({
     })
 
     return sorted
-  }, [initialAgentFormations, sortField, sortOrder])
+  }, [initialFormateurs, sortField, sortOrder])
 
-  const paginatedAgentFormations = useMemo(() => {
+  const paginatedFormateurs = useMemo(() => {
     const startIdx = (currentPage - 1) * ITEMS_PER_PAGE
-    return sortedAndFilteredAgentFormations.slice(startIdx, startIdx + ITEMS_PER_PAGE)
-  }, [sortedAndFilteredAgentFormations, currentPage])
+    return sortedAndFilteredFormateurs.slice(startIdx, startIdx + ITEMS_PER_PAGE)
+  }, [sortedAndFilteredFormateurs, currentPage])
 
-  const totalPages = Math.ceil(sortedAndFilteredAgentFormations.length / ITEMS_PER_PAGE)
+  const totalPages = Math.ceil(sortedAndFilteredFormateurs.length / ITEMS_PER_PAGE)
 
   const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString("fr-FR", {
@@ -201,36 +172,34 @@ export function FormationsAgentTable({
     })
   }
 
-  const formatSimpleDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("fr-FR", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    })
+  const formatPhoneNumber = (phone: number) => {
+    const phoneStr = phone.toString()
+    if (phoneStr.length === 8) {
+      return `${phoneStr.slice(0, 2)} ${phoneStr.slice(2, 5)} ${phoneStr.slice(5, 8)}`
+    }
+    return phoneStr
   }
 
   const exportToCSV = () => {
     const headers = [
-      "Agent",
-      "Formation",
-      "Date Début",
-      "Date Fin",
-      "Référence",
-      "Résultat",
-      "Moyenne",
+      "Nom et Prénom",
+      "Grade",
+      "Unité",
+      "Responsabilité",
+      "Téléphone",
+      "RIB",
       "Date de création",
       "Date de modification",
     ]
-    const rows = sortedAndFilteredAgentFormations.map((af: AgentFormationWithRelations) => [
-      `${af.agent.grade} ${af.agent.nomPrenom}`,
-      af.formation.formation,
-      af.dateDebut,
-      af.dateFin,
-      af.reference || "",
-      af.resultat || "",
-      af.moyenne,
-      formatDate(af.createdAt),
-      formatDate(af.updatedAt),
+    const rows = sortedAndFilteredFormateurs.map((formateur: Formateur) => [
+      formateur.nomPrenom,
+      formateur.grade,
+      formateur.unite,
+      formateur.responsabilite,
+      formateur.telephone,
+      formateur.RIB,
+      formatDate(formateur.createdAt),
+      formatDate(formateur.updatedAt),
     ])
 
     const csvContent = [
@@ -241,38 +210,41 @@ export function FormationsAgentTable({
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
     const link = document.createElement("a")
     link.href = URL.createObjectURL(blob)
-    link.download = `formations-agent-${new Date().toISOString().split("T")[0]}.csv`
+    link.download = `formateurs-${new Date().toISOString().split("T")[0]}.csv`
     link.click()
   }
 
   const exportToJSON = () => {
-    const jsonContent = JSON.stringify(sortedAndFilteredAgentFormations, null, 2)
+    const jsonContent = JSON.stringify(sortedAndFilteredFormateurs, null, 2)
     const blob = new Blob([jsonContent], { type: "application/json;charset=utf-8;" })
     const link = document.createElement("a")
     link.href = URL.createObjectURL(blob)
-    link.download = `formations-agent-${new Date().toISOString().split("T")[0]}.json`
+    link.download = `formateurs-${new Date().toISOString().split("T")[0]}.json`
     link.click()
   }
 
-  const handleDeleteClick = (agentFormation: AgentFormationWithRelations) => {
-    if (!selectedAgentFormations.includes(agentFormation.id)) {
+  const handleDeleteClick = (formateur: Formateur) => {
+    if (!selectedFormateurs.includes(formateur.id)) {
+      // Si la checkbox n'est pas cochée, ne rien faire
       return
     }
-    setAgentFormationToDelete(agentFormation)
+    setFormateurToDelete(formateur)
     setDeleteDialogOpen(true)
   }
 
   const handleConfirmDelete = async () => {
-    if (!agentFormationToDelete) return
+    if (!formateurToDelete) return
 
     try {
-      if (onDeleteAgentFormation) {
-        const result = await onDeleteAgentFormation(agentFormationToDelete.id)
+      if (onDeleteFormateur) {
+        const result = await onDeleteFormateur(formateurToDelete.id)
 
         if (result.success) {
-          setSelectedAgentFormations((prev) => prev.filter((id) => id !== agentFormationToDelete.id))
+          // Retirer le formateur de la sélection
+          setSelectedFormateurs((prev) => prev.filter((id) => id !== formateurToDelete.id))
+          // Fermer le dialogue
           setDeleteDialogOpen(false)
-          setAgentFormationToDelete(null)
+          setFormateurToDelete(null)
         } else {
           console.error("Erreur lors de la suppression:", result.error)
         }
@@ -284,30 +256,31 @@ export function FormationsAgentTable({
 
   const handleCancelDelete = () => {
     setDeleteDialogOpen(false)
-    setAgentFormationToDelete(null)
+    setFormateurToDelete(null)
   }
 
-  const handleEditClick = (agentFormation: AgentFormationWithRelations) => {
-    if (!selectedAgentFormations.includes(agentFormation.id)) {
+  const handleEditClick = (formateur: Formateur) => {
+    if (!selectedFormateurs.includes(formateur.id)) {
+      // Si la checkbox n'est pas cochée, ne rien faire
       return
     }
-    setAgentFormationToEdit(agentFormation)
+    setFormateurToEdit(formateur)
     setEditDialogOpen(true)
   }
 
-  const handleSaveEdit = async (data: Partial<AgentFormationWithRelations>) => {
-    if (!agentFormationToEdit) return
+  const handleSaveEdit = async (data: Partial<Formateur>) => {
+    if (!formateurToEdit) return
 
     try {
       if (onSaveEdit) {
         const result = await onSaveEdit({
-          ...agentFormationToEdit,
+          ...formateurToEdit,
           ...data,
-        } as AgentFormationWithRelations)
+        } as Formateur)
 
         if (result.success) {
           setEditDialogOpen(false)
-          setAgentFormationToEdit(null)
+          setFormateurToEdit(null)
         } else {
           console.error("Erreur lors de la modification:", result.error)
         }
@@ -319,7 +292,7 @@ export function FormationsAgentTable({
 
   const handleCancelEdit = () => {
     setEditDialogOpen(false)
-    setAgentFormationToEdit(null)
+    setFormateurToEdit(null)
   }
 
   const shouldAnimate = enableAnimations && !shouldReduceMotion
@@ -405,49 +378,40 @@ export function FormationsAgentTable({
                   </button>
                   <div className="h-px bg-border/30 my-1" />
                   <button
-                    onClick={() => handleSort("agentName")}
+                    onClick={() => handleSort("nomPrenom")}
                     className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
-                      sortField === "agentName" ? "bg-muted/30" : ""
+                      sortField === "nomPrenom" ? "bg-muted/30" : ""
                     }`}
                   >
-                    <span>Agent {sortField === "agentName" && `(${sortOrder === "asc" ? "A-Z" : "Z-A"})`}</span>
-                    {sortField === "agentName" && <Check size={14} className="text-primary" />}
+                    <span>Nom {sortField === "nomPrenom" && `(${sortOrder === "asc" ? "A-Z" : "Z-A"})`}</span>
+                    {sortField === "nomPrenom" && <Check size={14} className="text-primary" />}
                   </button>
                   <button
-                    onClick={() => handleSort("formationName")}
+                    onClick={() => handleSort("grade")}
                     className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
-                      sortField === "formationName" ? "bg-muted/30" : ""
+                      sortField === "grade" ? "bg-muted/30" : ""
                     }`}
                   >
-                    <span>Formation {sortField === "formationName" && `(${sortOrder === "asc" ? "A-Z" : "Z-A"})`}</span>
-                    {sortField === "formationName" && <Check size={14} className="text-primary" />}
+                    <span>Grade {sortField === "grade" && `(${sortOrder === "asc" ? "↑" : "↓"})`}</span>
+                    {sortField === "grade" && <Check size={14} className="text-primary" />}
                   </button>
                   <button
-                    onClick={() => handleSort("dateDebut")}
+                    onClick={() => handleSort("unite")}
                     className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
-                      sortField === "dateDebut" ? "bg-muted/30" : ""
+                      sortField === "unite" ? "bg-muted/30" : ""
                     }`}
                   >
-                    <span>Date début {sortField === "dateDebut" && `(${sortOrder === "asc" ? "↑" : "↓"})`}</span>
-                    {sortField === "dateDebut" && <Check size={14} className="text-primary" />}
+                    <span>Unité {sortField === "unite" && `(${sortOrder === "asc" ? "↑" : "↓"})`}</span>
+                    {sortField === "unite" && <Check size={14} className="text-primary" />}
                   </button>
                   <button
-                    onClick={() => handleSort("dateFin")}
+                    onClick={() => handleSort("responsabilite")}
                     className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
-                      sortField === "dateFin" ? "bg-muted/30" : ""
+                      sortField === "responsabilite" ? "bg-muted/30" : ""
                     }`}
                   >
-                    <span>Date fin {sortField === "dateFin" && `(${sortOrder === "asc" ? "↑" : "↓"})`}</span>
-                    {sortField === "dateFin" && <Check size={14} className="text-primary" />}
-                  </button>
-                  <button
-                    onClick={() => handleSort("moyenne")}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
-                      sortField === "moyenne" ? "bg-muted/30" : ""
-                    }`}
-                  >
-                    <span>Moyenne {sortField === "moyenne" && `(${sortOrder === "asc" ? "↑" : "↓"})`}</span>
-                    {sortField === "moyenne" && <Check size={14} className="text-primary" />}
+                    <span>Responsabilité {sortField === "responsabilite" && `(${sortOrder === "asc" ? "↑" : "↓"})`}</span>
+                    {sortField === "responsabilite" && <Check size={14} className="text-primary" />}
                   </button>
                   <button
                     onClick={() => handleSort("createdAt")}
@@ -518,7 +482,7 @@ export function FormationsAgentTable({
               className="px-3 py-3 text-xs font-semibold text-foreground border-b border-border text-left"
               style={{
                 display: "grid",
-                gridTemplateColumns: "40px 200px 260px 120px 120px 220px 140px 100px 180px 1fr 40px",
+                gridTemplateColumns: "40px 250px 160px 120px 180px 200px 200px 200px 1fr 40px",
                 columnGap: "0px",
                 backgroundColor: "#F3F3F3",
               }}
@@ -534,42 +498,37 @@ export function FormationsAgentTable({
                         }
                       : {}
                   }
-                  checked={paginatedAgentFormations.length > 0 && selectedAgentFormations.length === paginatedAgentFormations.length}
+                  checked={paginatedFormateurs.length > 0 && selectedFormateurs.length === paginatedFormateurs.length}
                   onChange={handleSelectAll}
                 />
               </div>
               <div className="flex items-center gap-1.5 border-r border-border px-3">
-                <User className="w-3.5 h-3.5 opacity-50" />
-                <span>Agent</span>
-                {sortField === "agentName" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
+                <UserIcon className="w-3.5 h-3.5 opacity-50" />
+                <span>Nom et Prénom</span>
+                {sortField === "nomPrenom" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
               </div>
               <div className="flex items-center gap-1.5 border-r border-border px-3">
-                <BookOpen className="w-3.5 h-3.5 opacity-50" />
-                <span>Formation</span>
-                {sortField === "formationName" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
+                <Briefcase className="w-3.5 h-3.5 opacity-50" />
+                <span>Grade</span>
+                {sortField === "grade" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
               </div>
               <div className="flex items-center gap-1.5 border-r border-border px-3">
-                <Calendar className="w-3.5 h-3.5 opacity-50" />
-                <span>Date Début</span>
-                {sortField === "dateDebut" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
+                <Building2 className="w-3.5 h-3.5 opacity-50" />
+                <span>Unité</span>
+                {sortField === "unite" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
               </div>
               <div className="flex items-center gap-1.5 border-r border-border px-3">
-                <Calendar className="w-3.5 h-3.5 opacity-50" />
-                <span>Date Fin</span>
-                {sortField === "dateFin" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
+                <ClipboardList className="w-3.5 h-3.5 opacity-50" />
+                <span>Responsabilité</span>
+                {sortField === "responsabilite" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
               </div>
               <div className="flex items-center gap-1.5 border-r border-border px-3">
-                <Hash className="w-3.5 h-3.5 opacity-50" />
-                <span>Référence</span>
+                <Phone className="w-3.5 h-3.5 opacity-50" />
+                <span>Téléphone</span>
               </div>
               <div className="flex items-center gap-1.5 border-r border-border px-3">
-                <Award className="w-3.5 h-3.5 opacity-50" />
-                <span>Résultat</span>
-              </div>
-              <div className="flex items-center gap-1.5 border-r border-border px-3">
-                <TrendingUp className="w-3.5 h-3.5 opacity-50" />
-                <span>Moyenne</span>
-                {sortField === "moyenne" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
+                <CreditCard className="w-3.5 h-3.5 opacity-50" />
+                <span>RIB</span>
               </div>
               <div className="flex items-center gap-1.5 border-r border-border px-3">
                 <Calendar className="w-3.5 h-3.5 opacity-50" />
@@ -597,15 +556,15 @@ export function FormationsAgentTable({
                 initial={shouldAnimate ? "hidden" : "visible"}
                 animate="visible"
               >
-                {paginatedAgentFormations.map((agentFormation: AgentFormationWithRelations) => (
-                  <motion.div key={agentFormation.id} variants={shouldAnimate ? rowVariants : {}}>
+                {paginatedFormateurs.map((formateur: Formateur) => (
+                  <motion.div key={formateur.id} variants={shouldAnimate ? rowVariants : {}}>
                     <div
                       className={`px-3 py-3.5 group relative transition-all duration-150 border-b border-border ${
-                        selectedAgentFormations.includes(agentFormation.id) ? "bg-slate-100 dark:bg-slate-800" : "bg-muted/5 hover:bg-muted/20"
+                        selectedFormateurs.includes(formateur.id) ? "bg-slate-100 dark:bg-slate-800" : "bg-muted/5 hover:bg-muted/20"
                       }`}
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "40px 200px 260px 120px 120px 220px 140px 100px 180px 1fr 40px",
+                        gridTemplateColumns: "40px 250px 160px 120px 180px 200px 200px 200px 1fr 40px",
                         columnGap: "0px",
                         alignItems: "center",
                       }}
@@ -621,60 +580,61 @@ export function FormationsAgentTable({
                                 }
                               : {}
                           }
-                          checked={selectedAgentFormations.includes(agentFormation.id)}
-                          onChange={() => handleAgentFormationSelect(agentFormation.id)}
+                          checked={selectedFormateurs.includes(formateur.id)}
+                          onChange={() => handleFormateurSelect(formateur.id)}
                         />
                       </div>
 
                       <div className="flex items-center gap-2 min-w-0 border-r border-border px-3">
                         <div
-                          className="text-xs text-foreground/80 truncate"
+                          className="text-sm text-foreground truncate"
                           style={{ fontFamily: "'Noto Naskh Arabic', serif" }}
                         >
-                          {agentFormation.agent.grade} {agentFormation.agent.nomPrenom}
+                          {formateur.nomPrenom}
                         </div>
                       </div>
 
                       <div className="flex items-center border-r border-border px-3">
                         <span
-                          className="text-xs text-foreground/80 truncate"
+                          className="text-sm text-foreground/80 truncate"
                           style={{ fontFamily: "'Noto Naskh Arabic', serif" }}
                         >
-                          {agentFormation.formation.formation}
+                          {formateur.grade}
                         </span>
-                      </div>
-
-                      <div className="flex items-center border-r border-border px-3">
-                        <span className="text-sm text-foreground/80">{formatSimpleDate(agentFormation.dateDebut)}</span>
-                      </div>
-
-                      <div className="flex items-center border-r border-border px-3">
-                        <span className="text-sm text-foreground/80">{formatSimpleDate(agentFormation.dateFin)}</span>
-                      </div>
-
-                      <div className="flex items-center border-r border-border px-3">
-                        <span className="text-xs text-foreground/80 truncate" style={{ fontFamily: "'Noto Naskh Arabic', serif" }}>{agentFormation.reference || "-"}</span>
                       </div>
 
                       <div className="flex items-center border-r border-border px-3">
                         <span
-                          className="text-xs text-foreground/80 truncate"
+                          className="text-sm text-foreground/80 truncate"
                           style={{ fontFamily: "'Noto Naskh Arabic', serif" }}
                         >
-                          {agentFormation.resultat || "-"}
+                          {formateur.unite}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center min-w-0 border-r border-border px-3">
+                        <span
+                          className="text-sm text-foreground/80 truncate"
+                          style={{ fontFamily: "'Noto Naskh Arabic', serif" }}
+                        >
+                          {formateur.responsabilite}
                         </span>
                       </div>
 
                       <div className="flex items-center border-r border-border px-3">
-                        <span className="text-sm text-foreground/80 font-medium">{agentFormation.moyenne}/20</span>
+                        <span className="text-sm text-foreground/80">{formatPhoneNumber(formateur.telephone)}</span>
                       </div>
 
                       <div className="flex items-center border-r border-border px-3">
-                        <span className="text-xs text-foreground/70">{formatDate(agentFormation.createdAt)}</span>
+                        <span className="text-sm text-foreground/80">{formateur.RIB}</span>
                       </div>
 
                       <div className="flex items-center border-r border-border px-3">
-                        <span className="text-xs text-foreground/70">{formatDate(agentFormation.updatedAt)}</span>
+                        <span className="text-xs text-foreground/70">{formatDate(formateur.createdAt)}</span>
+                      </div>
+
+                      <div className="flex items-center border-r border-border px-3">
+                        <span className="text-xs text-foreground/70">{formatDate(formateur.updatedAt)}</span>
                       </div>
 
                       <div className="flex items-center justify-center pl-3">
@@ -687,16 +647,16 @@ export function FormationsAgentTable({
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
                               className="gap-2 cursor-pointer"
-                              onClick={() => handleEditClick(agentFormation)}
-                              disabled={!selectedAgentFormations.includes(agentFormation.id)}
+                              onClick={() => handleEditClick(formateur)}
+                              disabled={!selectedFormateurs.includes(formateur.id)}
                             >
                               <Edit size={14} />
                               <span>Édition</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="gap-2 cursor-pointer text-red-600 focus:text-red-600"
-                              onClick={() => handleDeleteClick(agentFormation)}
-                              disabled={!selectedAgentFormations.includes(agentFormation.id)}
+                              onClick={() => handleDeleteClick(formateur)}
+                              disabled={!selectedFormateurs.includes(formateur.id)}
                             >
                               <Trash2 size={14} />
                               <span>Supprimer</span>
@@ -716,7 +676,7 @@ export function FormationsAgentTable({
       {totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between px-2">
           <div className="text-xs text-muted-foreground/70">
-            Page {currentPage} of {totalPages} • {sortedAndFilteredAgentFormations.length} formations agent
+            Page {currentPage} of {totalPages} • {sortedAndFilteredFormateurs.length} formateurs
           </div>
 
           <div className="flex gap-1.5">
@@ -743,7 +703,7 @@ export function FormationsAgentTable({
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmation de suppression</AlertDialogTitle>
             <AlertDialogDescription className="py-3" dir="ltr">
-              Êtes-vous sûr de vouloir supprimer la formation agent sélectionnée ?
+              Êtes-vous sûr de vouloir supprimer le formateur sélectionné dans la table ?
               <br />
               Cette action est irréversible.
             </AlertDialogDescription>
@@ -759,8 +719,8 @@ export function FormationsAgentTable({
         </AlertDialogContent>
       </AlertDialog>
 
-      <DialogueEditAgentFormation
-        agentFormation={agentFormationToEdit}
+      <DialogueEditFormateur
+        formateur={formateurToEdit}
         isOpen={editDialogOpen}
         onClose={handleCancelEdit}
         onSave={handleSaveEdit}

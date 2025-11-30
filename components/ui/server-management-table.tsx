@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Pencil } from "lucide-react"
+import { Pencil, Plus } from "lucide-react"
 import localFont from "next/font/local"
 import DialogueFormation, { type FormationData } from "@/components/dialogue-formation"
 import { ToastProvider, useToast } from "@/components/ui/ultra-quality-toast"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
+import { useTheme } from "next-themes"
 
 const notoNaskhArabic = localFont({
   src: "../../app/fonts/NotoNaskhArabic.woff2",
@@ -27,17 +28,26 @@ interface ServerManagementTableProps {
   title?: string
   servers?: Server[]
   className?: string
+  onAddNewFormation?: () => void
 }
 
 function ServerManagementTableContent({
   title = "الــــدورات التـكـــويـنـيـــة :",
   servers: initialServers = [],
   className = "",
+  onAddNewFormation,
 }: ServerManagementTableProps = {}) {
   const [servers, setServers] = useState<Server[]>(initialServers)
   const [editingFormation, setEditingFormation] = useState<FormationData | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const { addToast } = useToast()
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Synchroniser les données du serveur avec l'état local
   useEffect(() => {
@@ -47,11 +57,7 @@ function ServerManagementTableContent({
   // Convertir Server en FormationData
   const serverToFormationData = (server: Server): FormationData => {
     const typeFormation =
-      server.status === "active"
-        ? "تكوين إختصاص"
-        : server.status === "paused"
-        ? "تكوين تخصصي"
-        : "تكوين مستمر"
+      server.status === "active" ? "تكوين إختصاص" : server.status === "paused" ? "تكوين تخصصي" : "تكوين مستمر"
 
     return {
       id: server.id,
@@ -86,9 +92,9 @@ function ServerManagementTableContent({
         },
         body: JSON.stringify({
           typeFormation: data.typeFormation,
-          formation: data.formation,
+          formation: data.formation.trim(),
           specialite: data.specialite,
-          duree: data.duree,
+          duree: data.duree?.trim() || "",
           capaciteAbsorption: data.capaciteAbsorption,
         }),
       })
@@ -160,7 +166,7 @@ function ServerManagementTableContent({
       }
 
       // Barre vide pour la capacité restante
-      return "bg-muted/40 border border-border/30"
+      return "bg-gray-300 dark:bg-gray-600 border dark:border-gray-500"
     }
 
     return (
@@ -186,7 +192,9 @@ function ServerManagementTableContent({
       case "paused":
         return (
           <div className="px-3 py-1.5 rounded-lg bg-[#06417F]/10 dark:bg-blue-400/10 border border-[#06417F]/30 dark:border-blue-400/30 flex items-center justify-center">
-            <span className={`text-[#06417F] dark:text-blue-400 text-sm font-medium ${notoNaskhArabic.className}`}>تكوين تخصصي</span>
+            <span className={`text-[#06417F] dark:text-blue-400 text-sm font-medium ${notoNaskhArabic.className}`}>
+              تكوين تخصصي
+            </span>
           </div>
         )
       case "inactive":
@@ -212,17 +220,49 @@ function ServerManagementTableContent({
   return (
     <div className={`w-full max-w-7xl mx-auto p-6 ${className}`}>
       <div className="relative border border-border/30 rounded-2xl p-6 bg-gray-50 dark:bg-gray-900/50">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-[#00ff00] shadow-[0_0_8px_#00ff00,0_0_12px_#00ff00] animate-pulse" />
-              <h1 className={`text-xl font-bold text-foreground ${notoNaskhArabic.className}`}>{title}</h1>
+        {/* Header avec bouton aligné */}
+        <div className="mb-6">
+          <div
+            className="grid gap-4 px-4 items-center"
+            style={{ gridTemplateColumns: "1fr 3fr 1.5fr 1.5fr 2.5fr 2fr 1fr" }}
+          >
+            {/* Première colonne - titre et stats */}
+            <div className="col-span-6 flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#00ff00] shadow-[0_0_8px_#00ff00,0_0_12px_#00ff00] animate-pulse" />
+                <h1 className={`text-xl font-bold text-foreground ${notoNaskhArabic.className}`}>{title}</h1>
+              </div>
+              <div className={`text-xs text-muted-foreground ${notoNaskhArabic.className}`}>
+                {servers.filter((s) => s.status === "active").length} تكـويــن إختصـاص - {"  "}
+                {servers.filter((s) => s.status === "paused").length} تكـويــن تخــصصي - {"  "}
+                {servers.filter((s) => s.status === "inactive").length} تكـويــن مسـتـمــر
+              </div>
             </div>
-            <div className={`text-xs text-muted-foreground ${notoNaskhArabic.className}`}>
-              {servers.filter((s) => s.status === "active").length} تكـويــن إختصـاص - {"  "}
-              {servers.filter((s) => s.status === "paused").length}  تكـويــن تخــصصي - {"  "}
-              {servers.filter((s) => s.status === "inactive").length}  تكـويــن مسـتـمــر 
+
+            {/* Dernière colonne - bouton d'ajout aligné avec خــيــــــارات */}
+            <div className="flex justify-center">
+              {onAddNewFormation && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={onAddNewFormation}
+                      className={`-ml-18 p-2 border border-border text-sm transition-colors flex items-center justify-center rounded-md cursor-pointer ${
+                        mounted
+                          ? isDark
+                            ? "bg-blue-950/40 text-foreground/90 hover:bg-blue-950/60"
+                            : "bg-slate-100 text-[#06407F] hover:bg-slate-200"
+                          : "bg-muted/5 text-foreground hover:bg-muted/10"
+                      }`}
+                      aria-label="إضافة تكوين جديد"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <span className={notoNaskhArabic.className}>إضافة تكوين جديد</span>
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
           </div>
         </div>

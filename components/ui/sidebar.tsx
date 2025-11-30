@@ -101,7 +101,10 @@ const Sidebar = () => {
   const getSelectedItemFromPath = (path: string) => {
     if (path.includes("/admin/database/liste-agents")) return "Agent"
     if (path.includes("/admin/database/liste-formations")) return "Formation"
+    if (path.includes("/admin/database/liste-cours")) return "Cours"
+    if (path.includes("/admin/database/liste-formateur")) return "Formateur"
     if (path.includes("/admin/database/formations-agent")) return "AgentFormation"
+    if (path.includes("/admin/database/cours-formateur")) return "CoursFormateur"
     if (path.includes("/admin/auth-management/users")) return "Users"
     if (path.includes("/admin/auth-management/roles")) return "Roles"
     if (path.includes("/admin/auth-management/permissions")) return "Permissions"
@@ -187,12 +190,42 @@ const Sidebar = () => {
               </li>
               <li>
                 <button
+                  onClick={() => router.push("/admin/database/liste-cours")}
+                  className={`w-full font-medium text-[13px] text-left p-2 rounded-sm cursor-pointer ${
+                    selectedItem === "Cours" ? "bg-[#EFF6FF] text-[#06407F]" : "hover:bg-gray-100"
+                  }`}
+                >
+                  Liste des Cours
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => router.push("/admin/database/liste-formateur")}
+                  className={`w-full font-medium text-[13px] text-left p-2 rounded-sm cursor-pointer ${
+                    selectedItem === "Formateur" ? "bg-[#EFF6FF] text-[#06407F]" : "hover:bg-gray-100"
+                  }`}
+                >
+                  Liste des Formateurs
+                </button>
+              </li>
+              <li>
+                <button
                   onClick={() => router.push("/admin/database/formations-agent")}
                   className={`w-full font-medium text-[13px] text-left p-2 rounded-sm cursor-pointer ${
                     selectedItem === "AgentFormation" ? "bg-[#EFF6FF] text-[#06407F]" : "hover:bg-gray-100"
                   }`}
                 >
                   Formations par Agent
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => router.push("/admin/database/cours-formateur")}
+                  className={`w-full font-medium text-[13px] text-left p-2 rounded-sm cursor-pointer ${
+                    selectedItem === "CoursFormateur" ? "bg-[#EFF6FF] text-[#06407F]" : "hover:bg-gray-100"
+                  }`}
+                >
+                  Cours par Formateur
                 </button>
               </li>
             </ul>

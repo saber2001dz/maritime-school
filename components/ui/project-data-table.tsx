@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { useTheme } from "next-themes";
 
 // --- TYPE DEFINITIONS ---
 type StatusVariant = "success" | "inProgress" | "interrupted" | "notJoined";
@@ -69,6 +70,14 @@ const dotVariants = cva("w-1.5 h-1.5 rounded-full", {
 
 // --- MAIN COMPONENT ---
 export const ProjectDataTable = ({ projects, visibleColumns, onEditClick }: ProjectDataTableProps) => {
+  const [mounted, setMounted] = React.useState(false);
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Animation variants for table rows
   const rowVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
@@ -88,8 +97,8 @@ export const ProjectDataTable = ({ projects, visibleColumns, onEditClick }: Proj
     { key: "repository", label: "الــــــــــدورة التـكــويـنـيــــة", width: "w-60" },
     { key: "team", label: "تــاريـخ البــدايــة", width: "w-28" },
     { key: "tech", label: "تــاريـخ النهــايـــة", width: "w-28" },
-    { key: "createdAt", label: "المــرجــــــــع", width: "w-58" },
-    { key: "contributors", label: "المعـــدل", width: "w-18" },
+    { key: "createdAt", label: "المــرجــــــــع", width: "w-50" },
+    { key: "contributors", label: "عــدد الســاعــات", width: "w-26" },
     { key: "status", label: "النـتـيـجــــــة", width: "w-12" },
     { key: "actions", label: "خيــــارات", width: "w-18" },
   ];
@@ -99,13 +108,13 @@ export const ProjectDataTable = ({ projects, visibleColumns, onEditClick }: Proj
       <div className="overflow-auto">
         <Table>
           <TableHeader>
-            <TableRow className="bg-blue-50 dark:bg-[#10152B] [&]:hover:bg-blue-50 [&]:dark:hover:bg-[#10152B]">
+            <TableRow className="bg-slate-100 dark:bg-blue-950/40 [&]:hover:bg-slate-100 [&]:dark:hover:bg-blue-950/40">
               {tableHeaders
                 .filter((header) => header.key === 'actions' || visibleColumns.has(header.key as keyof Project))
                 .map((header, index, filteredArray) => (
                   <TableHead
                     key={header.key}
-                    className={`h-auto py-3 ${header.key === 'name' || header.key === 'actions' ? 'text-center' : 'text-start'} ${header.width || ''} font-semibold text-xs text-foreground/90 relative ${index < filteredArray.length - 1 ? 'after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-border' : ''}`}
+                    className={`h-auto py-3 ${header.key === 'name' || header.key === 'actions' ? 'text-center' : 'text-start'} ${header.width || ''} font-semibold text-xs text-[#06407F] dark:text-foreground/90 relative ${index < filteredArray.length - 1 ? 'after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-300 dark:after:bg-zinc-600' : ''}`}
                   >
                     {header.label}
                   </TableHead>
@@ -159,10 +168,16 @@ export const ProjectDataTable = ({ projects, visibleColumns, onEditClick }: Proj
                         <TooltipTrigger asChild>
                           <button
                             onClick={() => onEditClick?.(project)}
-                            className="p-1.5 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
+                            className={`p-1.5 rounded-md transition-all duration-150 cursor-pointer ${
+                              mounted
+                                ? isDark
+                                  ? "hover:bg-blue-950/50 text-foreground/70 hover:text-foreground"
+                                  : "hover:bg-slate-200 text-[#06407F]/70 hover:text-[#06407F]"
+                                : "hover:bg-muted text-foreground/70"
+                            }`}
                             aria-label="Modifier"
                           >
-                            <SquarePen className="h-3.5 w-3.5 text-foreground/70 hover:text-foreground" />
+                            <SquarePen size={16} />
                           </button>
                         </TooltipTrigger>
                         <TooltipContent>

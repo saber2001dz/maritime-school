@@ -2,6 +2,7 @@
 
 import { ServerManagementTable, Server } from "@/components/ui/server-management-table"
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 
 // Fonction pour convertir le type de formation en status
 function getStatusFromType(typeFormation: string): "active" | "paused" | "inactive" {
@@ -18,6 +19,7 @@ function getStatusFromType(typeFormation: string): "active" | "paused" | "inacti
 }
 
 export default function ListeFormation() {
+  const router = useRouter()
   const [formations, setFormations] = useState<Server[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -69,7 +71,10 @@ export default function ListeFormation() {
 
   return (
     <div className="pt-20">
-      <ServerManagementTable servers={formations} />
+      <ServerManagementTable
+        servers={formations}
+        onAddNewFormation={() => router.push('/nouvelle-formarion')}
+      />
     </div>
   )
 }

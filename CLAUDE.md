@@ -40,7 +40,8 @@ npm run lint
 
 - **app/(with-header)/** - Route group with shared header layout
   - [layout.tsx](app/(with-header)/layout.tsx) - Shared layout with Header component
-  - [principal/page.tsx](app/(with-header)/principal/page.tsx) - Main dashboard page with agents table
+  - [principal/page.tsx](app/(with-header)/principal/page.tsx) - Home page (displays "Page Principal")
+  - [liste-agent/page.tsx](app/(with-header)/liste-agent/page.tsx) - Agents list page with agents table
   - [nouveau-agent/page.tsx](app/(with-header)/nouveau-agent/page.tsx) - New agent creation page
   - [liste-formation/page.tsx](app/(with-header)/liste-formation/page.tsx) - Formations listing page
   - [nouvelle-formarion/page.tsx](app/(with-header)/nouvelle-formarion/page.tsx) - New formation creation page
@@ -401,7 +402,7 @@ Required in `.env`:
 
 ### Route Organization
 1. **Public Routes**: `/` (home), `/login`
-2. **Authenticated Routes (with-header)**: `/principal`, `/nouveau-agent`, `/liste-formation`, `/nouvelle-formarion`, `/formation-agent`
+2. **Authenticated Routes (with-header)**: `/principal`, `/liste-agent`, `/nouveau-agent`, `/liste-formation`, `/nouvelle-formarion`, `/formation-agent`
 3. **Admin Routes**: All under `/admin/*` with sidebar navigation and authentication guard
 
 ### Key Libraries

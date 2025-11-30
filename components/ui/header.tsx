@@ -37,24 +37,20 @@ export function Header() {
 
   const links = [
     {
-      label: "الصفحـة الـرئيسيـة",
+      label: "الصفـحـــة الـرئيسيــة",
       href: "/principal",
     },
     {
-      label: "متــربــص جــديــد",
-      href: "/nouveau-agent",
+      label: "قــائمــة المتـربصيـــن",
+      href: "/liste-agent",
     },
     {
-      label: "تكــويــن جــديــد",
-      href: "/nouvelle-formarion",
+      label: "قــائمــة المكــونيــن",
+      href: "/liste-formateur",
     },
     {
-      label: "قـائمـة التـربـصـات",
+      label: "قــائمــة التــربـصـــات",
       href: "/liste-formation",
-    },
-    {
-      label: "قـائمـة المكــونيــن",
-      href: "#",
     },
   ]
 
@@ -119,7 +115,9 @@ export function Header() {
             <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             <span className="sr-only">Toggle theme</span>
           </Toggle>
-          <Button onClick={handleLogout} className="bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors">خـــروج</Button>
+          <Button onClick={handleLogout} className="bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors">
+            خـــروج
+          </Button>
         </div>
         <Button size="icon" variant="outline" onClick={() => setOpen(!open)} className="md:hidden">
           <MenuToggleIcon open={open} className="size-5" duration={300} />
@@ -166,7 +164,10 @@ export function Header() {
               <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
               <span className="sr-only">Toggle theme</span>
             </Toggle>
-            <Button onClick={handleLogout} className="w-full bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors mr-1">
+            <Button
+              onClick={handleLogout}
+              className="w-full bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors mr-1"
+            >
               خـــروج
             </Button>
           </div>

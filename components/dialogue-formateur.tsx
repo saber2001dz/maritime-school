@@ -28,11 +28,11 @@ const notoNaskhArabic = localFont({
 // Pretend we have initial image files
 const initialBgImage = [
   {
-    name: "stagiaire.png",
+    name: "formateur.png",
     size: 1528737,
     type: "image/png",
-    url: "/images/stagiaire.png",
-    id: "stagiaire-bg-123456789",
+    url: "/images/formateur.png",
+    id: "formateur-bg-123456789",
   },
 ]
 
@@ -46,30 +46,31 @@ const initialAvatarImage = [
   },
 ]
 
-export interface AgentData {
+export interface FormateurData {
   id: string
   nomPrenom: string
   grade: string
-  matricule: string
+  unite: string
   responsabilite: string
   telephone: number
+  RIB: string
 }
 
-interface DialogueStyleProps {
-  agent?: AgentData
+interface DialogueFormateurProps {
+  formateur?: FormateurData
   isOpen?: boolean
   onClose?: () => void
-  onSave?: (data: AgentData) => void
+  onSave?: (data: FormateurData) => void
   isUpdating?: boolean
 }
 
-export default function DialogueStyle({
-  agent,
+export default function DialogueFormateur({
+  formateur,
   isOpen: controlledIsOpen,
   onClose,
   onSave,
   isUpdating = false,
-}: DialogueStyleProps = {}) {
+}: DialogueFormateurProps = {}) {
   const id = useId()
 
   const maxLength = 180
@@ -77,30 +78,33 @@ export default function DialogueStyle({
   const [nomPrenom, setNomPrenom] = useState("")
   const [telephone, setTelephone] = useState("")
   const [grade, setGrade] = useState("")
-  const [matricule, setMatricule] = useState("")
+  const [unite, setUnite] = useState("")
   const [responsabilite, setResponsabilite] = useState("")
+  const [RIB, setRIB] = useState("")
   const [internalIsOpen, setInternalIsOpen] = useState(false)
 
   // Utiliser controlledIsOpen si fourni, sinon utiliser l'état interne
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen
 
-  // Mettre à jour les champs quand l'agent change
+  // Mettre à jour les champs quand le formateur change
   useEffect(() => {
-    if (agent) {
-      setNomPrenom(agent.nomPrenom || "")
-      setTelephone(formatPhoneNumber(agent.telephone.toString()))
-      setGrade(agent.grade || "")
-      setMatricule(agent.matricule || "")
-      setResponsabilite(agent.responsabilite || "")
+    if (formateur) {
+      setNomPrenom(formateur.nomPrenom || "")
+      setTelephone(formatPhoneNumber(formateur.telephone.toString()))
+      setGrade(formateur.grade || "")
+      setUnite(formateur.unite || "")
+      setResponsabilite(formateur.responsabilite || "")
+      setRIB(formateur.RIB || "")
     } else {
-      // Réinitialiser si pas d'agent
+      // Réinitialiser si pas de formateur
       setNomPrenom("")
       setTelephone("")
       setGrade("")
-      setMatricule("")
+      setUnite("")
       setResponsabilite("")
+      setRIB("")
     }
-  }, [agent])
+  }, [formateur])
 
   const formatPhoneNumber = (value: string) => {
     // Remove all non-digit characters
@@ -124,10 +128,10 @@ export default function DialogueStyle({
     setTelephone(formatted)
   }
 
-  const handleMatriculeChange = (value: string) => {
-    // Remove all non-digit characters and limit to 6 digits
-    const digits = value.replace(/\D/g, "").slice(0, 6)
-    setMatricule(digits)
+  const handleRIBChange = (value: string) => {
+    // Remove all non-digit characters and limit to 20 digits
+    const digits = value.replace(/\D/g, "").slice(0, 20)
+    setRIB(digits)
   }
 
   const handleClose = () => {
@@ -139,21 +143,22 @@ export default function DialogueStyle({
   }
 
   const handleSave = () => {
-    if (onSave && agent) {
+    if (onSave && formateur) {
       // Convertir le téléphone formaté en nombre
       const phoneDigits = telephone.replace(/\D/g, "")
       onSave({
-        id: agent.id,
+        id: formateur.id,
         nomPrenom,
         grade,
-        matricule,
+        unite,
         responsabilite,
         telephone: parseInt(phoneDigits) || 0,
+        RIB,
       })
     }
   }
 
-  // Le dialogue en mode autonome (sans agent) nécessite son propre AnimatePresence
+  // Le dialogue en mode autonome (sans formateur) nécessite son propre AnimatePresence
   const dialogContent = (
     <Dialog open={true} modal={true}>
       <DialogContent
@@ -165,15 +170,15 @@ export default function DialogueStyle({
         <DialogHeader className="contents space-y-0">
           <div className="border-b px-6 py-4 flex items-center justify-between">
             <DialogTitle className={`text-start font-bold text-md ${notoNaskhArabic.className}`}>
-              {agent ? (
+              {formateur ? (
                 <>
-                  <span className="text-[#1071c7]">تـعــديـــل بـيـــانــات المتـــربــص: </span>
+                  <span className="text-[#1071c7]">تـعــديـــل بـيـــانــات المكــون: </span>
                   <span className="text-foreground/60 dark:text-foreground/50">
-                    ال{agent.grade} {agent.nomPrenom}
+                    ال{formateur.grade} {formateur.nomPrenom}
                   </span>
                 </>
               ) : (
-                <span className="text-[#1071c7]">تـعــديـــل بـيـــانــات المتـــربــص</span>
+                <span className="text-[#1071c7]">تـعــديـــل بـيـــانــات المكــون</span>
               )}
             </DialogTitle>
             <button onClick={handleClose} className="p-1 hover:bg-muted/50 rounded-md transition-colors cursor-pointer">
@@ -182,7 +187,7 @@ export default function DialogueStyle({
           </div>
         </DialogHeader>
         <DialogDescription className="sr-only">
-          {agent ? `تـعــديـــل بـيـــانــات المتـــربــص: ال${agent.grade} ${agent.nomPrenom}` : "تـعــديـــل بـيـــانــات المتـــربــص"}
+          {formateur ? `تـعــديـــل بـيـــانــات المكــون: ال${formateur.grade} ${formateur.nomPrenom}` : "تـعــديـــل بـيـــانــات المكــون"}
         </DialogDescription>
 
         <div className="overflow-y-auto">
@@ -207,16 +212,15 @@ export default function DialogueStyle({
                   />
                 </div>
                 <div className="flex-1 space-y-2">
-                  <Label htmlFor={`${id}-last-name`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
-                    الــرقــــم :
+                  <Label htmlFor={`${id}-unite`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
+                    الــوحـــدة :
                   </Label>
                   <Input
-                    id={`${id}-last-name`}
-                    placeholder="الــرقـــم"
+                    id={`${id}-unite`}
+                    placeholder="الــوحــــدة"
                     type="text"
-                    inputMode="numeric"
-                    value={matricule}
-                    onChange={(e) => handleMatriculeChange(e.target.value)}
+                    value={unite}
+                    onChange={(e) => setUnite(e.target.value)}
                     required
                     className={`placeholder:text-muted-foreground/50 ${notoNaskhArabic.className}`}
                     autoComplete="off"
@@ -294,12 +298,28 @@ export default function DialogueStyle({
                 />
               </div>
               <div className="*:not-first:mt-2">
+                <Label htmlFor={`${id}-rib`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
+                  RIB :
+                </Label>
+                <Input
+                  id={`${id}-rib`}
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="xxxxxxxxxxxxxxxxxxxx"
+                  value={RIB}
+                  onChange={(e) => handleRIBChange(e.target.value)}
+                  className="text-right placeholder:text-muted-foreground/50"
+                  dir="ltr"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="*:not-first:mt-2">
                 <Label htmlFor={`${id}-bio`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
-                  المســـروليــة :
+                  المســـؤوليــة :
                 </Label>
                 <Textarea
                   id={`${id}-bio`}
-                  placeholder="أكتب هنا المسؤولية الحالية للمتربص"
+                  placeholder="أكتب هنا المسؤولية الحالية للمكون"
                   maxLength={maxLength}
                   value={responsabilite}
                   onChange={(e) => setResponsabilite(e.target.value)}
@@ -336,11 +356,11 @@ export default function DialogueStyle({
 
   return (
     <>
-      {/* Si pas d'agent (mode autonome), wrapper avec AnimatePresence */}
-      {!agent ? (
+      {/* Si pas de formateur (mode autonome), wrapper avec AnimatePresence */}
+      {!formateur ? (
         <AnimatePresence mode="wait">{isOpen && dialogContent}</AnimatePresence>
       ) : (
-        /* Si agent fourni (mode contrôlé), pas de AnimatePresence ici car il est dans le parent */
+        /* Si formateur fourni (mode contrôlé), pas de AnimatePresence ici car il est dans le parent */
         isOpen && dialogContent
       )}
     </>

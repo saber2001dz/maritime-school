@@ -16,10 +16,6 @@ export function ResizableTableWrapper({ agents }: ResizableTableWrapperProps) {
     console.log(`Selected agent:`, agentId)
   }
 
-  const handleColumnResize = (columnKey: string, newWidth: number) => {
-    console.log(`Column ${columnKey} resized to ${newWidth}px`)
-  }
-
   const handleSaveEdit = async (agent: Agent): Promise<{ success: boolean; error?: string }> => {
     setIsUpdating(true)
     try {
@@ -61,14 +57,13 @@ export function ResizableTableWrapper({ agents }: ResizableTableWrapperProps) {
 
   return (
     <ResizableTableWithToast
-      className="mt-10"
       title="Agent"
       agents={agents}
       onAgentSelect={handleAgentSelect}
-      onColumnResize={handleColumnResize}
       onSaveEdit={handleSaveEdit}
       onFormationSaved={handleFormationSaved}
       isUpdating={isUpdating}
+      onAddNewAgent={() => router.push('/nouveau-agent')}
     />
   )
 }

@@ -5,94 +5,90 @@ import { useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { ProjectDataTable, Project } from "@/components/ui/project-data-table";
-import DialogueEditionFormation, { AgentFormationData, Formation } from "@/components/dialogue-edition-formation";
+import DialogueEditionCoursFormateur, { CoursFormateurData, Cours } from "@/components/dialogue-edition-cours-formateur";
 
-interface FormationAgentClientProps {
+interface CoursFormateurClientProps {
   initialData: Project[];
-  agentInfo: { grade: string; nomPrenom: string } | null;
+  formateurInfo: { grade: string; nomPrenom: string } | null;
   notoNaskhArabicClassName: string;
 }
 
 const allColumns: (keyof Project)[] = ["name", "repository", "team", "tech", "createdAt", "contributors", "status"];
 
-export default function FormationAgentClient({ initialData, agentInfo, notoNaskhArabicClassName }: FormationAgentClientProps) {
+export default function CoursFormateurClient({ initialData, formateurInfo, notoNaskhArabicClassName }: CoursFormateurClientProps) {
   const router = useRouter();
   const [visibleColumns, setVisibleColumns] = useState<Set<keyof Project>>(new Set(allColumns));
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [formations, setFormations] = useState<Formation[]>([]);
-  const [isLoadingFormations, setIsLoadingFormations] = useState(false);
-  const [editFormationData, setEditFormationData] = useState<AgentFormationData | null>(null);
+  const [coursList, setCoursList] = useState<Cours[]>([]);
+  const [isLoadingCours, setIsLoadingCours] = useState(false);
+  const [editCoursData, setEditCoursData] = useState<CoursFormateurData | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState("");
 
   const handleEditClick = async (project: Project) => {
     setSelectedProject(project);
 
-    // Charger les formations d'abord
-    await loadFormations();
+    // Charger les cours d'abord
+    await loadCours();
 
-    // Définir les données du formulaire avec le formationId du project
-    setEditFormationData({
-      formationId: project.formationId || "",
+    // Définir les données du formulaire avec le coursId du project
+    setEditCoursData({
+      coursId: project.formationId || "",
       dateDebut: project.team || "",
       dateFin: project.tech || "",
-      reference: project.createdAt || "",
-      resultat: typeof project.status === "string" ? project.status : project.status.text,
-      moyenne: parseFloat(project.contributors) || 0,
+      nombreHeures: parseFloat(project.contributors) || 0,
     });
 
     setIsEditDialogOpen(true);
   };
 
-  const loadFormations = async () => {
-    setIsLoadingFormations(true);
+  const loadCours = async () => {
+    setIsLoadingCours(true);
     try {
-      const response = await fetch("/api/formations");
+      const response = await fetch("/api/cours");
       if (response.ok) {
         const data = await response.json();
-        setFormations(data);
+        setCoursList(data);
       }
     } catch (err) {
-      console.error("Erreur lors du chargement des formations:", err);
+      console.error("Erreur lors du chargement des cours:", err);
     } finally {
-      setIsLoadingFormations(false);
+      setIsLoadingCours(false);
     }
   };
 
   const handleCloseDialog = () => {
     setIsEditDialogOpen(false);
     setSelectedProject(null);
-    setEditFormationData(null);
+    setEditCoursData(null);
     setError("");
   };
 
-  const handleSaveEdit = async (data: AgentFormationData) => {
+  const handleSaveEdit = async (data: CoursFormateurData) => {
     if (!selectedProject) return;
 
     setIsUpdating(true);
     setError("");
 
     try {
-      const response = await fetch(`/api/agent-formations/${selectedProject.id}`, {
+      const response = await fetch(`/api/cours-formations/${selectedProject.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          formationId: data.formationId,
+          coursId: data.coursId,
           dateDebut: data.dateDebut,
           dateFin: data.dateFin,
-          reference: data.reference,
-          resultat: data.resultat,
-          moyenne: data.moyenne,
+          nombreHeures: data.nombreHeures,
         }),
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Erreur lors de la mise à jour de la formation");
+        throw new Error(result.error || "Erreur lors de la mise à jour du cours");
       }
 
       // Rafraîchir les données
@@ -105,17 +101,17 @@ export default function FormationAgentClient({ initialData, agentInfo, notoNaskh
     }
   };
 
-  const handleFormationChange = (field: string, value: string | number) => {
-    if (editFormationData) {
-      setEditFormationData({
-        ...editFormationData,
+  const handleCoursChange = (field: string, value: string | number) => {
+    if (editCoursData) {
+      setEditCoursData({
+        ...editCoursData,
         [field]: value,
       });
     }
   };
 
   const handleBackClick = () => {
-    router.push("/liste-agent");
+    router.push("/liste-formateur");
   };
 
   return (
@@ -129,15 +125,15 @@ export default function FormationAgentClient({ initialData, agentInfo, notoNaskh
                 <button
                   onClick={handleBackClick}
                   className="p-1.5 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
-                  aria-label="Retour à la liste des agents"
+                  aria-label="Retour à la liste des formateurs"
                 >
                   <ChevronRight className="h-5 w-5 text-foreground/70 hover:text-foreground" />
                 </button>
                 <h1 className={`text-xl font-bold text-foreground ${notoNaskhArabicClassName}`}>
-                  قائمة الدورات التكوينية
-                  {agentInfo && (
+                  قــائـمــة الـــدروس
+                  {formateurInfo && (
                     <span className="text-foreground/60 font-normal mr-2">
-                      : ال{agentInfo.grade} {agentInfo.nomPrenom}
+                      : ال{formateurInfo.grade} {formateurInfo.nomPrenom}
                     </span>
                   )}
                 </h1>
@@ -149,24 +145,23 @@ export default function FormationAgentClient({ initialData, agentInfo, notoNaskh
         </div>
       </div>
 
-      {/* Dialogue d'édition de formation */}
+      {/* Dialogue d'édition de cours */}
       <AnimatePresence mode="wait">
-        {isEditDialogOpen && agentInfo && (
-          <DialogueEditionFormation
-            agent={{
+        {isEditDialogOpen && formateurInfo && (
+          <DialogueEditionCoursFormateur
+            formateur={{
               id: "",
-              nomPrenom: agentInfo.nomPrenom,
-              grade: agentInfo.grade,
-              matricule: "",
+              nomPrenom: formateurInfo.nomPrenom,
+              grade: formateurInfo.grade,
             }}
-            formations={formations}
-            formationData={editFormationData}
+            coursList={coursList}
+            coursData={editCoursData}
             isOpen={isEditDialogOpen}
             onClose={handleCloseDialog}
             onSave={handleSaveEdit}
-            onChange={handleFormationChange}
+            onChange={handleCoursChange}
             isUpdating={isUpdating}
-            isLoadingFormations={isLoadingFormations}
+            isLoadingCours={isLoadingCours}
             error={error}
           />
         )}

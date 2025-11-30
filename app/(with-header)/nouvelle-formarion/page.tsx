@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { motion, AnimatePresence } from "framer-motion"
 import localFont from "next/font/local"
-import { X } from "lucide-react"
+import { X, ChevronRight } from "lucide-react"
 
 const notoNaskhArabic = localFont({
   src: "../../fonts/NotoNaskhArabic.woff2",
@@ -63,10 +63,10 @@ export default function NouvelleFormationPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          formation: formData.formation,
+          formation: formData.formation.trim(),
           typeFormation: formData.typeFormation,
           specialite: formData.specialite,
-          duree: formData.duree,
+          duree: formData.duree.trim(),
           capaciteAbsorption: formData.capaciteAbsorption ? parseInt(formData.capaciteAbsorption) : null,
         }),
       })
@@ -89,11 +89,22 @@ export default function NouvelleFormationPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-start justify-center bg-white dark:bg-black p-4 pt-25">
+    <div className="flex items-start justify-center bg-white dark:bg-black p-4 pt-18">
       <motion.div
         className="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 flex flex-col gap-6"
         transition={{ duration: 0.6 }}
       >
+        {/* Bouton retour en haut à droite */}
+        {!success && (
+          <button
+            onClick={() => router.push('/liste-formation')}
+            className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+            aria-label="Retour"
+          >
+            <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+          </button>
+        )}
+
         <h2 className="text-3xl font-semibold text-center text-gray-900 dark:text-gray-100">
           {success ? "تم إنشاء التكوين بنجاح!" : "تكــويــن جـــديـــد"}
         </h2>
@@ -254,14 +265,25 @@ export default function NouvelleFormationPage() {
                 </motion.div>
               )}
 
+              {/* Séparateur */}
+              <div className="w-full h-px bg-border my-6" />
+
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3, delay: 0.3 }}
+                className="flex gap-3 w-full"
               >
                 <Button
-                  className="my-4 w-full rounded-1 bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors h-11 font-semibold"
+                  variant="outline"
+                  className="flex-1 rounded-1 cursor-pointer transition-colors h-11 bg-muted/30 hover:bg-muted/50 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 dark:hover:text-gray-200"
+                  onClick={() => router.push('/liste-formation')}
+                >
+                  إلغـــاء
+                </Button>
+                <Button
+                  className="flex-1 rounded-1 bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors h-11"
                   onClick={handleSubmit}
                   disabled={loading}
                 >

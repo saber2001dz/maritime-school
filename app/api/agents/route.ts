@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     // Gérer l'erreur de matricule unique
     if (error.code === 'P2002') {
       return NextResponse.json(
-        { error: 'Ce numéro de matricule existe déjà' },
+        { error: 'هذا رقم التسجيل موجود بالفعل' },
         { status: 409 }
       )
     }

@@ -11,11 +11,8 @@ import {
   Edit,
   Trash2,
   Check,
-  User,
-  BookOpen,
-  Hash,
-  Award,
-  TrendingUp,
+  FileText,
+  Search,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -33,53 +30,38 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { DialogueEditAgentFormation } from "./dialogue-edit-agent-formation"
+import { DialogueEditCours } from "./dialogue-edit-cours"
 
-export interface AgentFormationWithRelations {
+export interface Cours {
   id: string
-  agentId: string
-  formationId: string
-  dateDebut: string
-  dateFin: string
-  reference?: string | null
-  resultat?: string | null
-  moyenne: number
+  titre: string
   createdAt: Date | string
   updatedAt: Date | string
-  agent: {
-    id: string
-    nomPrenom: string
-    grade: string
-  }
-  formation: {
-    id: string
-    formation: string
-  }
 }
 
-interface FormationsAgentTableProps {
-  agentFormations?: AgentFormationWithRelations[]
-  onAgentFormationSelect?: (agentFormationId: string) => void
+interface CoursTableProps {
+  cours?: Cours[]
+  onCoursSelect?: (coursId: string) => void
   className?: string
   enableAnimations?: boolean
-  onSaveEdit?: (agentFormation: AgentFormationWithRelations) => Promise<{ success: boolean; error?: string }>
-  onDeleteAgentFormation?: (agentFormationId: string) => Promise<{ success: boolean; error?: string }>
+  onSaveEdit?: (cours: Cours) => Promise<{ success: boolean; error?: string }>
+  onDeleteCours?: (coursId: string) => Promise<{ success: boolean; error?: string }>
   isUpdating?: boolean
 }
 
-type SortField = "agentName" | "formationName" | "dateDebut" | "dateFin" | "moyenne" | "createdAt" | "updatedAt"
+type SortField = "titre" | "createdAt" | "updatedAt"
 type SortOrder = "asc" | "desc"
 
-export function FormationsAgentTable({
-  agentFormations: initialAgentFormations = [],
-  onAgentFormationSelect,
+export function CoursTable({
+  cours: initialCours = [],
+  onCoursSelect,
   className = "",
   enableAnimations = true,
   onSaveEdit,
-  onDeleteAgentFormation,
+  onDeleteCours,
   isUpdating = false,
-}: FormationsAgentTableProps) {
-  const [selectedAgentFormations, setSelectedAgentFormations] = useState<string[]>([])
+}: CoursTableProps) {
+  const [selectedCours, setSelectedCours] = useState<string[]>([])
   const [mounted, setMounted] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [sortField, setSortField] = useState<SortField | null>(null)
@@ -87,9 +69,10 @@ export function FormationsAgentTable({
   const [showSortMenu, setShowSortMenu] = useState(false)
   const [showExportMenu, setShowExportMenu] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [agentFormationToDelete, setAgentFormationToDelete] = useState<AgentFormationWithRelations | null>(null)
+  const [coursToDelete, setCoursToDelete] = useState<Cours | null>(null)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [agentFormationToEdit, setAgentFormationToEdit] = useState<AgentFormationWithRelations | null>(null)
+  const [coursToEdit, setCoursToEdit] = useState<Cours | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
   const shouldReduceMotion = useReducedMotion()
   const { theme } = useTheme()
   const isDark = theme === "dark"
@@ -100,24 +83,24 @@ export function FormationsAgentTable({
     setMounted(true)
   }, [])
 
-  const handleAgentFormationSelect = (agentFormationId: string) => {
-    setSelectedAgentFormations((prev) => {
-      if (prev.includes(agentFormationId)) {
-        return prev.filter((id) => id !== agentFormationId)
+  const handleCoursSelect = (coursId: string) => {
+    setSelectedCours((prev) => {
+      if (prev.includes(coursId)) {
+        return prev.filter((id) => id !== coursId)
       } else {
-        return [...prev, agentFormationId]
+        return [...prev, coursId]
       }
     })
-    if (onAgentFormationSelect) {
-      onAgentFormationSelect(agentFormationId)
+    if (onCoursSelect) {
+      onCoursSelect(coursId)
     }
   }
 
   const handleSelectAll = () => {
-    if (selectedAgentFormations.length === paginatedAgentFormations.length) {
-      setSelectedAgentFormations([])
+    if (selectedCours.length === paginatedCours.length) {
+      setSelectedCours([])
     } else {
-      setSelectedAgentFormations(paginatedAgentFormations.map((af) => af.id))
+      setSelectedCours(paginatedCours.map((c) => c.id))
     }
   }
 
@@ -132,48 +115,36 @@ export function FormationsAgentTable({
     setCurrentPage(1)
   }
 
-  const sortedAndFilteredAgentFormations = useMemo(() => {
-    let filtered = [...initialAgentFormations]
+  const sortedAndFilteredCours = useMemo(() => {
+    let filtered = [...initialCours]
+
+    // Filtrer par recherche
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter((cours) =>
+        cours.titre.toLowerCase().includes(query)
+      )
+    }
 
     if (!sortField) {
       return filtered
     }
 
     const sorted = filtered.sort((a, b) => {
-      let aVal: string | number | Date
-      let bVal: string | number | Date
+      let aVal: string | number | Date = a[sortField]
+      let bVal: string | number | Date = b[sortField]
 
-      switch (sortField) {
-        case "agentName":
-          aVal = a.agent.nomPrenom
-          bVal = b.agent.nomPrenom
-          break
-        case "formationName":
-          aVal = a.formation.formation
-          bVal = b.formation.formation
-          break
-        case "dateDebut":
-          aVal = new Date(a.dateDebut).getTime()
-          bVal = new Date(b.dateDebut).getTime()
-          break
-        case "dateFin":
-          aVal = new Date(a.dateFin).getTime()
-          bVal = new Date(b.dateFin).getTime()
-          break
-        case "moyenne":
-          aVal = a.moyenne
-          bVal = b.moyenne
-          break
-        case "createdAt":
-          aVal = new Date(a.createdAt).getTime()
-          bVal = new Date(b.createdAt).getTime()
-          break
-        case "updatedAt":
-          aVal = new Date(a.updatedAt).getTime()
-          bVal = new Date(b.updatedAt).getTime()
-          break
-        default:
-          return 0
+      // Convertir les dates en timestamps pour la comparaison
+      if (aVal instanceof Date) {
+        aVal = aVal.getTime()
+      } else if (sortField === "createdAt" || sortField === "updatedAt") {
+        aVal = new Date(aVal as string).getTime()
+      }
+
+      if (bVal instanceof Date) {
+        bVal = bVal.getTime()
+      } else if (sortField === "createdAt" || sortField === "updatedAt") {
+        bVal = new Date(bVal as string).getTime()
       }
 
       if (aVal < bVal) return sortOrder === "asc" ? -1 : 1
@@ -182,14 +153,14 @@ export function FormationsAgentTable({
     })
 
     return sorted
-  }, [initialAgentFormations, sortField, sortOrder])
+  }, [initialCours, sortField, sortOrder, searchQuery])
 
-  const paginatedAgentFormations = useMemo(() => {
+  const paginatedCours = useMemo(() => {
     const startIdx = (currentPage - 1) * ITEMS_PER_PAGE
-    return sortedAndFilteredAgentFormations.slice(startIdx, startIdx + ITEMS_PER_PAGE)
-  }, [sortedAndFilteredAgentFormations, currentPage])
+    return sortedAndFilteredCours.slice(startIdx, startIdx + ITEMS_PER_PAGE)
+  }, [sortedAndFilteredCours, currentPage])
 
-  const totalPages = Math.ceil(sortedAndFilteredAgentFormations.length / ITEMS_PER_PAGE)
+  const totalPages = Math.ceil(sortedAndFilteredCours.length / ITEMS_PER_PAGE)
 
   const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString("fr-FR", {
@@ -201,36 +172,16 @@ export function FormationsAgentTable({
     })
   }
 
-  const formatSimpleDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("fr-FR", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    })
-  }
-
   const exportToCSV = () => {
     const headers = [
-      "Agent",
-      "Formation",
-      "Date Début",
-      "Date Fin",
-      "Référence",
-      "Résultat",
-      "Moyenne",
+      "Titre",
       "Date de création",
       "Date de modification",
     ]
-    const rows = sortedAndFilteredAgentFormations.map((af: AgentFormationWithRelations) => [
-      `${af.agent.grade} ${af.agent.nomPrenom}`,
-      af.formation.formation,
-      af.dateDebut,
-      af.dateFin,
-      af.reference || "",
-      af.resultat || "",
-      af.moyenne,
-      formatDate(af.createdAt),
-      formatDate(af.updatedAt),
+    const rows = sortedAndFilteredCours.map((cours: Cours) => [
+      cours.titre,
+      formatDate(cours.createdAt),
+      formatDate(cours.updatedAt),
     ])
 
     const csvContent = [
@@ -241,38 +192,41 @@ export function FormationsAgentTable({
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
     const link = document.createElement("a")
     link.href = URL.createObjectURL(blob)
-    link.download = `formations-agent-${new Date().toISOString().split("T")[0]}.csv`
+    link.download = `cours-${new Date().toISOString().split("T")[0]}.csv`
     link.click()
   }
 
   const exportToJSON = () => {
-    const jsonContent = JSON.stringify(sortedAndFilteredAgentFormations, null, 2)
+    const jsonContent = JSON.stringify(sortedAndFilteredCours, null, 2)
     const blob = new Blob([jsonContent], { type: "application/json;charset=utf-8;" })
     const link = document.createElement("a")
     link.href = URL.createObjectURL(blob)
-    link.download = `formations-agent-${new Date().toISOString().split("T")[0]}.json`
+    link.download = `cours-${new Date().toISOString().split("T")[0]}.json`
     link.click()
   }
 
-  const handleDeleteClick = (agentFormation: AgentFormationWithRelations) => {
-    if (!selectedAgentFormations.includes(agentFormation.id)) {
+  const handleDeleteClick = (cours: Cours) => {
+    if (!selectedCours.includes(cours.id)) {
+      // Si la checkbox n'est pas cochée, ne rien faire
       return
     }
-    setAgentFormationToDelete(agentFormation)
+    setCoursToDelete(cours)
     setDeleteDialogOpen(true)
   }
 
   const handleConfirmDelete = async () => {
-    if (!agentFormationToDelete) return
+    if (!coursToDelete) return
 
     try {
-      if (onDeleteAgentFormation) {
-        const result = await onDeleteAgentFormation(agentFormationToDelete.id)
+      if (onDeleteCours) {
+        const result = await onDeleteCours(coursToDelete.id)
 
         if (result.success) {
-          setSelectedAgentFormations((prev) => prev.filter((id) => id !== agentFormationToDelete.id))
+          // Retirer le cours de la sélection
+          setSelectedCours((prev) => prev.filter((id) => id !== coursToDelete.id))
+          // Fermer le dialogue
           setDeleteDialogOpen(false)
-          setAgentFormationToDelete(null)
+          setCoursToDelete(null)
         } else {
           console.error("Erreur lors de la suppression:", result.error)
         }
@@ -284,30 +238,31 @@ export function FormationsAgentTable({
 
   const handleCancelDelete = () => {
     setDeleteDialogOpen(false)
-    setAgentFormationToDelete(null)
+    setCoursToDelete(null)
   }
 
-  const handleEditClick = (agentFormation: AgentFormationWithRelations) => {
-    if (!selectedAgentFormations.includes(agentFormation.id)) {
+  const handleEditClick = (cours: Cours) => {
+    if (!selectedCours.includes(cours.id)) {
+      // Si la checkbox n'est pas cochée, ne rien faire
       return
     }
-    setAgentFormationToEdit(agentFormation)
+    setCoursToEdit(cours)
     setEditDialogOpen(true)
   }
 
-  const handleSaveEdit = async (data: Partial<AgentFormationWithRelations>) => {
-    if (!agentFormationToEdit) return
+  const handleSaveEdit = async (data: Partial<Cours>) => {
+    if (!coursToEdit) return
 
     try {
       if (onSaveEdit) {
         const result = await onSaveEdit({
-          ...agentFormationToEdit,
+          ...coursToEdit,
           ...data,
-        } as AgentFormationWithRelations)
+        } as Cours)
 
         if (result.success) {
           setEditDialogOpen(false)
-          setAgentFormationToEdit(null)
+          setCoursToEdit(null)
         } else {
           console.error("Erreur lors de la modification:", result.error)
         }
@@ -319,7 +274,7 @@ export function FormationsAgentTable({
 
   const handleCancelEdit = () => {
     setEditDialogOpen(false)
-    setAgentFormationToEdit(null)
+    setCoursToEdit(null)
   }
 
   const shouldAnimate = enableAnimations && !shouldReduceMotion
@@ -362,7 +317,21 @@ export function FormationsAgentTable({
   return (
     <div className={`w-full ${className}`}>
       <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-2"></div>
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 sm:flex-initial sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Rechercher par titre..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                setCurrentPage(1)
+              }}
+              className="w-full pl-9 pr-3 py-1.5 bg-background border border-border/50 text-foreground text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+        </div>
 
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
@@ -405,49 +374,13 @@ export function FormationsAgentTable({
                   </button>
                   <div className="h-px bg-border/30 my-1" />
                   <button
-                    onClick={() => handleSort("agentName")}
+                    onClick={() => handleSort("titre")}
                     className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
-                      sortField === "agentName" ? "bg-muted/30" : ""
+                      sortField === "titre" ? "bg-muted/30" : ""
                     }`}
                   >
-                    <span>Agent {sortField === "agentName" && `(${sortOrder === "asc" ? "A-Z" : "Z-A"})`}</span>
-                    {sortField === "agentName" && <Check size={14} className="text-primary" />}
-                  </button>
-                  <button
-                    onClick={() => handleSort("formationName")}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
-                      sortField === "formationName" ? "bg-muted/30" : ""
-                    }`}
-                  >
-                    <span>Formation {sortField === "formationName" && `(${sortOrder === "asc" ? "A-Z" : "Z-A"})`}</span>
-                    {sortField === "formationName" && <Check size={14} className="text-primary" />}
-                  </button>
-                  <button
-                    onClick={() => handleSort("dateDebut")}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
-                      sortField === "dateDebut" ? "bg-muted/30" : ""
-                    }`}
-                  >
-                    <span>Date début {sortField === "dateDebut" && `(${sortOrder === "asc" ? "↑" : "↓"})`}</span>
-                    {sortField === "dateDebut" && <Check size={14} className="text-primary" />}
-                  </button>
-                  <button
-                    onClick={() => handleSort("dateFin")}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
-                      sortField === "dateFin" ? "bg-muted/30" : ""
-                    }`}
-                  >
-                    <span>Date fin {sortField === "dateFin" && `(${sortOrder === "asc" ? "↑" : "↓"})`}</span>
-                    {sortField === "dateFin" && <Check size={14} className="text-primary" />}
-                  </button>
-                  <button
-                    onClick={() => handleSort("moyenne")}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
-                      sortField === "moyenne" ? "bg-muted/30" : ""
-                    }`}
-                  >
-                    <span>Moyenne {sortField === "moyenne" && `(${sortOrder === "asc" ? "↑" : "↓"})`}</span>
-                    {sortField === "moyenne" && <Check size={14} className="text-primary" />}
+                    <span>Titre {sortField === "titre" && `(${sortOrder === "asc" ? "A-Z" : "Z-A"})`}</span>
+                    {sortField === "titre" && <Check size={14} className="text-primary" />}
                   </button>
                   <button
                     onClick={() => handleSort("createdAt")}
@@ -518,7 +451,7 @@ export function FormationsAgentTable({
               className="px-3 py-3 text-xs font-semibold text-foreground border-b border-border text-left"
               style={{
                 display: "grid",
-                gridTemplateColumns: "40px 200px 260px 120px 120px 220px 140px 100px 180px 1fr 40px",
+                gridTemplateColumns: "40px 1fr 200px 200px 40px",
                 columnGap: "0px",
                 backgroundColor: "#F3F3F3",
               }}
@@ -534,42 +467,14 @@ export function FormationsAgentTable({
                         }
                       : {}
                   }
-                  checked={paginatedAgentFormations.length > 0 && selectedAgentFormations.length === paginatedAgentFormations.length}
+                  checked={paginatedCours.length > 0 && selectedCours.length === paginatedCours.length}
                   onChange={handleSelectAll}
                 />
               </div>
               <div className="flex items-center gap-1.5 border-r border-border px-3">
-                <User className="w-3.5 h-3.5 opacity-50" />
-                <span>Agent</span>
-                {sortField === "agentName" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
-              </div>
-              <div className="flex items-center gap-1.5 border-r border-border px-3">
-                <BookOpen className="w-3.5 h-3.5 opacity-50" />
-                <span>Formation</span>
-                {sortField === "formationName" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
-              </div>
-              <div className="flex items-center gap-1.5 border-r border-border px-3">
-                <Calendar className="w-3.5 h-3.5 opacity-50" />
-                <span>Date Début</span>
-                {sortField === "dateDebut" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
-              </div>
-              <div className="flex items-center gap-1.5 border-r border-border px-3">
-                <Calendar className="w-3.5 h-3.5 opacity-50" />
-                <span>Date Fin</span>
-                {sortField === "dateFin" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
-              </div>
-              <div className="flex items-center gap-1.5 border-r border-border px-3">
-                <Hash className="w-3.5 h-3.5 opacity-50" />
-                <span>Référence</span>
-              </div>
-              <div className="flex items-center gap-1.5 border-r border-border px-3">
-                <Award className="w-3.5 h-3.5 opacity-50" />
-                <span>Résultat</span>
-              </div>
-              <div className="flex items-center gap-1.5 border-r border-border px-3">
-                <TrendingUp className="w-3.5 h-3.5 opacity-50" />
-                <span>Moyenne</span>
-                {sortField === "moyenne" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
+                <FileText className="w-3.5 h-3.5 opacity-50" />
+                <span>Titre</span>
+                {sortField === "titre" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
               </div>
               <div className="flex items-center gap-1.5 border-r border-border px-3">
                 <Calendar className="w-3.5 h-3.5 opacity-50" />
@@ -592,20 +497,20 @@ export function FormationsAgentTable({
 
             <AnimatePresence mode="wait">
               <motion.div
-                key={`page-${currentPage}-sort-${sortField || "none"}-order-${sortOrder}`}
+                key={`page-${currentPage}-sort-${sortField || "none"}-order-${sortOrder}-search-${searchQuery}`}
                 variants={shouldAnimate ? containerVariants : {}}
                 initial={shouldAnimate ? "hidden" : "visible"}
                 animate="visible"
               >
-                {paginatedAgentFormations.map((agentFormation: AgentFormationWithRelations) => (
-                  <motion.div key={agentFormation.id} variants={shouldAnimate ? rowVariants : {}}>
+                {paginatedCours.map((cours: Cours) => (
+                  <motion.div key={cours.id} variants={shouldAnimate ? rowVariants : {}}>
                     <div
                       className={`px-3 py-3.5 group relative transition-all duration-150 border-b border-border ${
-                        selectedAgentFormations.includes(agentFormation.id) ? "bg-slate-100 dark:bg-slate-800" : "bg-muted/5 hover:bg-muted/20"
+                        selectedCours.includes(cours.id) ? "bg-slate-100 dark:bg-slate-800" : "bg-muted/5 hover:bg-muted/20"
                       }`}
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "40px 200px 260px 120px 120px 220px 140px 100px 180px 1fr 40px",
+                        gridTemplateColumns: "40px 1fr 200px 200px 40px",
                         columnGap: "0px",
                         alignItems: "center",
                       }}
@@ -621,60 +526,26 @@ export function FormationsAgentTable({
                                 }
                               : {}
                           }
-                          checked={selectedAgentFormations.includes(agentFormation.id)}
-                          onChange={() => handleAgentFormationSelect(agentFormation.id)}
+                          checked={selectedCours.includes(cours.id)}
+                          onChange={() => handleCoursSelect(cours.id)}
                         />
                       </div>
 
                       <div className="flex items-center gap-2 min-w-0 border-r border-border px-3">
                         <div
-                          className="text-xs text-foreground/80 truncate"
+                          className="text-sm text-foreground truncate"
                           style={{ fontFamily: "'Noto Naskh Arabic', serif" }}
                         >
-                          {agentFormation.agent.grade} {agentFormation.agent.nomPrenom}
+                          {cours.titre}
                         </div>
                       </div>
 
                       <div className="flex items-center border-r border-border px-3">
-                        <span
-                          className="text-xs text-foreground/80 truncate"
-                          style={{ fontFamily: "'Noto Naskh Arabic', serif" }}
-                        >
-                          {agentFormation.formation.formation}
-                        </span>
+                        <span className="text-xs text-foreground/70">{formatDate(cours.createdAt)}</span>
                       </div>
 
                       <div className="flex items-center border-r border-border px-3">
-                        <span className="text-sm text-foreground/80">{formatSimpleDate(agentFormation.dateDebut)}</span>
-                      </div>
-
-                      <div className="flex items-center border-r border-border px-3">
-                        <span className="text-sm text-foreground/80">{formatSimpleDate(agentFormation.dateFin)}</span>
-                      </div>
-
-                      <div className="flex items-center border-r border-border px-3">
-                        <span className="text-xs text-foreground/80 truncate" style={{ fontFamily: "'Noto Naskh Arabic', serif" }}>{agentFormation.reference || "-"}</span>
-                      </div>
-
-                      <div className="flex items-center border-r border-border px-3">
-                        <span
-                          className="text-xs text-foreground/80 truncate"
-                          style={{ fontFamily: "'Noto Naskh Arabic', serif" }}
-                        >
-                          {agentFormation.resultat || "-"}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center border-r border-border px-3">
-                        <span className="text-sm text-foreground/80 font-medium">{agentFormation.moyenne}/20</span>
-                      </div>
-
-                      <div className="flex items-center border-r border-border px-3">
-                        <span className="text-xs text-foreground/70">{formatDate(agentFormation.createdAt)}</span>
-                      </div>
-
-                      <div className="flex items-center border-r border-border px-3">
-                        <span className="text-xs text-foreground/70">{formatDate(agentFormation.updatedAt)}</span>
+                        <span className="text-xs text-foreground/70">{formatDate(cours.updatedAt)}</span>
                       </div>
 
                       <div className="flex items-center justify-center pl-3">
@@ -687,16 +558,16 @@ export function FormationsAgentTable({
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
                               className="gap-2 cursor-pointer"
-                              onClick={() => handleEditClick(agentFormation)}
-                              disabled={!selectedAgentFormations.includes(agentFormation.id)}
+                              onClick={() => handleEditClick(cours)}
+                              disabled={!selectedCours.includes(cours.id)}
                             >
                               <Edit size={14} />
                               <span>Édition</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="gap-2 cursor-pointer text-red-600 focus:text-red-600"
-                              onClick={() => handleDeleteClick(agentFormation)}
-                              disabled={!selectedAgentFormations.includes(agentFormation.id)}
+                              onClick={() => handleDeleteClick(cours)}
+                              disabled={!selectedCours.includes(cours.id)}
                             >
                               <Trash2 size={14} />
                               <span>Supprimer</span>
@@ -716,7 +587,7 @@ export function FormationsAgentTable({
       {totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between px-2">
           <div className="text-xs text-muted-foreground/70">
-            Page {currentPage} of {totalPages} • {sortedAndFilteredAgentFormations.length} formations agent
+            Page {currentPage} of {totalPages} • {sortedAndFilteredCours.length} cours
           </div>
 
           <div className="flex gap-1.5">
@@ -743,7 +614,7 @@ export function FormationsAgentTable({
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmation de suppression</AlertDialogTitle>
             <AlertDialogDescription className="py-3" dir="ltr">
-              Êtes-vous sûr de vouloir supprimer la formation agent sélectionnée ?
+              Êtes-vous sûr de vouloir supprimer le cours sélectionné dans la table ?
               <br />
               Cette action est irréversible.
             </AlertDialogDescription>
@@ -759,8 +630,8 @@ export function FormationsAgentTable({
         </AlertDialogContent>
       </AlertDialog>
 
-      <DialogueEditAgentFormation
-        agentFormation={agentFormationToEdit}
+      <DialogueEditCours
+        cours={coursToEdit}
         isOpen={editDialogOpen}
         onClose={handleCancelEdit}
         onSave={handleSaveEdit}
