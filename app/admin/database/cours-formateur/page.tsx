@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db'
 import { CoursFormateursTableWrapper } from './cours-formateurs-table-wrapper'
 
+
 async function getCoursFormateurs() {
   const coursFormateurs = await prisma.coursFormateur.findMany({
     include: {

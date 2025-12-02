@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db'
 import { FormationsAgentTableWrapper } from './formations-agent-table-wrapper'
 
+
 async function getAgentFormations() {
   const agentFormations = await prisma.agentFormation.findMany({
     include: {

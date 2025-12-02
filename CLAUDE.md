@@ -9,15 +9,21 @@ This is a Next.js 16.0.1 application (using the App Router) built with React 19.
 ## Development Commands
 
 ### Running the Development Server
+
+**Default Development (Neon Cloud):**
 ```bash
 npm run dev
 ```
+Runs the development server with Neon cloud database.
 The app will be available at http://localhost:3000
+
+**Note:** The project uses **Neon Cloud PostgreSQL as the database** for both development and production. Neon provides serverless PostgreSQL with connection pooling optimized for Next.js and Vercel deployments.
 
 ### Building for Production
 ```bash
 npm run build
 ```
+Builds the application with current `.env` configuration.
 
 ### Starting Production Server
 ```bash
@@ -127,23 +133,160 @@ npm run lint
 
 ## Database (Prisma ORM)
 
-### Setup
-The project uses Prisma ORM with PostgreSQL as the database provider.
+### Neon Cloud Database Setup
+
+The project uses **Neon Cloud PostgreSQL** as the database for both development and production:
+
+**Neon Cloud PostgreSQL:**
+- Provider: Neon (Serverless PostgreSQL)
+- Connection: Pooled connection with pgbouncer for optimal serverless performance
+- Database: `Maritime School`
+- Region: EU Central 1 (AWS)
+- Purpose: **Development, testing, and production**
+- Benefits: Serverless, connection pooling, optimized for Next.js and Vercel, no cold starts with pooled connections
+
+### Environment Files
+
+The project uses two environment files:
+
+1. **[.env](.env)** - Active environment (git-ignored)
+   - Contains the Neon cloud database configuration
+   - Format: `postgresql://neondb_owner:password@host-pooler.region.aws.neon.tech/Maritime%20School?sslmode=require&channel_binding=require`
+   - This is the primary configuration used for development
+
+2. **[.env.example](.env.example)** - Template file (safe for git)
+   - Contains placeholder values for all required environment variables
+   - Use this as reference when setting up new environments
+
+3. **[.env.neon](.env.neon)** - Reference copy (optional)
+   - Backup of Neon configuration for reference
+
+### Database Backup Strategy
+
+**Backup Directory:** `backups/`
+- Contains historical database dumps for reference
+- Use Neon Console for point-in-time recovery and automated backups
+- Neon provides automatic backups with branch-based restore capabilities
+
+**Manual Backup (if needed):**
+```bash
+# Export from Neon using psql
+pg_dump 'postgresql://neondb_owner:password@host-pooler.region.aws.neon.tech/Maritime%20School?sslmode=require' > backups/neon_backup_$(date +%Y%m%d_%H%M%S).sql
+```
+
+**Restoring from backup:**
+```bash
+psql 'postgresql://neondb_owner:password@host-pooler.region.aws.neon.tech/Maritime%20School?sslmode=require' < backups/neon_backup_YYYYMMDD_HHMMSS.sql
+```
+
+### Schema Migration Workflow
+
+**Standard Development Workflow:**
+
+1. **Make changes to schema:**
+   ```bash
+   # Edit prisma/schema.prisma
+   ```
+
+2. **Apply migration to Neon:**
+   ```bash
+   npm run db:migrate            # Create and apply migration
+   npm run db:generate           # Update Prisma Client
+   ```
+
+3. **Test the application:**
+   ```bash
+   npm run dev                   # Test application with Neon
+   ```
+
+**Important Notes:**
+- All development and testing is done with Neon cloud database
+- Migrations are automatically applied to the Neon database
+- No environment switching needed
 
 ### Configuration Files
 - [prisma/schema.prisma](prisma/schema.prisma) - Database schema definition
 - [prisma.config.ts](prisma.config.ts) - Prisma configuration (requires dotenv)
-- [.env](.env) - Environment variables (DATABASE_URL)
+- [.env](.env) - Active Neon configuration
+- [.env.example](.env.example) - Template file for environment setup
+- [.env.neon](.env.neon) - Reference copy of Neon configuration
 - [lib/db.ts](lib/db.ts) - Prisma Client singleton instance
+
+### Neon Configuration Best Practices
+
+**Critical: Prisma Schema Configuration**
+
+The [prisma/schema.prisma](prisma/schema.prisma) file MUST include both `url` and `directUrl` for reliable Neon migrations:
+
+```prisma
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")      # Pooled connection for queries
+  directUrl = env("DIRECT_URL")        # Direct connection for migrations
+}
+```
+
+**Why `directUrl` is Required:**
+- Separates application queries (pooled via pgBouncer) from migrations (direct connection)
+- Prevents pooler from interfering with migration transactions
+- Ensures reliable schema changes in serverless environments
+- Recommended by Neon for all Prisma versions
+
+**Connection String Parameters:**
+
+Both `DATABASE_URL` and `DIRECT_URL` in `.env` should include:
+- `sslmode=require` - Enforce SSL/TLS encryption
+- `channel_binding=require` - Enhanced security
+- `connect_timeout=10` - Handle Neon compute idle states (prevents timeouts)
+
+**Example:**
+```env
+DATABASE_URL="postgresql://user:pass@host-pooler.region.aws.neon.tech/db?sslmode=require&channel_binding=require&connect_timeout=10"
+DIRECT_URL="postgresql://user:pass@host.region.aws.neon.tech/db?sslmode=require&channel_binding=require&connect_timeout=10"
+```
+
+**Note the difference:**
+- `DATABASE_URL`: Uses `-pooler` in hostname (pooled connection)
+- `DIRECT_URL`: No `-pooler` in hostname (direct connection)
+
+**Migration Commands:**
+- **Development:** `npm run db:migrate` (or `npx prisma migrate dev`) - Create and apply migrations
+- **Production:** `npx prisma migrate deploy` - Apply pending migrations only (safe, non-destructive)
+- **Emergency:** `npx prisma db push` - Force schema sync (NOT production-safe, may lose data)
+
+**Troubleshooting Common Issues:**
+
+1. **"Can't reach database server" error:**
+   - Cause: Neon compute is in idle state
+   - Solution: Wait 10-30 seconds for compute to wake up, or increase `connect_timeout`
+
+2. **Missing tables after migration:**
+   - Cause: `directUrl` not configured in schema
+   - Solution: Add `directUrl = env("DIRECT_URL")` to datasource block
+
+3. **Schema drift warnings:**
+   - Use `npx prisma db pull` to inspect current database schema
+   - Use `npx prisma migrate status` to check migration state
+
+4. **Migration stuck or failing:**
+   - Ensure `DIRECT_URL` is using non-pooled connection (no `-pooler`)
+   - Verify connection with: `psql "YOUR_DIRECT_URL" -c "SELECT 1;"`
+   - Check Neon Console for compute status
 
 ### Database Commands
 ```bash
 npm run db:generate  # Generate Prisma Client
-npm run db:push      # Push schema changes without migration
+npm run db:push      # Push schema changes without migration (prototyping only)
 npm run db:migrate   # Create and apply a new migration
 npm run db:studio    # Open Prisma Studio (GUI for database)
 npm run db:seed      # Seed the database
 ```
+
+**Important Notes:**
+- **Neon Cloud is the only database** - all work uses Neon
+- Use `npm run db:migrate` for production-ready schema changes
+- Use `npm run db:push` only for rapid prototyping (no migration history)
+- Neon database uses pooled connection (pgbouncer) with `channel_binding=require` for enhanced security
 
 ### Current Schema Models
 
@@ -346,10 +489,17 @@ Defined in [lib/auth.ts](lib/auth.ts) using Better-Auth access control:
 - **session**: list, revoke
 
 ### Environment Variables
-Required in `.env`:
-- `DATABASE_URL` - PostgreSQL database connection string (format: `postgresql://user:password@host:port/database?schema=public`)
-- `BETTER_AUTH_SECRET` - Secret key for Better-Auth
+Required in `.env` (Neon cloud configuration):
+- `DATABASE_URL` - Neon PostgreSQL database connection string
+  - **Format**: `postgresql://neondb_owner:password@host-pooler.region.aws.neon.tech/Maritime%20School?sslmode=require&channel_binding=require`
+  - Use the pooled connection endpoint (`-pooler`) for optimal serverless performance
+  - `sslmode=require` enforces SSL/TLS encryption
+  - `channel_binding=require` provides enhanced security
+- `BETTER_AUTH_SECRET` - Secret key for Better-Auth (generate with `openssl rand -base64 32`)
 - `BETTER_AUTH_URL` / `NEXT_PUBLIC_BETTER_AUTH_URL` - Base URL for authentication
+  - Development: `http://localhost:3000`
+  - Production (Vercel): `https://your-app.vercel.app`
+- `NEON_API_KEY` - Neon API key for MCP server integration (optional)
 
 ## UI Components
 
@@ -443,12 +593,20 @@ This project uses Tailwind CSS v4 with breaking changes from v3:
 - Text direction: `dir="ltr"` for admin panel, `dir="rtl"` support for Arabic content
 
 ### Database & Migrations
-- PostgreSQL database running locally on port 5432
-- Database name: `maritime_school`, User: `maritime`
+- **Neon Cloud PostgreSQL**: Single database for all environments
+  - **Serverless PostgreSQL** with pooled connection (pgbouncer)
+  - Database: `Maritime School`, Region: EU Central 1 (AWS)
+  - Optimized for Next.js and Vercel deployments
+- **Development Strategy**: All development and testing uses Neon cloud database
 - Prisma migrations are versioned and committed to the repository
-- Use `npm run db:migrate` to create new migrations
+- **Migration Strategy**: Simple and straightforward
+  - Run `npm run db:migrate` to create and apply migrations
+  - Run `npm run db:generate` to update Prisma Client
+  - No environment switching needed
 - Use `npm run db:push` for quick schema prototyping (no migration files)
 - Current migration: `20251127151746_init_postgresql` (PostgreSQL schema)
+- **Backup Strategy**: Use Neon Console for point-in-time recovery and automated backups
+- **Manual Backups**: Historical backups stored in `backups/` directory for reference
 
 ### Component Architecture
 - Route groups: `(with-header)` for shared header layout
@@ -473,9 +631,43 @@ This project uses Tailwind CSS v4 with breaking changes from v3:
 - Display user feedback using Sonner toast notifications
 
 ### Development Workflow
+
+#### Standard Development
+1. Start development server:
+   ```bash
+   npm run dev              # Uses Neon cloud database
+   ```
+2. Make changes to your code
+3. Test in the browser at http://localhost:3000
+4. Commit changes when ready
+
+#### Schema Changes Workflow
 1. Make schema changes in [prisma/schema.prisma](prisma/schema.prisma)
-2. Run `npm run db:migrate` to create and apply migration
-3. Run `npm run db:generate` to update Prisma Client types
+2. **Apply migration:**
+   ```bash
+   npm run db:migrate       # Create and apply migration
+   npm run db:generate      # Update Prisma Client
+   ```
+3. **Test the application:**
+   ```bash
+   npm run dev              # Test with Neon cloud
+   ```
 4. Update API routes if needed
 5. Update UI components to reflect changes
-6. Test thoroughly before committing
+6. Commit changes (including migration files)
+
+#### Database Backup Workflow
+**Create manual backup from Neon (if needed):**
+```bash
+pg_dump 'postgresql://neondb_owner:password@host-pooler.region.aws.neon.tech/Maritime%20School?sslmode=require' > backups/neon_backup_$(date +%Y%m%d_%H%M%S).sql
+```
+
+**Note:** Use Neon Console for point-in-time recovery and automated backups.
+
+#### Vercel Deployment
+When deploying to Vercel, configure these environment variables in Vercel dashboard:
+- `DATABASE_URL` - Same Neon connection string from `.env`
+- `BETTER_AUTH_SECRET` - Same secret from `.env`
+- `BETTER_AUTH_URL` - Your Vercel URL (e.g., `https://maritime-school.vercel.app`)
+- `NEXT_PUBLIC_BETTER_AUTH_URL` - Your Vercel URL
+- `NEON_API_KEY` - Same API key from `.env` (optional)

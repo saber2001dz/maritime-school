@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db'
 import { CoursTableWrapper } from './cours-table-wrapper'
 
+
 async function getCours() {
   return await prisma.cours.findMany({
     orderBy: {

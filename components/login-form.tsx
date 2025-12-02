@@ -78,7 +78,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
         return
       }
 
-      router.push("/liste-agent")
+      router.push("/principal")
       router.refresh()
     } catch (error) {
       setHasError(true)

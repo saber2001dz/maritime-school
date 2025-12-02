@@ -26,8 +26,10 @@ export default async function PrincipalPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold">إجمالي المتربصين</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-semibold">إجمالي المتـربصيـن</CardTitle>
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950">
+                  <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -41,8 +43,10 @@ export default async function PrincipalPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold">إجمالي المدرسين</CardTitle>
-                <UserCheck className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-semibold">إجمالي المـدرسيـن</CardTitle>
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100 dark:bg-green-950">
+                  <UserCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -56,14 +60,16 @@ export default async function PrincipalPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold">إجمالي الـدورات التكوينيـة</CardTitle>
-                <Award className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-semibold">إجمالي التـربصـات التكوينيـة</CardTitle>
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-950">
+                  <Award className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{formationsCount}</div>
               <p className="text-sm text-muted-foreground font-(family-name:--font-noto-naskh-arabic)">
-                عدد الدورات التكوينية
+                عدد التربصات التكوينية
               </p>
             </CardContent>
           </Card>
@@ -71,13 +77,15 @@ export default async function PrincipalPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold فثءف">إجمالي الـدروس</CardTitle>
-                <BookText className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-semibold">إجمالي الـدروس</CardTitle>
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-950">
+                  <BookText className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{coursCount}</div>
-              <p className="text-sm text-muted-foreground font-(family-name:--font-noto-naskh-arabic)">عـدد الدروس</p>
+              <p className="text-sm text-muted-foreground font-(family-name:--font-noto-naskh-arabic)">عـدد الــدروس</p>
             </CardContent>
           </Card>
         </div>
