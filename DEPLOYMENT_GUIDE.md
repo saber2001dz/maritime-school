@@ -39,17 +39,19 @@ DIRECT_URL=postgresql://neondb_owner:npg_acVzu5lJg6OR@ep-summer-thunder-agycz7q4
 BETTER_AUTH_SECRET=2TfmY1cVvs18fD0JP5ZPGIbARTu2Ftue6ngR0CVWg/0=
 
 # IMPORTANT: Remplacez par votre URL Vercel réelle
-BETTER_AUTH_URL=https://votre-app.vercel.app
-NEXT_PUBLIC_BETTER_AUTH_URL=https://votre-app.vercel.app
+BETTER_AUTH_URL=https://maritime-school.vercel.app
+NEXT_PUBLIC_BETTER_AUTH_URL=https://maritime-school.vercel.app
 
 # API Neon (optionnel)
 NEON_API_KEY=napi_4fst6dfgnmz995xxzfnwf75dg7a1a68az6yfv3szrb4fo6yg3t002pkdfkf5rgqd
 ```
 
-**⚠️ IMPORTANT**:
-- Remplacez `https://votre-app.vercel.app` par votre vraie URL Vercel
-- Assurez-vous que les URLs n'ont PAS de slash final (`/`)
+**⚠️ TRÈS IMPORTANT**:
+- ❌ **MAUVAIS** : `https://maritime-school.vercel.app/` (avec slash final)
+- ✅ **BON** : `https://maritime-school.vercel.app` (sans slash final)
+- Le slash final cause des problèmes avec les cookies et l'authentification !
 - Configurez ces variables pour **tous les environnements** (Production, Preview, Development)
+- Après modification, **redéployez** votre application
 
 ## Étapes de Déploiement
 
