@@ -40,13 +40,6 @@ export const auth = betterAuth({
       enabled: false,
     },
     useSecureCookies: process.env.NODE_ENV === "production",
-    // Configuration explicite du SameSite
-    defaultCookieAttributes: {
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      httpOnly: true,
-      path: "/",
-    },
   },
   session: {
     cookieCache: {
