@@ -30,25 +30,7 @@ export const auth = betterAuth({
   },
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: normalizeUrl(process.env.BETTER_AUTH_URL),
-  trustedOrigins: [
-    normalizeUrl(process.env.BETTER_AUTH_URL),
-    normalizeUrl(process.env.NEXT_PUBLIC_BETTER_AUTH_URL),
-  ].filter((url, index, self) => self.indexOf(url) === index), // Remove duplicates
-  advanced: {
-    cookiePrefix: "better-auth",
-    crossSubDomainCookies: {
-      enabled: false,
-    },
-    useSecureCookies: process.env.NODE_ENV === "production",
-  },
-  session: {
-    cookieCache: {
-      enabled: true,
-      maxAge: 5 * 60, // 5 minutes
-    },
-    expiresIn: 60 * 60 * 24 * 7, // 7 jours
-    updateAge: 60 * 60 * 24, // Mettre à jour la session chaque jour
-  },
+  trustedOrigins: [normalizeUrl(process.env.BETTER_AUTH_URL)],
   plugins: [
     admin({
       defaultRole: "agent",
