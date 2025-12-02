@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db'
 import { ROLES } from '@/lib/roles'
 import { UsersTableWrapper } from './users-table-wrapper'
 
+
 async function getUsers() {
   const users = await prisma.user.findMany({
     include: {

@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db'
 import { FormationsTableWrapper } from './formations-table-wrapper'
 
+
 async function getFormations() {
   const formations = await prisma.formation.findMany({
     orderBy: {

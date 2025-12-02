@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db'
 import { AgentsTableWrapper } from './agents-table-wrapper'
 
+
 async function getAgents() {
   const agents = await prisma.agent.findMany({
     orderBy: {

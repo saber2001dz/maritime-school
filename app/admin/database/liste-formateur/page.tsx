@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db'
 import { FormateursTableWrapper } from './formateurs-table-wrapper'
 
+
 async function getFormateurs() {
   const formateurs = await prisma.formateur.findMany({
     orderBy: {

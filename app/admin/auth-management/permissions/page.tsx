@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db'
 import { PermissionsTableWrapper } from './permissions-table-wrapper'
 
+
 // Définir les ressources et actions depuis Better-Auth
 const resources = {
   user: {
