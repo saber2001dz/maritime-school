@@ -7,6 +7,11 @@ export const verifySession = cache(async () => {
   const cookieStore = await cookies()
   const sessionToken = cookieStore.get("better-auth.session_token")?.value
 
+  // Log pour déboguer en production
+  if (process.env.NODE_ENV === "production") {
+    console.log("Vérification session - Token présent:", !!sessionToken)
+  }
+
   if (!sessionToken) {
     return { isAuth: false, userId: null, session: null }
   }
@@ -19,7 +24,14 @@ export const verifySession = cache(async () => {
     })
 
     if (!session) {
+      if (process.env.NODE_ENV === "production") {
+        console.log("Session invalide ou expirée")
+      }
       return { isAuth: false, userId: null, session: null }
+    }
+
+    if (process.env.NODE_ENV === "production") {
+      console.log("Session valide pour l'utilisateur:", session.user.email)
     }
 
     return {
