@@ -9,7 +9,6 @@ import { Separator } from "@/components/ui/separator"
 import localFont from "next/font/local"
 import { useState, useRef, useEffect } from "react"
 import { signIn } from "@/lib/auth-client"
-import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/ultra-quality-toast"
 import { Eye, EyeOff } from "lucide-react"
 
@@ -24,7 +23,6 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
   const [isLoading, setIsLoading] = useState(false)
   const [hasError, setHasError] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const router = useRouter()
   const { addToast } = useToast()
   const emailInputRef = useRef<HTMLInputElement>(null)
 
@@ -63,22 +61,12 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     setHasError(false)
 
     try {
-      console.log("Tentative de connexion...")
-
-      // Utiliser notre API route personnalisée qui gère les cookies côté serveur
-      const response = await fetch("/api/auth-login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-        credentials: "include", // Important pour inclure les cookies
+      const { error } = await signIn.email({
+        email,
+        password,
       })
 
-      const data = await response.json()
-
-      if (!response.ok || data.error) {
-        console.error("Erreur de connexion:", data.error)
+      if (error) {
         setHasError(true)
         addToast({
           variant: "error",
@@ -88,14 +76,13 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
         return
       }
 
-      console.log("Connexion réussie")
       addToast({
         variant: "success",
         title: "تم تسجيل الدخول بنجاح",
         description: "مرحبا بك",
       })
 
-      // Redirection immédiate - les cookies sont déjà définis par le serveur
+      // Utiliser window.location pour forcer un reload complet
       window.location.href = "/principal"
     } catch (error) {
       console.error("Exception lors de la connexion:", error)
