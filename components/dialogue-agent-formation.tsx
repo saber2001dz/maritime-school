@@ -4,6 +4,7 @@ import { useId, useState, useEffect } from "react"
 import { XIcon } from "lucide-react"
 import localFont from "next/font/local"
 import { AnimatePresence } from "framer-motion"
+import Image from "next/image"
 
 import { useFileUpload } from "@/hooks/use-file-upload"
 import { Button } from "@/components/ui/button"
@@ -18,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Spinner } from "@/components/ui/spinner"
 
 const notoNaskhArabic = localFont({
   src: "../app/fonts/NotoNaskhArabic.woff2",
@@ -404,6 +406,7 @@ export default function DialogueAgentFormation({
 }
 
 function ProfileBg() {
+  const [isLoading, setIsLoading] = useState(true)
   const [{ files }] = useFileUpload({
     accept: "image/*",
     initialFiles: initialBgImage,
@@ -414,13 +417,22 @@ function ProfileBg() {
   return (
     <div className="h-32">
       <div className="relative flex size-full items-center justify-center overflow-hidden bg-muted">
+        {/* Spinner loader pendant le chargement */}
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-muted">
+            <Spinner className="size-8 text-muted-foreground" />
+          </div>
+        )}
+
         {currentImage && (
-          <img
-            className="size-full object-cover"
+          <Image
             src={currentImage}
             alt={files[0]?.preview ? "Preview of uploaded image" : "Default profile background"}
-            width={512}
-            height={96}
+            fill
+            className="object-cover"
+            priority
+            onLoad={() => setIsLoading(false)}
+            onError={() => setIsLoading(false)}
           />
         )}
       </div>
@@ -429,6 +441,7 @@ function ProfileBg() {
 }
 
 function Avatar() {
+  const [isLoading, setIsLoading] = useState(true)
   const [{ files }] = useFileUpload({
     accept: "image/*",
     initialFiles: initialAvatarImage,
@@ -439,8 +452,23 @@ function Avatar() {
   return (
     <div className="-mt-10 px-6">
       <div className="relative flex size-20 items-center justify-center overflow-hidden rounded-full border-4 border-background bg-muted shadow-xs shadow-black/10">
+        {/* Spinner loader pendant le chargement */}
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-full">
+            <Spinner className="size-6 text-muted-foreground" />
+          </div>
+        )}
+
         {currentImage && (
-          <img src={currentImage} className="size-full object-cover" width={80} height={80} alt="Profile image" />
+          <Image
+            src={currentImage}
+            alt="Profile image"
+            fill
+            className="object-cover"
+            priority
+            onLoad={() => setIsLoading(false)}
+            onError={() => setIsLoading(false)}
+          />
         )}
       </div>
     </div>
