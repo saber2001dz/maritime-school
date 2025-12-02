@@ -63,45 +63,40 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     setHasError(false)
 
     try {
-      const result = await signIn.email(
-        {
-          email,
-          password,
-        },
-        {
-          onRequest: () => {
-            console.log("Tentative de connexion...")
-          },
-          onSuccess: () => {
-            console.log("Connexion réussie")
-            addToast({
-              variant: "success",
-              title: "تم تسجيل الدخول بنجاح",
-              description: "مرحبا بك",
-            })
-            // Force refresh puis redirection
-            router.refresh()
-            // Redirection avec un léger délai pour assurer que les cookies sont définis
-            setTimeout(() => {
-              router.push("/principal")
-            }, 100)
-          },
-          onError: (ctx) => {
-            console.error("Erreur de connexion:", ctx.error)
-            setHasError(true)
-            addToast({
-              variant: "error",
-              title: "خطأ في تسجيل الدخول",
-              description: "البريد الإلكتروني أو كلمة المرور غير صحيحة",
-            })
-          },
-        }
-      )
+      console.log("Tentative de connexion...")
 
-      // Vérification supplémentaire si pas d'erreur mais pas de succès non plus
-      if (!result?.data && !result?.error) {
-        console.warn("Réponse inattendue:", result)
+      // Utiliser notre API route personnalisée qui gère les cookies côté serveur
+      const response = await fetch("/api/auth-login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: "include", // Important pour inclure les cookies
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || data.error) {
+        console.error("Erreur de connexion:", data.error)
+        setHasError(true)
+        addToast({
+          variant: "error",
+          title: "خطأ في تسجيل الدخول",
+          description: "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+        })
+        return
       }
+
+      console.log("Connexion réussie")
+      addToast({
+        variant: "success",
+        title: "تم تسجيل الدخول بنجاح",
+        description: "مرحبا بك",
+      })
+
+      // Redirection immédiate - les cookies sont déjà définis par le serveur
+      window.location.href = "/principal"
     } catch (error) {
       console.error("Exception lors de la connexion:", error)
       setHasError(true)
