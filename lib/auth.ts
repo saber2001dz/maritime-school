@@ -28,6 +28,19 @@ export const auth = betterAuth({
     process.env.BETTER_AUTH_URL || "http://localhost:3000",
     process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3000",
   ].filter((url, index, self) => self.indexOf(url) === index), // Remove duplicates
+  advanced: {
+    cookiePrefix: "better-auth",
+    crossSubDomainCookies: {
+      enabled: false,
+    },
+    useSecureCookies: process.env.NODE_ENV === "production",
+  },
+  session: {
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60, // 5 minutes
+    },
+  },
   plugins: [
     admin({
       defaultRole: "agent",
