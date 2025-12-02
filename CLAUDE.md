@@ -2,6 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⚠️ IMPORTANT: Philosophie de Développement
+
+**TOUJOURS PRIVILÉGIER LA SIMPLICITÉ**
+
+Lors de la résolution de problèmes ou de bugs :
+1. **Commencer par la solution la plus simple** - Ne pas ajouter de complexité inutile
+2. **Consulter la documentation officielle** - Vérifier les bonnes pratiques avant d'agir
+3. **Analyser en profondeur** - Comprendre la cause racine avant de proposer une solution
+4. **Éviter la sur-ingénierie** - Ne pas créer de routes API personnalisées, de wrappers ou d'abstractions quand les outils natifs suffisent
+5. **Tester la solution minimale** - Si la version simple fonctionne, ne pas la compliquer
+
+**Exemple concret :**
+- ✅ BON : Utiliser directement `auth.api.getSession({ headers: await headers() })` (comme documenté)
+- ❌ MAUVAIS : Créer une route API personnalisée qui enveloppe Better-Auth avec manipulation manuelle des cookies
+
+**Règle d'or :** Si la bibliothèque ou le framework fournit une solution native, l'utiliser telle quelle.
+
 ## Project Overview
 
 This is a Next.js 16.0.1 application (using the App Router) built with React 19.2.0, TypeScript, and Tailwind CSS v4. The project is intended for a maritime school management system with comprehensive authentication, user management, agent tracking, and training (formation) management capabilities.
