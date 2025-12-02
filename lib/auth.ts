@@ -15,6 +15,12 @@ const schoolStatements = {
 
 const schoolAc = createAccessControl(schoolStatements)
 
+// Fonction pour normaliser les URLs (enlever le slash final)
+const normalizeUrl = (url: string | undefined): string => {
+  if (!url) return "http://localhost:3000"
+  return url.replace(/\/$/, "") // Enlève le slash final
+}
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
@@ -23,10 +29,10 @@ export const auth = betterAuth({
     enabled: true,
   },
   secret: process.env.BETTER_AUTH_SECRET,
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  baseURL: normalizeUrl(process.env.BETTER_AUTH_URL),
   trustedOrigins: [
-    process.env.BETTER_AUTH_URL || "http://localhost:3000",
-    process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3000",
+    normalizeUrl(process.env.BETTER_AUTH_URL),
+    normalizeUrl(process.env.NEXT_PUBLIC_BETTER_AUTH_URL),
   ].filter((url, index, self) => self.indexOf(url) === index), // Remove duplicates
   advanced: {
     cookiePrefix: "better-auth",
@@ -34,12 +40,21 @@ export const auth = betterAuth({
       enabled: false,
     },
     useSecureCookies: process.env.NODE_ENV === "production",
+    // Configuration explicite du SameSite
+    defaultCookieAttributes: {
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      path: "/",
+    },
   },
   session: {
     cookieCache: {
       enabled: true,
       maxAge: 5 * 60, // 5 minutes
     },
+    expiresIn: 60 * 60 * 24 * 7, // 7 jours
+    updateAge: 60 * 60 * 24, // Mettre à jour la session chaque jour
   },
   plugins: [
     admin({
