@@ -64,7 +64,13 @@ interface DialogueFormationProps {
   isUpdating?: boolean
 }
 
-export default function DialogueFormation({ formation, isOpen: controlledIsOpen, onClose, onSave, isUpdating = false }: DialogueFormationProps = {}) {
+export default function DialogueFormation({
+  formation,
+  isOpen: controlledIsOpen,
+  onClose,
+  onSave,
+  isUpdating = false,
+}: DialogueFormationProps = {}) {
   const id = useId()
 
   const [formationName, setFormationName] = useState("")
@@ -131,157 +137,145 @@ export default function DialogueFormation({ formation, isOpen: controlledIsOpen,
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
       >
-              <DialogHeader className="contents space-y-0">
-                <div className="border-b px-6 py-4 flex items-center justify-between">
-                  <DialogTitle
-                    className={`text-start text-[#1071c7] font-bold text-md ${notoNaskhArabic.className}`}
-                  >
-                    تـعــديـــل بـيـــانــات الــدورة التـكـويـنـيـة
-                  </DialogTitle>
-                  <button
-                    onClick={handleClose}
-                    className="p-1 hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
-                  >
-                    <XIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              </DialogHeader>
-              <DialogDescription className="sr-only">
-                تـعــديـــل بـيـــانــات الــدورة التـكـويـنـيـة
-              </DialogDescription>
+        <DialogHeader className="contents space-y-0">
+          <div className="border-b px-6 py-4 flex items-center justify-between">
+            <DialogTitle className={`text-start text-[#1071c7] font-bold text-md ${notoNaskhArabic.className}`}>
+              تـعــديـــل بـيـــانــات الــدورة التـكـويـنـيـة
+            </DialogTitle>
+            <button onClick={handleClose} className="p-1 hover:bg-muted/50 rounded-md transition-colors cursor-pointer">
+              <XIcon className="h-4 w-4" />
+            </button>
+          </div>
+        </DialogHeader>
+        <DialogDescription className="sr-only">تـعــديـــل بـيـــانــات الــدورة التـكـويـنـيـة</DialogDescription>
 
-              <div className="overflow-y-auto">
-                <ProfileBg />
-                <Avatar />
-                <div className="px-6 pt-4 pb-6">
-                  <form className="space-y-4">
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor={`${id}-formation`}
-                        className={`text-sm font-light ${notoNaskhArabic.className}`}
-                      >
-                        الـــدورة التـكـويـنـيـة :
-                      </Label>
-                      <Input
-                        id={`${id}-formation`}
-                        placeholder="الـــدورة التـكـويـنـيـة"
-                        type="text"
-                        value={formationName}
-                        onChange={(e) => setFormationName(e.target.value)}
-                        required
-                        autoComplete="off"
-                        className={`text-base font-semibold placeholder:text-muted-foreground/50 ${notoNaskhArabic.className}`}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor={`${id}-type`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
-                        نــوع التـكـويــن :
-                      </Label>
-                      <Select dir="rtl" value={typeFormation} onValueChange={(value) => setTypeFormation(value)}>
-                        <SelectTrigger className={`w-full rounded ${notoNaskhArabic.className}`}>
-                          <SelectValue placeholder="اختر نوع التكوين" />
-                        </SelectTrigger>
-                        <SelectContent className={notoNaskhArabic.className}>
-                          <SelectItem value="تكوين إختصاص" className="text-sm">
-                            تكوين إختصاص
-                          </SelectItem>
-                          <SelectItem value="تكوين تخصصي" className="text-sm">
-                            تكوين تخصصي
-                          </SelectItem>
-                          <SelectItem value="تكوين مستمر" className="text-sm">
-                            تكوين مستمر
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor={`${id}-specialite`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
-                        الإخــتــصــاص :
-                      </Label>
-                      <Select dir="rtl" value={specialite} onValueChange={(value) => setSpecialite(value)}>
-                        <SelectTrigger className={`w-full rounded ${notoNaskhArabic.className}`}>
-                          <SelectValue placeholder="اختر الإختصاص" />
-                        </SelectTrigger>
-                        <SelectContent className={notoNaskhArabic.className}>
-                          <SelectItem value="بحري" className="text-sm">
-                            بحري
-                          </SelectItem>
-                          <SelectItem value="عدلي" className="text-sm">
-                            عدلي
-                          </SelectItem>
-                          <SelectItem value="إداري" className="text-sm">
-                            إداري
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor={`${id}-duree`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
-                        مـــدة التـكـويــن :
-                      </Label>
-                      <Input
-                        id={`${id}-duree`}
-                        type="text"
-                        placeholder="مـــدة التـكـويــن"
-                        value={duree}
-                        onChange={(e) => setDuree(e.target.value)}
-                        className={`placeholder:text-muted-foreground/50 ${notoNaskhArabic.className}`}
-                        autoComplete="off"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor={`${id}-capacite`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
-                        طــاقــة الإســتــعــاب :
-                      </Label>
-                      <Input
-                        id={`${id}-capacite`}
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="طــاقــة الإســتــعــاب"
-                        value={capaciteAbsorption}
-                        onChange={(e) => handleCapaciteChange(e.target.value)}
-                        className={`placeholder:text-muted-foreground/50 ${notoNaskhArabic.className}`}
-                        autoComplete="off"
-                      />
-                    </div>
-                  </form>
-                </div>
+        <div className="overflow-y-auto">
+          <ProfileBg />
+          <Avatar />
+          <div className="px-6 pt-4 pb-6">
+            <form className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor={`${id}-formation`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
+                  الـــدورة التـكـويـنـيـة :
+                </Label>
+                <Input
+                  id={`${id}-formation`}
+                  placeholder="الـــدورة التـكـويـنـيـة"
+                  type="text"
+                  value={formationName}
+                  onChange={(e) => setFormationName(e.target.value)}
+                  required
+                  autoComplete="off"
+                  className={`text-base placeholder:text-muted-foreground/50 ${notoNaskhArabic.className}`}
+                />
               </div>
 
-              <DialogFooter className="border-t px-6 py-4">
-                <Button
-                  className={`text-sm cursor-pointer ${notoNaskhArabic.className}`}
-                  type="button"
-                  variant="outline"
-                  onClick={handleClose}
-                  disabled={isUpdating}
-                >
-                  إلـغــاء
-                </Button>
-                <Button
-                  className={`text-sm cursor-pointer bg-primary dark:bg-blue-600 hover:bg-primary/90 dark:hover:bg-blue-700 text-white ${notoNaskhArabic.className}`}
-                  type="button"
-                  onClick={handleSave}
-                  disabled={isUpdating}
-                >
-                  {isUpdating ? "جاري الحفظ..." : "سـجـل البيــانــات"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              <div className="space-y-2">
+                <Label htmlFor={`${id}-type`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
+                  نــوع التـكـويــن :
+                </Label>
+                <Select dir="rtl" value={typeFormation} onValueChange={(value) => setTypeFormation(value)}>
+                  <SelectTrigger className={`w-full rounded ${notoNaskhArabic.className}`}>
+                    <SelectValue placeholder="اختر نوع التكوين" />
+                  </SelectTrigger>
+                  <SelectContent className={notoNaskhArabic.className}>
+                    <SelectItem value="تكوين إختصاص" className="text-sm">
+                      تكوين إختصاص
+                    </SelectItem>
+                    <SelectItem value="تكوين تخصصي" className="text-sm">
+                      تكوين تخصصي
+                    </SelectItem>
+                    <SelectItem value="تكوين مستمر" className="text-sm">
+                      تكوين مستمر
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor={`${id}-specialite`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
+                  الإخــتــصــاص :
+                </Label>
+                <Select dir="rtl" value={specialite} onValueChange={(value) => setSpecialite(value)}>
+                  <SelectTrigger className={`w-full rounded ${notoNaskhArabic.className}`}>
+                    <SelectValue placeholder="اختر الإختصاص" />
+                  </SelectTrigger>
+                  <SelectContent className={notoNaskhArabic.className}>
+                    <SelectItem value="بحري" className="text-sm">
+                      بحري
+                    </SelectItem>
+                    <SelectItem value="عدلي" className="text-sm">
+                      عدلي
+                    </SelectItem>
+                    <SelectItem value="إداري" className="text-sm">
+                      إداري
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor={`${id}-duree`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
+                  مـــدة التـكـويــن :
+                </Label>
+                <Input
+                  id={`${id}-duree`}
+                  type="text"
+                  placeholder="مـــدة التـكـويــن"
+                  value={duree}
+                  onChange={(e) => setDuree(e.target.value)}
+                  className={`placeholder:text-muted-foreground/50 ${notoNaskhArabic.className}`}
+                  autoComplete="off"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor={`${id}-capacite`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
+                  طــاقــة الإســتــعــاب :
+                </Label>
+                <Input
+                  id={`${id}-capacite`}
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="طــاقــة الإســتــعــاب"
+                  value={capaciteAbsorption}
+                  onChange={(e) => handleCapaciteChange(e.target.value)}
+                  className={`placeholder:text-muted-foreground/50 ${notoNaskhArabic.className}`}
+                  autoComplete="off"
+                />
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <DialogFooter className="border-t px-6 py-4">
+          <Button
+            className={`text-sm cursor-pointer ${notoNaskhArabic.className}`}
+            type="button"
+            variant="outline"
+            onClick={handleClose}
+            disabled={isUpdating}
+          >
+            إلـغــاء
+          </Button>
+          <Button
+            className={`text-sm cursor-pointer bg-primary dark:bg-blue-600 hover:bg-primary/90 dark:hover:bg-blue-700 text-white ${notoNaskhArabic.className}`}
+            type="button"
+            onClick={handleSave}
+            disabled={isUpdating}
+          >
+            {isUpdating ? "جاري الحفظ..." : "سـجـل البيــانــات"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 
   return (
     <>
       {/* Si pas de formation (mode autonome), wrapper avec AnimatePresence */}
       {!formation ? (
-        <AnimatePresence mode="wait">
-          {isOpen && dialogContent}
-        </AnimatePresence>
+        <AnimatePresence mode="wait">{isOpen && dialogContent}</AnimatePresence>
       ) : (
         /* Si formation fournie (mode contrôlé), pas de AnimatePresence ici car il est dans le parent */
         isOpen && dialogContent
