@@ -9,7 +9,7 @@ datasource db {
 }
 
 model Account {
-  id                    String    @id
+  id                    String    @id @default(cuid())
   userId                String
   accountId             String
   providerId            String
@@ -21,28 +21,28 @@ model Account {
   scope                 String?
   idToken               String?
   createdAt             DateTime  @default(now())
-  updatedAt             DateTime
-  User                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 model Agent {
-  id             String           @id
-  nomPrenom      String
-  grade          String
-  matricule      String           @unique
-  responsabilite String
-  telephone      Int
-  categorie      String
-  avatar         String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime
-  AgentFormation AgentFormation[]
+  id              String           @id @default(cuid())
+  nomPrenom       String
+  grade           String
+  matricule       String           @unique
+  responsabilite  String
+  telephone       Int
+  categorie       String
+  avatar          String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  agentFormations AgentFormation[]
 }
 
 model AgentFormation {
-  id                 String            @id
+  id                 String            @id @default(cuid())
   agentId            String
   formationId        String
   dateDebut          String
@@ -51,11 +51,11 @@ model AgentFormation {
   resultat           String?
   moyenne            Float
   createdAt          DateTime          @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime          @updatedAt
   sessionFormationId String?
-  Agent              Agent             @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  Formation          Formation         @relation(fields: [formationId], references: [id], onDelete: Cascade)
-  SessionFormation   SessionFormation? @relation(fields: [sessionFormationId], references: [id])
+  agent              Agent             @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  formation          Formation         @relation(fields: [formationId], references: [id], onDelete: Cascade)
+  sessionFormation   SessionFormation? @relation(fields: [sessionFormationId], references: [id])
 
   @@index([agentId])
   @@index([formationId])
@@ -63,91 +63,91 @@ model AgentFormation {
 }
 
 model Cours {
-  id             String           @id
-  titre          String
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime
-  CoursFormateur CoursFormateur[]
+  id              String           @id @default(cuid())
+  titre           String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  coursFormateurs CoursFormateur[]
 }
 
 model CoursFormateur {
-  id           String    @id(map: "CoursFormation_pkey")
+  id           String    @id @default(cuid()) @map("CoursFormation_pkey")
   formateurId  String
   coursId      String
   dateDebut    String
   dateFin      String
   nombreHeures Float
   createdAt    DateTime  @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime  @updatedAt
   reference    String?
-  Cours        Cours     @relation(fields: [coursId], references: [id], onDelete: Cascade, map: "CoursFormation_coursId_fkey")
-  Formateur    Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade, map: "CoursFormation_formateurId_fkey")
+  cours        Cours     @relation(fields: [coursId], references: [id], onDelete: Cascade, map: "CoursFormation_coursId_fkey")
+  formateur    Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade, map: "CoursFormation_formateurId_fkey")
 
   @@index([coursId], map: "CoursFormation_coursId_idx")
   @@index([formateurId], map: "CoursFormation_formateurId_idx")
 }
 
 model Formateur {
-  id             String           @id
-  nomPrenom      String
-  grade          String
-  unite          String
-  responsabilite String
-  telephone      Int
-  RIB            String           @db.VarChar(20)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime
-  CoursFormateur CoursFormateur[]
+  id              String           @id @default(cuid())
+  nomPrenom       String
+  grade           String
+  unite           String
+  responsabilite  String
+  telephone       Int
+  RIB             String           @db.VarChar(20)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  coursFormateurs CoursFormateur[]
 }
 
 model Formation {
-  id                 String             @id
+  id                 String             @id @default(cuid())
   typeFormation      String
   formation          String
   duree              String?
   createdAt          DateTime           @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime           @updatedAt
   capaciteAbsorption Int?
   specialite         String?
-  AgentFormation     AgentFormation[]
-  SessionFormation   SessionFormation[]
+  agentFormations    AgentFormation[]
+  sessionFormations  SessionFormation[]
 }
 
 model Session {
-  id             String   @id
+  id             String   @id @default(cuid())
   userId         String
   token          String   @unique
   expiresAt      DateTime
   ipAddress      String?
   userAgent      String?
   createdAt      DateTime @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   impersonatedBy String?
-  User           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 model SessionFormation {
-  id                 String           @id
+  id                 String           @id @default(cuid())
   formationId        String
   dateDebut          DateTime
   dateFin            DateTime
   nombreParticipants Int              @default(0)
   reference          String?
   createdAt          DateTime         @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime         @updatedAt
   statut             String?
   color              String?
-  AgentFormation     AgentFormation[]
-  Formation          Formation        @relation(fields: [formationId], references: [id], onDelete: Cascade)
+  agentFormations    AgentFormation[]
+  formation          Formation        @relation(fields: [formationId], references: [id], onDelete: Cascade)
 
   @@index([dateDebut])
   @@index([formationId])
 }
 
 model User {
-  id            String    @id
+  id            String    @id @default(cuid())
   email         String    @unique
   name          String
   emailVerified Boolean   @default(false)
@@ -155,19 +155,19 @@ model User {
   role          String    @default("agent")
   lastLogin     DateTime?
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime  @updatedAt
   banned        Boolean?
   banReason     String?
   banExpires    DateTime?
-  Account       Account[]
-  Session       Session[]
+  accounts      Account[]
+  sessions      Session[]
 }
 
 model Verification {
-  id         String   @id
+  id         String   @id @default(cuid())
   identifier String
   value      String
   expiresAt  DateTime
   createdAt  DateTime @default(now())
-  updatedAt  DateTime
+  updatedAt  DateTime @updatedAt
 }
