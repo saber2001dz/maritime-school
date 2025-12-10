@@ -5,7 +5,7 @@ export default async function PrincipalPage() {
   // Récupérer les agents depuis la base de données avec leur formation la plus récente
   const agents = await prisma.agent.findMany({
     include: {
-      formations: {
+      agentFormations: {
         orderBy: { dateDebut: 'desc' },
         take: 1,
         select: { dateDebut: true }
@@ -24,7 +24,7 @@ export default async function PrincipalPage() {
     matricule: agent.matricule,
     responsabilite: agent.responsabilite,
     telephone: agent.telephone,
-    derniereDateFormation: agent.formations[0]?.dateDebut || "-",
+    derniereDateFormation: agent.agentFormations[0]?.dateDebut || "-",
     categorie: agent.categorie as "ضابط سامي" | "ضابط" | "ضابط صف" | "هيئة الرقباء",
     avatar: agent.avatar ?? undefined,
   }))
