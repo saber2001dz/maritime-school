@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Users, UserCheck, Award, BookText } from "lucide-react"
 import { prisma } from "@/lib/db"
 import { ChartBarDefault } from "./chart-bar"
+import { SessionsList } from "./sessions-list"
 
 export default async function PrincipalPage() {
   // Récupérer les statistiques depuis la base de données
@@ -12,11 +13,63 @@ export default async function PrincipalPage() {
     prisma.cours.count(),
   ])
 
+  // Récupérer les sessions de formation en cours et à venir
+  const now = new Date()
+
+  // Sessions en cours (dateDebut <= now <= dateFin)
+  const sessionsEnCours = await prisma.sessionFormation.findMany({
+    where: {
+      dateDebut: { lte: now },
+      dateFin: { gte: now },
+    },
+    include: {
+      formation: true,
+    },
+    orderBy: {
+      dateDebut: 'desc',
+    },
+  })
+
+  // Sessions à venir (dateDebut > now)
+  const sessionsAVenir = await prisma.sessionFormation.findMany({
+    where: {
+      dateDebut: { gt: now },
+    },
+    include: {
+      formation: true,
+    },
+    orderBy: {
+      dateDebut: 'asc',
+    },
+    take: 5 - sessionsEnCours.length, // Compléter jusqu'à 5
+  })
+
+  // Combiner les sessions : en cours d'abord, puis à venir
+  const recentSessions = [...sessionsEnCours, ...sessionsAVenir].slice(0, 5)
+
+  // Fonction pour formater les dates au format yyyy-mm-dd
+  const formatDate = (date: Date | string) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date
+    const year = dateObj.getFullYear()
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0')
+    const day = String(dateObj.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  // Préparer les sessions avec les dates formatées pour le composant client
+  const formattedSessions = recentSessions.map(session => ({
+    id: session.id,
+    formationName: session.formation.formation,
+    dateDebut: formatDate(session.dateDebut),
+    dateFin: formatDate(session.dateFin),
+    nombreParticipants: session.nombreParticipants,
+  }))
+
   return (
     <div className="bg-background py-6 md:py-10">
       <div className="mx-auto w-full max-w-7xl px-0">
         <div className="pb-6">
-          <h1 className="text-2xl font-bold mb-1 text-right">لـوحــة المفـاتيـح</h1>
+          <h1 className="text-2xl font-bold mb-1 text-right">لـوحــة المتــابـعـــة</h1>
           <p className="text-sm text-muted-foreground mb-6 text-right">
             لوحة التحكم الرئيسية لإدارة ومتابعة أنشطة المدرسة البحرية
           </p>
@@ -98,72 +151,11 @@ export default async function PrincipalPage() {
             <CardHeader className="pb-3">
               <CardTitle className="font-semibold">الـدورات التكوينية الأخيـرة</CardTitle>
               <CardDescription className="font-(family-name:--font-noto-naskh-arabic)">
-                الدورات التكوينية خـلال ثلاث الأشهر الأخيرة
+                الــدورات التكوينيــة الخمســة الأخيــرة
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-sm font-medium">
-                    01
-                  </div>
-                  <div className="mr-4 space-y-3 flex-1">
-                    <p className="text-sm font-medium leading-none">الإسعافات الأولية</p>
-                    <p className="text-xs text-muted-foreground font-(family-name:--font-noto-naskh-arabic)">
-                      2025-09-01 إلى 15-09-2025
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium">25</div>
-                </div>
-                <div className="flex items-center">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-sm font-medium">
-                    02
-                  </div>
-                  <div className="mr-4 space-y-3 flex-1">
-                    <p className="text-sm font-medium leading-none">التصرف في الجثث بالبحر</p>
-                    <p className="text-xs text-muted-foreground font-(family-name:--font-noto-naskh-arabic)">
-                      2025-09-01 إلى 15-09-2025
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium">22</div>
-                </div>
-                <div className="flex items-center">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-sm font-medium">
-                    03
-                  </div>
-                  <div className="mr-4 space-y-3 flex-1">
-                    <p className="text-sm font-medium leading-none">المحاضر و الإجراءات العدلية</p>
-                    <p className="text-xs text-muted-foreground font-(family-name:--font-noto-naskh-arabic)">
-                      2025-09-01 إلى 15-09-2025
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium">25</div>
-                </div>
-                <div className="flex items-center">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-sm font-medium">
-                    04
-                  </div>
-                  <div className="mr-4 space-y-3 flex-1">
-                    <p className="text-sm font-medium leading-none">درجة أولى حدود بحرية BS1</p>
-                    <p className="text-xs text-muted-foreground font-(family-name:--font-noto-naskh-arabic)">
-                      2025-09-01 إلى 15-09-2025
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium">26</div>
-                </div>
-                <div className="flex items-center">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-sm font-medium">
-                    05
-                  </div>
-                  <div className="mr-4 space-y-3 flex-1">
-                    <p className="text-sm font-medium leading-none">قيادة و صيانة الزوارق السريعة</p>
-                    <p className="text-xs text-muted-foreground font-(family-name:--font-noto-naskh-arabic)">
-                      2025-09-01 إلى 15-09-2025
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium">23</div>
-                </div>
-              </div>
+              <SessionsList sessions={formattedSessions} />
             </CardContent>
           </Card>
         </div>
