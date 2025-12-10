@@ -1,8 +1,6 @@
-"use client"
-
-import { ServerManagementTable, Server } from "@/components/ui/server-management-table"
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { FormationTableWrapper } from "./formation-table-wrapper"
+import { prisma } from "@/lib/db"
+import { Server } from "@/components/ui/server-management-table"
 
 // Fonction pour convertir le type de formation en status
 function getStatusFromType(typeFormation: string): "active" | "paused" | "inactive" {
@@ -18,63 +16,25 @@ function getStatusFromType(typeFormation: string): "active" | "paused" | "inacti
   }
 }
 
-export default function ListeFormation() {
-  const router = useRouter()
-  const [formations, setFormations] = useState<Server[]>([])
-  const [loading, setLoading] = useState(true)
-  const [refreshKey, setRefreshKey] = useState(0)
+export default async function ListeFormation() {
+  // Récupérer les formations depuis la base de données
+  const formations = await prisma.formation.findMany({
+    orderBy: {
+      formation: 'asc', // Tri alphabétique
+    },
+  })
 
-  useEffect(() => {
-    async function fetchFormations() {
-      try {
-        const response = await fetch("/api/formations")
-        if (!response.ok) {
-          throw new Error("Erreur lors de la récupération des formations")
-        }
-        const data = await response.json()
+  // Transformer les données Prisma en format Server
+  const formattedFormations: Server[] = formations.map((formation, index) => ({
+    id: formation.id,
+    number: String(index + 1).padStart(2, "0"),
+    serviceName: formation.formation,
+    osType: "windows" as const,
+    specialite: formation.specialite || "غير محدد",
+    dueDate: formation.duree || "غير محدد",
+    capaciteAbsorption: formation.capaciteAbsorption || 0,
+    status: getStatusFromType(formation.typeFormation),
+  }))
 
-        // Trier les formations par ordre alphabétique (colonne formation)
-        const sortedData = [...data].sort((a, b) =>
-          a.formation.localeCompare(b.formation, 'ar')
-        )
-
-        // Transformer les données de la base en format Server
-        const formattedFormations: Server[] = sortedData.map((formation: any, index: number) => ({
-          id: formation.id,
-          number: String(index + 1).padStart(2, "0"),
-          serviceName: formation.formation,
-          osType: "windows" as const, // Valeur par défaut
-          specialite: formation.specialite || "غير محدد",
-          dueDate: formation.duree || "غير محدد",
-          capaciteAbsorption: formation.capaciteAbsorption || 0,
-          status: getStatusFromType(formation.typeFormation),
-        }))
-
-        setFormations(formattedFormations)
-      } catch (error) {
-        console.error("Erreur:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchFormations()
-  }, [refreshKey])
-
-  if (loading) {
-    return (
-      <div className="pt-20 flex items-center justify-center min-h-screen">
-        <div className="text-muted-foreground">جاري التحميل...</div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="pt-20">
-      <ServerManagementTable
-        servers={formations}
-        onAddNewFormation={() => router.push('/nouvelle-formarion')}
-      />
-    </div>
-  )
+  return <FormationTableWrapper formations={formattedFormations} />
 }

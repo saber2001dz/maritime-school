@@ -71,7 +71,7 @@ model Cours {
 }
 
 model CoursFormateur {
-  id           String    @id @default(cuid()) @map("CoursFormation_pkey")
+  id           String    @id @default(cuid())
   formateurId  String
   coursId      String
   dateDebut    String
@@ -80,11 +80,11 @@ model CoursFormateur {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   reference    String?
-  cours        Cours     @relation(fields: [coursId], references: [id], onDelete: Cascade, map: "CoursFormation_coursId_fkey")
-  formateur    Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade, map: "CoursFormation_formateurId_fkey")
+  cours        Cours     @relation(fields: [coursId], references: [id], onDelete: Cascade)
+  formateur    Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade)
 
-  @@index([coursId], map: "CoursFormation_coursId_idx")
-  @@index([formateurId], map: "CoursFormation_formateurId_idx")
+  @@index([coursId])
+  @@index([formateurId])
 }
 
 model Formateur {

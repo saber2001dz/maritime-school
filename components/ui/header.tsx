@@ -52,6 +52,10 @@ export function Header() {
       label: "قــائمــة التــربـصـــات",
       href: "/liste-formation",
     },
+    {
+      label: "قــائمــة الـــدورات",
+      href: "/session-formation",
+    },
   ]
 
   React.useEffect(() => {
