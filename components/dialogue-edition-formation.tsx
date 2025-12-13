@@ -1,7 +1,7 @@
 "use client"
 
 import { useId, useState, useEffect } from "react"
-import { XIcon } from "lucide-react"
+import { XIcon, Trash2 } from "lucide-react"
 import localFont from "next/font/local"
 import { AnimatePresence } from "framer-motion"
 
@@ -15,9 +15,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
 const notoNaskhArabic = localFont({
   src: "../app/fonts/NotoNaskhArabic.woff2",
@@ -74,11 +85,14 @@ interface DialogueEditionFormationProps {
   agent?: Agent
   formations?: Formation[]
   formationData?: AgentFormationData | null
+  agentFormationId?: string
   isOpen?: boolean
   onClose?: () => void
   onSave?: (data: AgentFormationData) => void
+  onDelete?: (id: string) => void
   onChange?: (field: string, value: string | number) => void
   isUpdating?: boolean
+  isDeleting?: boolean
   isLoadingFormations?: boolean
   error?: string
 }
@@ -87,11 +101,14 @@ export default function DialogueEditionFormation({
   agent,
   formations = [],
   formationData,
+  agentFormationId,
   isOpen: controlledIsOpen,
   onClose,
   onSave,
+  onDelete,
   onChange,
   isUpdating = false,
+  isDeleting = false,
   isLoadingFormations = false,
   error,
 }: DialogueEditionFormationProps = {}) {
@@ -106,6 +123,7 @@ export default function DialogueEditionFormation({
   const [internalMoyenne, setInternalMoyenne] = useState(0)
   const [internalIsOpen, setInternalIsOpen] = useState(false)
   const [dateError, setDateError] = useState("")
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   // Utiliser controlledIsOpen si fourni, sinon utiliser l'état interne
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen
@@ -210,6 +228,21 @@ export default function DialogueEditionFormation({
         moyenne,
       })
     }
+  }
+
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (onDelete && agentFormationId) {
+      onDelete(agentFormationId)
+    }
+    setDeleteDialogOpen(false)
+  }
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false)
   }
 
   // Le dialogue en mode autonome (sans agent) nécessite son propre AnimatePresence
@@ -374,24 +407,44 @@ export default function DialogueEditionFormation({
           </div>
         </div>
 
-        <DialogFooter className="border-t px-6 py-4">
-          <Button
-            className={`text-sm cursor-pointer ${notoNaskhArabic.className}`}
-            type="button"
-            variant="outline"
-            onClick={handleClose}
-            disabled={isUpdating}
-          >
-            إلـغــاء
-          </Button>
-          <Button
-            className={`text-sm cursor-pointer bg-primary dark:bg-blue-600 hover:bg-primary/90 dark:hover:bg-blue-700 text-white ${notoNaskhArabic.className}`}
-            type="button"
-            onClick={handleSave}
-            disabled={isUpdating}
-          >
-            {isUpdating ? "جاري الحفظ..." : "سـجـل البيــانــات"}
-          </Button>
+        <DialogFooter className="border-t px-6 py-4 flex-row sm:justify-between">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                className="h-9 w-9 p-0 cursor-pointer hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={handleDeleteClick}
+                disabled={isUpdating || isDeleting}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <span className={notoNaskhArabic.className}>حذف الدورة التكوينية</span>
+            </TooltipContent>
+          </Tooltip>
+
+          <div className="flex flex-1 justify-end gap-2">
+            <Button
+              className={`text-sm cursor-pointer ${notoNaskhArabic.className}`}
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={isUpdating || isDeleting}
+            >
+              إلـغــاء
+            </Button>
+            <Button
+              className={`text-sm cursor-pointer bg-primary dark:bg-blue-600 hover:bg-primary/90 dark:hover:bg-blue-700 text-white ${notoNaskhArabic.className}`}
+              type="button"
+              onClick={handleSave}
+              disabled={isUpdating || isDeleting}
+            >
+              {isUpdating ? "جاري الحفظ..." : "سـجـل البيــانــات"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -406,6 +459,36 @@ export default function DialogueEditionFormation({
         /* Si agent fourni (mode contrôlé), pas de AnimatePresence ici car il est dans le parent */
         isOpen && dialogContent
       )}
+
+      {/* AlertDialog pour la confirmation de suppression */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }} className="text-start">
+              تأكيــد الحـــذف
+            </AlertDialogTitle>
+            <AlertDialogDescription className={`py-5 text-start ${notoNaskhArabic.className}`}>
+              هل أنت متأكد من حذف هذه الدورة التكوينية؟ هذا الإجراء لا يمكن التراجع عنه.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-end cursor-pointer">
+            <AlertDialogCancel
+              onClick={handleCancelDelete}
+              className={`cursor-pointer ${notoNaskhArabic.className}`}
+              disabled={isDeleting}
+            >
+              إلغــاء
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className={`bg-red-600 hover:bg-red-700 text-white cursor-pointer ${notoNaskhArabic.className}`}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "جاري الحذف..." : "حــــــذف"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

@@ -40,6 +40,7 @@ function ServerManagementTableContent({
   const [servers, setServers] = useState<Server[]>(initialServers)
   const [editingFormation, setEditingFormation] = useState<FormationData | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [mounted, setMounted] = useState(false)
   const { addToast } = useToast()
   const { resolvedTheme } = useTheme()
@@ -144,6 +145,44 @@ function ServerManagementTableContent({
 
   const handleCloseDialog = () => {
     setEditingFormation(null)
+  }
+
+  const handleDeleteFormation = async (id: string) => {
+    setIsDeleting(true)
+
+    try {
+      const response = await fetch(`/api/formations/${id}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        throw new Error("Erreur lors de la suppression")
+      }
+
+      // Mettre à jour l'état local
+      setServers((prevServers) => prevServers.filter((s) => s.id !== id))
+
+      // Afficher le toast de succès
+      addToast({
+        variant: "success",
+        title: "نجـاح العمليـة",
+        description: "تم حذف الدورة التكوينية بنجاح",
+      })
+
+      // Fermer le dialogue
+      setEditingFormation(null)
+    } catch (error) {
+      console.error("Erreur lors de la suppression:", error)
+
+      // Afficher le toast d'erreur
+      addToast({
+        variant: "error",
+        title: "خطأ في العملية",
+        description: "حدث خطأ أثناء حذف الدورة التكوينية",
+      })
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const getCapacityBars = (capacity: number, status: Server["status"]) => {
@@ -405,7 +444,9 @@ function ServerManagementTableContent({
             isOpen={true}
             onClose={handleCloseDialog}
             onSave={handleSaveFormation}
+            onDelete={handleDeleteFormation}
             isUpdating={isUpdating}
+            isDeleting={isDeleting}
           />
         )}
       </AnimatePresence>

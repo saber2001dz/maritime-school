@@ -43,6 +43,7 @@ export default async function CoursFormateurPage({ searchParams }: PageProps) {
   // Attendre les searchParams (Next.js 15+)
   const params = await searchParams
   const formateurId = params.formateurId as string | undefined
+  const returnUrl = (params.returnUrl as string) || '/liste-formateur'
 
   // Récupérer les informations du formateur si un formateurId est fourni
   let formateurInfo = null
@@ -76,6 +77,7 @@ export default async function CoursFormateurPage({ searchParams }: PageProps) {
       initialData={transformedData}
       formateurInfo={formateurInfo}
       notoNaskhArabicClassName={notoNaskhArabic.className}
+      returnUrl={returnUrl}
     />
   )
 }

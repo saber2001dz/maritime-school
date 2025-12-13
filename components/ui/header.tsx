@@ -41,6 +41,10 @@ export function Header() {
       href: "/principal",
     },
     {
+      label: "قــائمــة الـــدورات",
+      href: "/session-formation",
+    },
+    {
       label: "قــائمــة المتـربصيـــن",
       href: "/liste-agent",
     },
@@ -52,9 +56,10 @@ export function Header() {
       label: "قــائمــة التــربـصـــات",
       href: "/liste-formation",
     },
-    {
-      label: "قــائمــة الـــدورات",
-      href: "/session-formation",
+    
+     {
+      label: "قــائمــة الـــدروس",
+      href: "/liste-cours",
     },
   ]
 

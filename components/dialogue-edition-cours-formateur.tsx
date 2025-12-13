@@ -1,7 +1,7 @@
 "use client"
 
 import { useId, useState, useEffect } from "react"
-import { XIcon } from "lucide-react"
+import { XIcon, Trash2 } from "lucide-react"
 import localFont from "next/font/local"
 import { AnimatePresence } from "framer-motion"
 
@@ -15,9 +15,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
 const notoNaskhArabic = localFont({
   src: "../app/fonts/NotoNaskhArabic.woff2",
@@ -71,8 +82,10 @@ interface DialogueEditionCoursFormateurProps {
   isOpen?: boolean
   onClose?: () => void
   onSave?: (data: CoursFormateurData) => void
+  onDelete?: (coursFormateurId: string) => void
   onChange?: (field: string, value: string | number) => void
   isUpdating?: boolean
+  isDeleting?: boolean
   isLoadingCours?: boolean
   error?: string
 }
@@ -84,8 +97,10 @@ export default function DialogueEditionCoursFormateur({
   isOpen: controlledIsOpen,
   onClose,
   onSave,
+  onDelete,
   onChange,
   isUpdating = false,
+  isDeleting = false,
   isLoadingCours = false,
   error,
 }: DialogueEditionCoursFormateurProps = {}) {
@@ -99,6 +114,7 @@ export default function DialogueEditionCoursFormateur({
   const [internalReference, setInternalReference] = useState("")
   const [internalIsOpen, setInternalIsOpen] = useState(false)
   const [dateError, setDateError] = useState("")
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   // Utiliser controlledIsOpen si fourni, sinon utiliser l'état interne
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen
@@ -198,6 +214,21 @@ export default function DialogueEditionCoursFormateur({
     }
   }
 
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (onDelete && coursData) {
+      onDelete(coursData.coursId)
+    }
+    setDeleteDialogOpen(false)
+  }
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false)
+  }
+
   // Le dialogue en mode autonome (sans formateur) nécessite son propre AnimatePresence
   const dialogContent = (
     <Dialog open={true} modal={true}>
@@ -212,11 +243,11 @@ export default function DialogueEditionCoursFormateur({
             <DialogTitle className={`text-start font-bold text-md ${notoNaskhArabic.className}`}>
               {formateur ? (
                 <>
-                  <span className="text-[#1071c7]">تعديل درس المدرس: </span>
+                  <span className="text-[#1071c7]">تعديل درس للمــدرس: </span>
                   <span className="text-foreground/60 dark:text-foreground/50">ال{formateur.grade} {formateur.nomPrenom}</span>
                 </>
               ) : (
-                <span className="text-[#1071c7]">تعديل درس المدرس</span>
+                <span className="text-[#1071c7]">تعديل درس للمــدرس</span>
               )}
             </DialogTitle>
             <button
@@ -238,7 +269,7 @@ export default function DialogueEditionCoursFormateur({
             <form className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor={`${id}-cours`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
-                  الدرس :
+                  الــــــدرس :
                 </Label>
                 <Select
                   dir="rtl"
@@ -338,24 +369,44 @@ export default function DialogueEditionCoursFormateur({
           </div>
         </div>
 
-        <DialogFooter className="border-t px-6 py-4">
-          <Button
-            className={`text-sm cursor-pointer ${notoNaskhArabic.className}`}
-            type="button"
-            variant="outline"
-            onClick={handleClose}
-            disabled={isUpdating}
-          >
-            إلـغــاء
-          </Button>
-          <Button
-            className={`text-sm cursor-pointer bg-primary dark:bg-blue-600 hover:bg-primary/90 dark:hover:bg-blue-700 text-white ${notoNaskhArabic.className}`}
-            type="button"
-            onClick={handleSave}
-            disabled={isUpdating}
-          >
-            {isUpdating ? "جاري الحفظ..." : "سـجـل البيــانــات"}
-          </Button>
+        <DialogFooter className="border-t px-6 py-4 flex-row sm:justify-between">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                className="h-9 w-9 p-0 cursor-pointer hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={handleDeleteClick}
+                disabled={isUpdating || isDeleting}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <span className={notoNaskhArabic.className}>حذف الدرس</span>
+            </TooltipContent>
+          </Tooltip>
+
+          <div className="flex flex-1 justify-end gap-2">
+            <Button
+              className={`text-sm cursor-pointer ${notoNaskhArabic.className}`}
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={isUpdating || isDeleting}
+            >
+              إلـغــاء
+            </Button>
+            <Button
+              className={`text-sm cursor-pointer bg-primary dark:bg-blue-600 hover:bg-primary/90 dark:hover:bg-blue-700 text-white ${notoNaskhArabic.className}`}
+              type="button"
+              onClick={handleSave}
+              disabled={isUpdating || isDeleting}
+            >
+              {isUpdating ? "جاري الحفظ..." : "سـجـل البيــانــات"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -370,6 +421,36 @@ export default function DialogueEditionCoursFormateur({
         /* Si formateur fourni (mode contrôlé), pas de AnimatePresence ici car il est dans le parent */
         isOpen && dialogContent
       )}
+
+      {/* AlertDialog pour la confirmation de suppression */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }} className="text-start">
+              تأكيــد الحـــذف
+            </AlertDialogTitle>
+            <AlertDialogDescription className={`py-5 text-start ${notoNaskhArabic.className}`}>
+              هل أنت متأكد من حذف هذا الدرس للمدرس؟ هذا الإجراء لا يمكن التراجع عنه.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-end cursor-pointer">
+            <AlertDialogCancel
+              onClick={handleCancelDelete}
+              className={`cursor-pointer ${notoNaskhArabic.className}`}
+              disabled={isDeleting}
+            >
+              إلغــاء
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className={`bg-red-600 hover:bg-red-700 text-white cursor-pointer ${notoNaskhArabic.className}`}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "جاري الحذف..." : "حــــــذف"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

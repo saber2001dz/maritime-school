@@ -11,11 +11,12 @@ interface CoursFormateurClientProps {
   initialData: Project[];
   formateurInfo: { grade: string; nomPrenom: string } | null;
   notoNaskhArabicClassName: string;
+  returnUrl?: string;
 }
 
 const allColumns: (keyof Project)[] = ["name", "repository", "team", "tech", "createdAt", "contributors", "status"];
 
-export default function CoursFormateurClient({ initialData, formateurInfo, notoNaskhArabicClassName }: CoursFormateurClientProps) {
+export default function CoursFormateurClient({ initialData, formateurInfo, notoNaskhArabicClassName, returnUrl = '/liste-formateur' }: CoursFormateurClientProps) {
   const router = useRouter();
   const [visibleColumns, setVisibleColumns] = useState<Set<keyof Project>>(new Set(allColumns));
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -111,7 +112,7 @@ export default function CoursFormateurClient({ initialData, formateurInfo, notoN
   };
 
   const handleBackClick = () => {
-    router.push("/liste-formateur");
+    router.push(returnUrl);
   };
 
   return (

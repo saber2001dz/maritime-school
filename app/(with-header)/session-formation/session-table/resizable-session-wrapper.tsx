@@ -12,6 +12,11 @@ export function ResizableSessionWrapper({ sessions }: ResizableSessionWrapperPro
 
   const handleSessionSelect = (sessionId: string) => {
     // TODO: Implement session selection handler
+    // Cette fonction devrait gérer la sélection d'une session pour :
+    // - Afficher la liste des participants (قائمة المشاركين) dans un panneau latéral ou une page dédiée
+    // - Naviguer vers une page de détails de la session
+    // Actuellement, l'option "قائمة المشاركين" dans le menu dropdown est désactivée
+    // (voir resizable-session-table.tsx ligne 1069-1075)
   }
 
   const handleSaveEdit = async (session: SessionFormation): Promise<{ success: boolean; error?: string }> => {

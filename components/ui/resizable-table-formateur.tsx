@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, useMemo, useCallback } from "react"
+import { useRouter, usePathname, ReadonlyURLSearchParams } from "next/navigation"
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion"
 import { useTheme } from "next-themes"
 import {
@@ -53,6 +53,7 @@ interface ResizableTableFormateurProps {
   className?: string
   enableAnimations?: boolean
   onAddNewFormateur?: () => void
+  searchParams?: ReadonlyURLSearchParams | null
 }
 
 type SortField = "nomPrenom" | "grade" | "unite" | "responsabilite"
@@ -90,9 +91,7 @@ const getRankOrder = (rank: string): number => {
 }
 
 const normalizeArabicText = (text: string): string => {
-  return text
-    .replace(/[أإآا]/g, "ا")
-    .toLowerCase()
+  return text.replace(/[أإآا]/g, "ا").toLowerCase()
 }
 
 export function ResizableTableFormateur({
@@ -103,25 +102,37 @@ export function ResizableTableFormateur({
   className = "",
   enableAnimations = true,
   onAddNewFormateur,
+  searchParams,
 }: ResizableTableFormateurProps) {
-  const [mounted, setMounted] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [sortField, setSortField] = useState<SortField | null>(null)
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc")
-  const [showSortMenu, setShowSortMenu] = useState(false)
-  const [showFilterMenu, setShowFilterMenu] = useState(false)
-  const [showExportMenu, setShowExportMenu] = useState(false)
-  const [filterGrade, setFilterGrade] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState<string>("")
-  const [editingFormateur, setEditingFormateur] = useState<Formateur | null>(null)
-  const [selectedFormateurs, setSelectedFormateurs] = useState<string[]>([])
-  const [formateurToDelete, setFormateurToDelete] = useState<Formateur | null>(null)
-
   const router = useRouter()
+  const pathname = usePathname()
   const shouldReduceMotion = useReducedMotion()
   const { theme } = useTheme()
   const isDark = theme === "dark"
   const { addToast } = useToast()
+
+  // Parse URL params for initial state
+  const selectedParam = searchParams?.get('selected')
+  // Sélection d'une seule ligne : prendre uniquement le premier ID si plusieurs sont présents
+  const selectedFromUrl = selectedParam ? [selectedParam.split(',')[0]] : []
+  const pageFromUrl = Number(searchParams?.get('page')) || 1
+  const sortFromUrl = searchParams?.get('sort') as SortField | null
+  const orderFromUrl = (searchParams?.get('order') as SortOrder) || 'asc'
+  const gradeFromUrl = searchParams?.get('grade') || null
+  const searchFromUrl = searchParams?.get('search') || ''
+
+  const [mounted, setMounted] = useState(false)
+  const [currentPage, setCurrentPage] = useState(pageFromUrl)
+  const [sortField, setSortField] = useState<SortField | null>(sortFromUrl)
+  const [sortOrder, setSortOrder] = useState<SortOrder>(orderFromUrl)
+  const [showSortMenu, setShowSortMenu] = useState(false)
+  const [showFilterMenu, setShowFilterMenu] = useState(false)
+  const [showExportMenu, setShowExportMenu] = useState(false)
+  const [filterGrade, setFilterGrade] = useState<string | null>(gradeFromUrl)
+  const [searchQuery, setSearchQuery] = useState<string>(searchFromUrl)
+  const [editingFormateur, setEditingFormateur] = useState<Formateur | null>(null)
+  const [selectedFormateurs, setSelectedFormateurs] = useState<string[]>(selectedFromUrl)
+  const [formateurToDelete, setFormateurToDelete] = useState<Formateur | null>(null)
 
   // Column width state avec les mêmes largeurs que liste-agent
   const [columnWidths] = useState<Record<string, number>>({
@@ -140,6 +151,34 @@ export function ResizableTableFormateur({
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Sync state changes to URL - runs after state updates, not during render
+  useEffect(() => {
+    if (!mounted) return // Don't run on initial mount
+
+    const params = new URLSearchParams()
+
+    // Une seule ligne sélectionnée à la fois
+    if (selectedFormateurs.length > 0) {
+      params.set('selected', selectedFormateurs[0])
+    }
+    if (currentPage !== 1) {
+      params.set('page', String(currentPage))
+    }
+    if (sortField) {
+      params.set('sort', sortField)
+      params.set('order', sortOrder)
+    }
+    if (filterGrade) {
+      params.set('grade', filterGrade)
+    }
+    if (searchQuery) {
+      params.set('search', searchQuery)
+    }
+
+    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname
+    router.push(newUrl, { scroll: false })
+  }, [selectedFormateurs, currentPage, sortField, sortOrder, filterGrade, searchQuery, pathname, router, mounted])
 
   const handleSort = (field: SortField | null) => {
     if (field === null) {
@@ -291,11 +330,13 @@ export function ResizableTableFormateur({
   }
 
   const handleFormateurSelect = (formateurId: string) => {
+    // Sélectionner une seule ligne à la fois, ou décocher si déjà sélectionné
     setSelectedFormateurs((prev) => {
       if (prev.includes(formateurId)) {
-        return prev.filter((id) => id !== formateurId)
+        return [] // Décocher
+      } else {
+        return [formateurId] // Sélectionner uniquement cette ligne
       }
-      return [...prev, formateurId]
     })
   }
 
@@ -308,11 +349,11 @@ export function ResizableTableFormateur({
 
     try {
       const response = await fetch(`/api/formateurs/${formateurToDelete.id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       })
 
       if (!response.ok) {
-        throw new Error('Erreur lors de la suppression du formateur')
+        throw new Error("Erreur lors de la suppression du formateur")
       }
 
       addToast({
@@ -698,10 +739,7 @@ export function ResizableTableFormateur({
                 <span>رقــم الحســاب البـنـكـي</span>
               </div>
 
-              <div
-                className="flex items-center justify-center px-3 relative"
-                style={{ width: columnWidths.actions }}
-              >
+              <div className="flex items-center justify-center px-3 relative" style={{ width: columnWidths.actions }}>
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="opacity-50">
                   <circle cx="8" cy="8" r="1" fill="currentColor" />
                   <circle cx="13" cy="8" r="1" fill="currentColor" />
@@ -728,9 +766,7 @@ export function ResizableTableFormateur({
                       className="text-muted-foreground/70 text-sm"
                       style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                     >
-                      {searchQuery
-                        ? `لا توجد نتائج للبحث عن "${searchQuery}"`
-                        : "لا توجد نتائج"}
+                      {searchQuery ? `لا توجد نتائج للبحث عن "${searchQuery}"` : "لا توجد نتائج"}
                     </div>
                     <div
                       className="text-muted-foreground/50 text-xs mt-2"
@@ -888,10 +924,7 @@ export function ResizableTableFormateur({
                               </span>
                             </div>
 
-                            <div
-                              className="flex items-center justify-center"
-                              style={{ width: columnWidths.actions }}
-                            >
+                            <div className="flex items-center justify-center" style={{ width: columnWidths.actions }}>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <button className="opacity-60 hover:opacity-100 transition-opacity cursor-pointer flex items-center">
@@ -915,7 +948,10 @@ export function ResizableTableFormateur({
                                     className="gap-2 cursor-pointer"
                                     onClick={() => {
                                       if (selectedFormateurs.includes(formateur.id)) {
-                                        router.push(`/cours-formateur?formateurId=${formateur.id}`)
+                                        // Preserve current URL params
+                                        const params = new URLSearchParams(searchParams?.toString())
+                                        const returnUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname
+                                        router.push(`/cours-formateur?formateurId=${formateur.id}&returnUrl=${encodeURIComponent(returnUrl)}`)
                                       }
                                     }}
                                     disabled={!selectedFormateurs.includes(formateur.id)}
@@ -930,7 +966,10 @@ export function ResizableTableFormateur({
                                     className="gap-2 cursor-pointer"
                                     onClick={() => {
                                       if (selectedFormateurs.includes(formateur.id)) {
-                                        router.push(`/nouveau-cours?formateurId=${formateur.id}`)
+                                        // Preserve current URL params
+                                        const params = new URLSearchParams(searchParams?.toString())
+                                        const returnUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname
+                                        router.push(`/nouveau-cours?formateurId=${formateur.id}&returnUrl=${encodeURIComponent(returnUrl)}`)
                                       }
                                     }}
                                     disabled={!selectedFormateurs.includes(formateur.id)}
@@ -947,7 +986,9 @@ export function ResizableTableFormateur({
                                     disabled={!selectedFormateurs.includes(formateur.id)}
                                   >
                                     <Trash2 size={14} />
-                                    <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>حـــــــــــــــــــــــذف</span>
+                                    <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+                                      حـــــــــــــــــــــــذف
+                                    </span>
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -1006,23 +1047,28 @@ export function ResizableTableFormateur({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }} className="text-right">
-              تأكيد الحذف
+              تأكيــد الحـــذف
             </AlertDialogTitle>
-            <AlertDialogDescription style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }} className="text-right">
+            <AlertDialogDescription
+              style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+              className="text-right py-5"
+            >
               هل أنت متأكد من حذف المكون{" "}
-              <span className="font-semibold text-foreground">{formateurToDelete?.nomPrenom}</span>؟ لا يمكن التراجع عن هذا
-              الإجراء.
+              <span className="font-semibold text-foreground">{formateurToDelete?.nomPrenom}</span>؟ لا يمكن التراجع عن
+              هذا الإجراء.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogCancel className="cursor-pointer" style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+              إلغــاء
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-red-600 hover:bg-red-700 text-white cursor-pointer"
               style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
             >
-              حذف
+              حــــــذف
             </AlertDialogAction>
-            <AlertDialogCancel style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>إلغاء</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

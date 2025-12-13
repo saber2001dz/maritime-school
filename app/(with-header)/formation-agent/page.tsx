@@ -104,5 +104,5 @@ export default async function FormationAgentPage({ searchParams }: PageProps) {
   // Transformer les données pour le format attendu par le composant client
   const transformedData = transformAgentFormations(agentFormations);
 
-  return <FormationAgentClient initialData={transformedData} agentInfo={agentInfo} notoNaskhArabicClassName={notoNaskhArabic.className} />;
+  return <FormationAgentClient data={transformedData} agentInfo={agentInfo} notoNaskhArabicClassName={notoNaskhArabic.className} />;
 }

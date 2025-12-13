@@ -8,14 +8,18 @@ import { ProjectDataTable, Project } from "@/components/ui/project-data-table";
 import DialogueEditionFormation, { AgentFormationData, Formation } from "@/components/dialogue-edition-formation";
 
 interface FormationAgentClientProps {
-  initialData: Project[];
+  data: Project[];
   agentInfo: { grade: string; nomPrenom: string } | null;
   notoNaskhArabicClassName: string;
 }
 
 const allColumns: (keyof Project)[] = ["name", "repository", "team", "tech", "createdAt", "contributors", "status"];
 
-export default function FormationAgentClient({ initialData, agentInfo, notoNaskhArabicClassName }: FormationAgentClientProps) {
+export default function FormationAgentClient({
+  data,
+  agentInfo,
+  notoNaskhArabicClassName,
+}: FormationAgentClientProps) {
   const router = useRouter();
   const [visibleColumns, setVisibleColumns] = useState<Set<keyof Project>>(new Set(allColumns));
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -23,14 +27,26 @@ export default function FormationAgentClient({ initialData, agentInfo, notoNaskh
   const [formations, setFormations] = useState<Formation[]>([]);
   const [isLoadingFormations, setIsLoadingFormations] = useState(false);
   const [editFormationData, setEditFormationData] = useState<AgentFormationData | null>(null);
-  const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleEditClick = async (project: Project) => {
     setSelectedProject(project);
+    setIsLoadingFormations(true);
 
-    // Charger les formations d'abord
-    await loadFormations();
+    // Charger les formations via l'API
+    try {
+      const response = await fetch("/api/formations");
+      if (response.ok) {
+        const loadedFormations = await response.json();
+        setFormations(loadedFormations);
+      }
+    } catch (err) {
+      console.error("Erreur lors du chargement des formations:", err);
+    }
+
+    setIsLoadingFormations(false);
 
     // Définir les données du formulaire avec le formationId du project
     setEditFormationData({
@@ -45,21 +61,6 @@ export default function FormationAgentClient({ initialData, agentInfo, notoNaskh
     setIsEditDialogOpen(true);
   };
 
-  const loadFormations = async () => {
-    setIsLoadingFormations(true);
-    try {
-      const response = await fetch("/api/formations");
-      if (response.ok) {
-        const data = await response.json();
-        setFormations(data);
-      }
-    } catch (err) {
-      console.error("Erreur lors du chargement des formations:", err);
-    } finally {
-      setIsLoadingFormations(false);
-    }
-  };
-
   const handleCloseDialog = () => {
     setIsEditDialogOpen(false);
     setSelectedProject(null);
@@ -70,8 +71,8 @@ export default function FormationAgentClient({ initialData, agentInfo, notoNaskh
   const handleSaveEdit = async (data: AgentFormationData) => {
     if (!selectedProject) return;
 
-    setIsUpdating(true);
     setError("");
+    setIsUpdating(true);
 
     try {
       const response = await fetch(`/api/agent-formations/${selectedProject.id}`, {
@@ -95,7 +96,7 @@ export default function FormationAgentClient({ initialData, agentInfo, notoNaskh
         throw new Error(result.error || "Erreur lors de la mise à jour de la formation");
       }
 
-      // Rafraîchir les données
+      // Rafraîchir les données de la page
       router.refresh();
       handleCloseDialog();
     } catch (err: any) {
@@ -111,6 +112,30 @@ export default function FormationAgentClient({ initialData, agentInfo, notoNaskh
         ...editFormationData,
         [field]: value,
       });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setError("");
+    setIsDeleting(true);
+
+    try {
+      const response = await fetch(`/api/agent-formations/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.error || "Erreur lors de la suppression de la formation");
+      }
+
+      // Rafraîchir les données de la page
+      router.refresh();
+      handleCloseDialog();
+    } catch (err: any) {
+      setError(err.message || "Une erreur est survenue lors de la suppression");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -145,7 +170,7 @@ export default function FormationAgentClient({ initialData, agentInfo, notoNaskh
             </div>
           </div>
 
-          <ProjectDataTable projects={initialData} visibleColumns={visibleColumns} onEditClick={handleEditClick} />
+          <ProjectDataTable projects={data} visibleColumns={visibleColumns} onEditClick={handleEditClick} />
         </div>
       </div>
 
@@ -161,11 +186,14 @@ export default function FormationAgentClient({ initialData, agentInfo, notoNaskh
             }}
             formations={formations}
             formationData={editFormationData}
+            agentFormationId={selectedProject?.id}
             isOpen={isEditDialogOpen}
             onClose={handleCloseDialog}
             onSave={handleSaveEdit}
+            onDelete={handleDelete}
             onChange={handleFormationChange}
             isUpdating={isUpdating}
+            isDeleting={isDeleting}
             isLoadingFormations={isLoadingFormations}
             error={error}
           />

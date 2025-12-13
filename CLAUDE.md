@@ -19,6 +19,56 @@ Lors de la résolution de problèmes ou de bugs :
 
 **Règle d'or :** Si la bibliothèque ou le framework fournit une solution native, l'utiliser telle quelle.
 
+## Pattern Standard pour Pages avec Tables
+
+### Architecture Recommandée (2 fichiers)
+
+Pour les pages affichant des données avec des opérations CRUD, suivre ce pattern simple :
+
+**1. page.tsx (Server Component)**
+- Fetch data from Prisma
+- Transform data for UI
+- Pass to client component
+
+**2. client-component.tsx (Client Component)**
+- State management (useState)
+- API calls (CRUD operations)
+- Router navigation (useRouter)
+- UI rendering (table, dialogs, forms)
+
+**Exemple :**
+```typescript
+// ✅ BON (pattern cours-formateur, formation-agent)
+page.tsx (Server Component)
+  ↓ Fetch data from Prisma
+ClientComponent (Client Component)
+  ↓ Handle TOUT (API, state, router, UI)
+```
+
+### Exception: Wrapper Component (3 fichiers)
+
+Ajouter un wrapper component uniquement si vous avez une **raison architecturale valide** :
+
+- **Context providers** nécessaires (ToastProvider, ThemeProvider, etc.)
+- **Boundaries d'erreur** spécifiques
+- **Optimistic updates** complexes
+
+**Exemple d'exception justifiée :**
+- [liste-cours](app/(with-header)/liste-cours/) utilise un wrapper pour le `<ToastProvider>` et les optimistic updates
+
+**Exemple de sur-ingénierie à éviter :**
+```typescript
+// ❌ MAUVAIS (ancien pattern formation-agent - maintenant corrigé)
+page.tsx (Server Component)
+  ↓ Fetch data from Prisma
+WrapperComponent (Client Component)
+  ↓ Proxy API calls (inutile - juste passer les appels)
+ClientComponent (Client Component)
+  ↓ Handle UI only
+```
+
+**Principe :** N'ajouter un wrapper que s'il apporte une **vraie valeur architecturale**, pas juste pour séparer la logique.
+
 ## Project Overview
 
 This is a Next.js 16.0.1 application (using the App Router) built with React 19.2.0, TypeScript, and Tailwind CSS v4. The project is intended for a maritime school management system with comprehensive authentication, user management, agent tracking, and training (formation) management capabilities.

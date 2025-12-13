@@ -872,7 +872,7 @@ export function ResizableSessionTable({
                 <span>الـــوضعيـــــة</span>
               </div>
 
-              <div className="flex mr-2 items-center justify-center relative" style={{ width: columnWidths.actions }}>
+              <div className="flex mx-2 items-center justify-center relative" style={{ width: columnWidths.actions }}>
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="opacity-50">
                   <circle cx="8" cy="8" r="1" fill="currentColor" />
                   <circle cx="13" cy="8" r="1" fill="currentColor" />
@@ -1045,7 +1045,7 @@ export function ResizableSessionTable({
                     </div>
 
                     {/* Actions */}
-                    <div className="flex mr-2 items-center justify-center" style={{ width: columnWidths.actions }}>
+                    <div className="flex mx-2 items-center justify-center" style={{ width: columnWidths.actions }}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button className="opacity-60 hover:opacity-100 transition-opacity cursor-pointer flex items-center">
@@ -1071,7 +1071,7 @@ export function ResizableSessionTable({
                             disabled={!selectedSessions.includes(session.id)}
                           >
                             <Users size={14} />
-                            <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>قائمـة المشاركيـن</span>
+                            <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>قائمـة المشاركيــن</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             dir="rtl"
@@ -1080,7 +1080,7 @@ export function ResizableSessionTable({
                             disabled={!selectedSessions.includes(session.id)}
                           >
                             <Trash2 size={14} />
-                            <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>حـــــــــــــــــــذف</span>
+                            <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>حـــــــــــــــــــــذف</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

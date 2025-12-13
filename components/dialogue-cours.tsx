@@ -28,7 +28,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
@@ -58,70 +57,48 @@ const initialAvatarImage = [
   },
 ]
 
-export interface FormationData {
+export interface CoursData {
   id: string
-  formation: string
-  typeFormation: string
-  specialite: string | null
-  duree: string | null
-  capaciteAbsorption: number | null
+  titre: string
 }
 
-interface DialogueFormationProps {
-  formation?: FormationData
+interface DialogueCoursProps {
+  cours?: CoursData
   isOpen?: boolean
   onClose?: () => void
-  onSave?: (data: FormationData) => void
+  onSave?: (data: CoursData) => void
   onDelete?: (id: string) => void
   isUpdating?: boolean
   isDeleting?: boolean
 }
 
-export default function DialogueFormation({
-  formation,
+export default function DialogueCours({
+  cours,
   isOpen: controlledIsOpen,
   onClose,
   onSave,
   onDelete,
   isUpdating = false,
   isDeleting = false,
-}: DialogueFormationProps = {}) {
+}: DialogueCoursProps = {}) {
   const id = useId()
 
-  const [formationName, setFormationName] = useState("")
-  const [typeFormation, setTypeFormation] = useState("")
-  const [specialite, setSpecialite] = useState("")
-  const [duree, setDuree] = useState("")
-  const [capaciteAbsorption, setCapaciteAbsorption] = useState("")
+  const [titre, setTitre] = useState("")
   const [internalIsOpen, setInternalIsOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   // Utiliser controlledIsOpen si fourni, sinon utiliser l'état interne
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen
 
-  // Mettre à jour les champs quand la formation change
+  // Mettre à jour les champs quand le cours change
   useEffect(() => {
-    if (formation) {
-      setFormationName(formation.formation || "")
-      setTypeFormation(formation.typeFormation || "")
-      setSpecialite(formation.specialite || "")
-      setDuree(formation.duree || "")
-      setCapaciteAbsorption(formation.capaciteAbsorption?.toString() || "")
+    if (cours) {
+      setTitre(cours.titre || "")
     } else {
-      // Réinitialiser si pas de formation
-      setFormationName("")
-      setTypeFormation("")
-      setSpecialite("")
-      setDuree("")
-      setCapaciteAbsorption("")
+      // Réinitialiser si pas de cours
+      setTitre("")
     }
-  }, [formation])
-
-  const handleCapaciteChange = (value: string) => {
-    // Remove all non-digit characters
-    const digits = value.replace(/\D/g, "")
-    setCapaciteAbsorption(digits)
-  }
+  }, [cours])
 
   const handleClose = () => {
     if (onClose) {
@@ -132,14 +109,10 @@ export default function DialogueFormation({
   }
 
   const handleSave = () => {
-    if (onSave && formation) {
+    if (onSave && cours) {
       onSave({
-        id: formation.id,
-        formation: formationName,
-        typeFormation,
-        specialite: specialite || null,
-        duree: duree || null,
-        capaciteAbsorption: capaciteAbsorption ? parseInt(capaciteAbsorption) : null,
+        id: cours.id,
+        titre: titre.trim(),
       })
     }
   }
@@ -149,8 +122,8 @@ export default function DialogueFormation({
   }
 
   const handleConfirmDelete = () => {
-    if (onDelete && formation) {
-      onDelete(formation.id)
+    if (onDelete && cours) {
+      onDelete(cours.id)
     }
     setDeleteDialogOpen(false)
   }
@@ -159,11 +132,11 @@ export default function DialogueFormation({
     setDeleteDialogOpen(false)
   }
 
-  // Le dialogue en mode autonome (sans formation) nécessite son propre AnimatePresence
+  // Le dialogue en mode autonome (sans cours) nécessite son propre AnimatePresence
   const dialogContent = (
     <Dialog open={true} modal={true}>
       <DialogContent
-        className="flex flex-col gap-0 overflow-y-visible p-0 sm:max-w-lg bg-white dark:bg-slate-900 [&>button:last-child]:top-3.5"
+        className="flex flex-col gap-0 overflow-y-visible p-0 sm:max-w-lg bg-white dark:bg-slate-900 [&>button:last-child]:top-3.5 top-[45%]!"
         showClose={false}
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
@@ -171,108 +144,33 @@ export default function DialogueFormation({
         <DialogHeader className="contents space-y-0">
           <div className="border-b px-6 py-4 flex items-center justify-between">
             <DialogTitle className={`text-start text-[#1071c7] font-bold text-md ${notoNaskhArabic.className}`}>
-              تـعــديـــل بـيـــانــات الــدورة التـكـويـنـيـة
+              تـعــديـــل بـيـــانــات الــدرس
             </DialogTitle>
             <button onClick={handleClose} className="p-1 hover:bg-muted/50 rounded-md transition-colors cursor-pointer">
               <XIcon className="h-4 w-4" />
             </button>
           </div>
         </DialogHeader>
-        <DialogDescription className="sr-only">تـعــديـــل بـيـــانــات الــدورة التـكـويـنـيـة</DialogDescription>
+        <DialogDescription className="sr-only">تـعــديـــل بـيـــانــات الــدرس</DialogDescription>
 
         <div className="overflow-y-auto">
           <ProfileBg />
           <Avatar />
-          <div className="px-6 pt-4 pb-6">
+          <div className="px-6 pt-6 pb-16">
             <form className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor={`${id}-formation`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
-                  الـــدورة التـكـويـنـيـة :
+                <Label htmlFor={`${id}-titre`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
+                  عـنــوان الــدرس :
                 </Label>
                 <Input
-                  id={`${id}-formation`}
-                  placeholder="الـــدورة التـكـويـنـيـة"
+                  id={`${id}-titre`}
+                  placeholder="عـنــوان الــدرس"
                   type="text"
-                  value={formationName}
-                  onChange={(e) => setFormationName(e.target.value)}
+                  value={titre}
+                  onChange={(e) => setTitre(e.target.value)}
                   required
                   autoComplete="off"
                   className={`text-base placeholder:text-muted-foreground/50 ${notoNaskhArabic.className}`}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor={`${id}-type`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
-                  نــوع التـكـويــن :
-                </Label>
-                <Select dir="rtl" value={typeFormation} onValueChange={(value) => setTypeFormation(value)}>
-                  <SelectTrigger className={`w-full rounded ${notoNaskhArabic.className}`}>
-                    <SelectValue placeholder="اختر نوع التكوين" />
-                  </SelectTrigger>
-                  <SelectContent className={notoNaskhArabic.className}>
-                    <SelectItem value="تكوين إختصاص" className="text-sm">
-                      تكوين إختصاص
-                    </SelectItem>
-                    <SelectItem value="تكوين تخصصي" className="text-sm">
-                      تكوين تخصصي
-                    </SelectItem>
-                    <SelectItem value="تكوين مستمر" className="text-sm">
-                      تكوين مستمر
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor={`${id}-specialite`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
-                  الإخــتــصــاص :
-                </Label>
-                <Select dir="rtl" value={specialite} onValueChange={(value) => setSpecialite(value)}>
-                  <SelectTrigger className={`w-full rounded ${notoNaskhArabic.className}`}>
-                    <SelectValue placeholder="اختر الإختصاص" />
-                  </SelectTrigger>
-                  <SelectContent className={notoNaskhArabic.className}>
-                    <SelectItem value="بحري" className="text-sm">
-                      بحري
-                    </SelectItem>
-                    <SelectItem value="عدلي" className="text-sm">
-                      عدلي
-                    </SelectItem>
-                    <SelectItem value="إداري" className="text-sm">
-                      إداري
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor={`${id}-duree`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
-                  مـــدة التـكـويــن :
-                </Label>
-                <Input
-                  id={`${id}-duree`}
-                  type="text"
-                  placeholder="مـــدة التـكـويــن"
-                  value={duree}
-                  onChange={(e) => setDuree(e.target.value)}
-                  className={`placeholder:text-muted-foreground/50 ${notoNaskhArabic.className}`}
-                  autoComplete="off"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor={`${id}-capacite`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
-                  طــاقــة الإســتــعــاب :
-                </Label>
-                <Input
-                  id={`${id}-capacite`}
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="طــاقــة الإســتــعــاب"
-                  value={capaciteAbsorption}
-                  onChange={(e) => handleCapaciteChange(e.target.value)}
-                  className={`placeholder:text-muted-foreground/50 ${notoNaskhArabic.className}`}
-                  autoComplete="off"
                 />
               </div>
             </form>
@@ -294,7 +192,7 @@ export default function DialogueFormation({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <span className={notoNaskhArabic.className}>حذف الدورة التكوينية</span>
+              <span className={notoNaskhArabic.className}>حذف الدرس</span>
             </TooltipContent>
           </Tooltip>
 
@@ -324,11 +222,11 @@ export default function DialogueFormation({
 
   return (
     <>
-      {/* Si pas de formation (mode autonome), wrapper avec AnimatePresence */}
-      {!formation ? (
+      {/* Si pas de cours (mode autonome), wrapper avec AnimatePresence */}
+      {!cours ? (
         <AnimatePresence mode="wait">{isOpen && dialogContent}</AnimatePresence>
       ) : (
-        /* Si formation fournie (mode contrôlé), pas de AnimatePresence ici car il est dans le parent */
+        /* Si cours fourni (mode contrôlé), pas de AnimatePresence ici car il est dans le parent */
         isOpen && dialogContent
       )}
 
@@ -340,7 +238,7 @@ export default function DialogueFormation({
               تأكيــد الحـــذف
             </AlertDialogTitle>
             <AlertDialogDescription className={`py-5 text-start ${notoNaskhArabic.className}`}>
-              هل أنت متأكد من حذف هذه الدورة التكوينية؟ هذا الإجراء لا يمكن التراجع عنه.
+              هل أنت متأكد من حذف هذا الدرس؟ هذا الإجراء لا يمكن التراجع عنه.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="sm:justify-end cursor-pointer">

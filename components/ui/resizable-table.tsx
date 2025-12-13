@@ -1272,7 +1272,9 @@ export function ResizableTable({
                                     disabled={!selectedAgents.includes(agent.id)}
                                   >
                                     <Trash2 size={14} />
-                                    <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>حــــــــــــــــذف</span>
+                                    <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+                                      حــــــــــــــــذف
+                                    </span>
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -1409,28 +1411,28 @@ export function ResizableTable({
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>تأكيد الحذف</AlertDialogTitle>
+            <AlertDialogTitle className="text-start" style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+              تأكيــد الحـــذف
+            </AlertDialogTitle>
             <AlertDialogDescription
-              className="py-3"
+              className="py-5 text-start"
               dir="rtl"
               style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
             >
-              هل أنت متأكد من حذف هذا المتربص؟
-              <br />
-              هذا الإجراء لا يمكن التراجع عنه.
+              هل أنت متأكد من حذف هذا المتربص؟ هذا الإجراء لا يمكن التراجع عنه.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="sm:justify-start">
+          <AlertDialogFooter className="sm:justify-end">
+            <AlertDialogCancel className="cursor-pointer" style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+              إلغــاء
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
               className="bg-red-600 hover:bg-red-700 text-white cursor-pointer"
               style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
             >
-              حذف
+              حــــــذف
             </AlertDialogAction>
-            <AlertDialogCancel className="cursor-pointer" style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
-              إلغاء
-            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
