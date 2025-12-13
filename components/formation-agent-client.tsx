@@ -11,6 +11,7 @@ interface FormationAgentClientProps {
   data: Project[];
   agentInfo: { grade: string; nomPrenom: string } | null;
   notoNaskhArabicClassName: string;
+  returnUrl: string;
 }
 
 const allColumns: (keyof Project)[] = ["name", "repository", "team", "tech", "createdAt", "contributors", "status"];
@@ -19,6 +20,7 @@ export default function FormationAgentClient({
   data,
   agentInfo,
   notoNaskhArabicClassName,
+  returnUrl,
 }: FormationAgentClientProps) {
   const router = useRouter();
   const [visibleColumns, setVisibleColumns] = useState<Set<keyof Project>>(new Set(allColumns));
@@ -140,7 +142,7 @@ export default function FormationAgentClient({
   };
 
   const handleBackClick = () => {
-    router.push("/liste-agent");
+    router.push(returnUrl);
   };
 
   return (

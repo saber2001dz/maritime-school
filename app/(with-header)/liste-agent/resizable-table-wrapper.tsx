@@ -1,7 +1,7 @@
 "use client"
 
 import { ResizableTableWithToast, type Agent } from "@/components/ui/resizable-table"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 
 interface ResizableTableWrapperProps {
@@ -10,6 +10,7 @@ interface ResizableTableWrapperProps {
 
 export function ResizableTableWrapper({ agents }: ResizableTableWrapperProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isUpdating, setIsUpdating] = useState(false)
 
   const handleAgentSelect = (agentId: string) => {
@@ -64,6 +65,7 @@ export function ResizableTableWrapper({ agents }: ResizableTableWrapperProps) {
       onFormationSaved={handleFormationSaved}
       isUpdating={isUpdating}
       onAddNewAgent={() => router.push('/nouveau-agent')}
+      searchParams={searchParams}
     />
   )
 }

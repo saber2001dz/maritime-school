@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname, ReadonlyURLSearchParams } from "next/navigation"
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion"
 import { useTheme } from "next-themes"
 import {
@@ -70,6 +70,7 @@ interface ResizableTableProps {
   className?: string
   enableAnimations?: boolean
   onAddNewAgent?: () => void
+  searchParams?: ReadonlyURLSearchParams | null
 }
 
 type SortField = "nomPrenom" | "categorie" | "derniereDateFormation" | "grade"
@@ -153,17 +154,36 @@ export function ResizableTable({
   className = "",
   enableAnimations = true,
   onAddNewAgent,
+  searchParams,
 }: ResizableTableProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const shouldReduceMotion = useReducedMotion()
+  const { theme } = useTheme()
+  const isDark = theme === "dark"
+  const { addToast } = useToast()
+
+  // Parse URL params for initial state
+  const selectedParam = searchParams?.get('selected')
+  // Sélection d'une seule ligne : prendre uniquement le premier ID si plusieurs sont présents
+  const selectedFromUrl = selectedParam ? [selectedParam.split(',')[0]] : []
+  const pageFromUrl = Number(searchParams?.get('page')) || 1
+  const sortFromUrl = searchParams?.get('sort') as SortField | null
+  const orderFromUrl = (searchParams?.get('order') as SortOrder) || 'asc'
+  const categorieFromUrl = searchParams?.get('categorie') || null
+  const searchFromUrl = searchParams?.get('search') || ''
+  const matriculeFromUrl = searchParams?.get('matricule') || ''
+
   const [mounted, setMounted] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [sortField, setSortField] = useState<SortField | null>(null)
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc")
+  const [currentPage, setCurrentPage] = useState(pageFromUrl)
+  const [sortField, setSortField] = useState<SortField | null>(sortFromUrl)
+  const [sortOrder, setSortOrder] = useState<SortOrder>(orderFromUrl)
   const [showSortMenu, setShowSortMenu] = useState(false)
   const [showFilterMenu, setShowFilterMenu] = useState(false)
   const [showExportMenu, setShowExportMenu] = useState(false)
-  const [filterStatus, setFilterStatus] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState<string>("")
-  const [searchMatricule, setSearchMatricule] = useState<string>("")
+  const [filterStatus, setFilterStatus] = useState<string | null>(categorieFromUrl)
+  const [searchQuery, setSearchQuery] = useState<string>(searchFromUrl)
+  const [searchMatricule, setSearchMatricule] = useState<string>(matriculeFromUrl)
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null)
   const [addingFormationAgent, setAddingFormationAgent] = useState<Agent | null>(null)
   const [formationFormData, setFormationFormData] = useState<{
@@ -178,15 +198,9 @@ export function ResizableTable({
   const [availableFormations, setAvailableFormations] = useState<Formation[]>([])
   const [isLoadingFormations, setIsLoadingFormations] = useState(false)
   const [isSavingFormation, setIsSavingFormation] = useState(false)
-  const [selectedAgents, setSelectedAgents] = useState<string[]>([])
+  const [selectedAgents, setSelectedAgents] = useState<string[]>(selectedFromUrl)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null)
-
-  const router = useRouter()
-  const shouldReduceMotion = useReducedMotion()
-  const { theme } = useTheme()
-  const isDark = theme === "dark"
-  const { addToast } = useToast()
 
   // Column width state with default values
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
@@ -206,6 +220,37 @@ export function ResizableTable({
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Sync state changes to URL - runs after state updates, not during render
+  useEffect(() => {
+    if (!mounted) return // Don't run on initial mount
+
+    const params = new URLSearchParams()
+
+    // Une seule ligne sélectionnée à la fois
+    if (selectedAgents.length > 0) {
+      params.set('selected', selectedAgents[0])
+    }
+    if (currentPage !== 1) {
+      params.set('page', String(currentPage))
+    }
+    if (sortField) {
+      params.set('sort', sortField)
+      params.set('order', sortOrder)
+    }
+    if (filterStatus) {
+      params.set('categorie', filterStatus)
+    }
+    if (searchQuery) {
+      params.set('search', searchQuery)
+    }
+    if (searchMatricule) {
+      params.set('matricule', searchMatricule)
+    }
+
+    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname
+    router.push(newUrl, { scroll: false })
+  }, [selectedAgents, currentPage, sortField, sortOrder, filterStatus, searchQuery, searchMatricule, pathname, router, mounted])
 
   const handleSort = (field: SortField | null) => {
     if (field === null) {
@@ -1244,7 +1289,10 @@ export function ResizableTable({
                                     className="gap-2 cursor-pointer"
                                     onClick={() => {
                                       if (selectedAgents.includes(agent.id)) {
-                                        router.push(`/formation-agent?agentId=${agent.id}`)
+                                        // Preserve current URL params
+                                        const params = new URLSearchParams(searchParams?.toString())
+                                        const returnUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname
+                                        router.push(`/formation-agent?agentId=${agent.id}&returnUrl=${encodeURIComponent(returnUrl)}`)
                                       }
                                     }}
                                     disabled={!selectedAgents.includes(agent.id)}

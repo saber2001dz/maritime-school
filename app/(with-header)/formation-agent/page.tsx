@@ -76,6 +76,7 @@ export default async function FormationAgentPage({ searchParams }: PageProps) {
   // Attendre les searchParams (Next.js 15+)
   const params = await searchParams;
   const agentId = params.agentId as string | undefined;
+  const returnUrl = (params.returnUrl as string) || '/liste-agent';
 
   // Récupérer les informations de l'agent si un agentId est fourni
   let agentInfo = null;
@@ -104,5 +105,12 @@ export default async function FormationAgentPage({ searchParams }: PageProps) {
   // Transformer les données pour le format attendu par le composant client
   const transformedData = transformAgentFormations(agentFormations);
 
-  return <FormationAgentClient data={transformedData} agentInfo={agentInfo} notoNaskhArabicClassName={notoNaskhArabic.className} />;
+  return (
+    <FormationAgentClient
+      data={transformedData}
+      agentInfo={agentInfo}
+      notoNaskhArabicClassName={notoNaskhArabic.className}
+      returnUrl={returnUrl}
+    />
+  );
 }

@@ -77,11 +77,11 @@ export default function CoursSimpleTable({
                 transition: { type: "spring", stiffness: 400, damping: 25 },
               }}
             >
-              {/* Gradient de fond bleu */}
+              {/* Gradient de fond rose/fuchsia */}
               <div
-                className="absolute inset-0 bg-linear-to-l from-[#06417F]/10 dark:from-blue-400/10 to-transparent pointer-events-none"
+                className="absolute inset-0 bg-linear-to-l from-blue-600/12 dark:from-blue-400/12 to-transparent pointer-events-none"
                 style={{
-                  backgroundSize: "30% 100%",
+                  backgroundSize: "80% 100%",
                   backgroundPosition: "right",
                   backgroundRepeat: "no-repeat",
                 }}

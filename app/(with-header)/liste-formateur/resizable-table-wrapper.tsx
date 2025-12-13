@@ -1,17 +1,16 @@
 "use client"
 
 import { ResizableTableFormateurWithToast, type Formateur } from "@/components/ui/resizable-table-formateur"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
-import { ReadonlyURLSearchParams } from "next/navigation"
 
 interface ResizableTableWrapperProps {
   formateurs: Formateur[]
-  searchParams?: ReadonlyURLSearchParams | null
 }
 
-export function ResizableTableWrapper({ formateurs, searchParams }: ResizableTableWrapperProps) {
+export function ResizableTableWrapper({ formateurs }: ResizableTableWrapperProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isUpdating, setIsUpdating] = useState(false)
 
   const handleFormateurSelect = (formateurId: string) => {
