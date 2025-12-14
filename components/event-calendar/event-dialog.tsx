@@ -391,6 +391,7 @@ export function EventDialog({
           <DialogFooter className="flex-row sm:justify-between">
             {event?.id && (
               <Button
+              className="cursor-pointer"
                 variant="outline"
                 size="icon"
                 onClick={handleDeleteClick}
@@ -400,10 +401,10 @@ export function EventDialog({
               </Button>
             )}
             <div className="flex flex-1 justify-end gap-2">
-              <Button variant="outline" onClick={onClose}>
+              <Button variant="outline" onClick={onClose} className="cursor-pointer">
                 إلغــــاء
               </Button>
-              <Button onClick={handleSave}>حــفــــظ</Button>
+              <Button className="cursor-pointer" onClick={handleSave}>حــفــــظ</Button>
             </div>
           </DialogFooter>
         </DialogContent>
@@ -413,7 +414,7 @@ export function EventDialog({
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent className={notoNaskhArabic.variable} style={{ fontFamily: "var(--font-noto-naskh-arabic)" }} dir="rtl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-right">
+            <AlertDialogTitle className="text-right cursor-pointer">
               تأكيد الحـــذف
             </AlertDialogTitle>
             <AlertDialogDescription className="text-right">
@@ -424,7 +425,7 @@ export function EventDialog({
             <AlertDialogCancel>إلغــــاء</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-red-600 hover:bg-red-700 text-white cursor-pointer"
             >
               حــــذف
             </AlertDialogAction>

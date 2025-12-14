@@ -48,11 +48,11 @@ export function SessionTabsClient({ sessions: initialSessions, formations }: Ses
               </div>
               <TabsList>
                 <TabsTrigger value="list" className="min-w-[50px] cursor-pointer">
-                  <Table className="h-5 w-5 text-muted-foreground data-[state=active]:text-foreground" />
+                  <Table className="h-5 w-5" />
                 </TabsTrigger>
 
                 <TabsTrigger value="schedule" className="min-w-[50px] cursor-pointer">
-                  <CalendarDays className="h-5 w-5 text-muted-foreground data-[state=active]:text-foreground" />
+                  <CalendarDays className="h-5 w-5" />
                 </TabsTrigger>
               </TabsList>
             </div>
