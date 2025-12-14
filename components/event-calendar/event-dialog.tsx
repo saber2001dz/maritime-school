@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react"
 import { RiCalendarLine, RiDeleteBinLine } from "@remixicon/react"
-import { format, isBefore } from "date-fns"
+import { isBefore } from "date-fns"
 import localFont from "next/font/local"
 
 import { cn } from "@/lib/utils"
+import { formatDateInArabic, customArLocale } from "@/lib/calendar-locale"
 
 const notoNaskhArabic = localFont({
   src: "../../app/fonts/NotoNaskhArabic.woff2",
@@ -215,7 +216,7 @@ export function EventDialog({
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className={`sm:max-w-[425px] ${notoNaskhArabic.variable}`} style={{ fontFamily: "var(--font-noto-naskh-arabic)" }} dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-start font-bold">{event?.id ? "تعديل الــدورة" : "إنشاء الــدورة"}</DialogTitle>
+            <DialogTitle className="text-start font-bold text-[#1071c7]">{event?.id ? "تعديل الــدورة" : "إنشاء الــدورة"}</DialogTitle>
             <DialogDescription className="sr-only">
               {event?.id
                 ? "تعديل تفاصيل هذه الــدورة"
@@ -272,7 +273,7 @@ export function EventDialog({
                         !startDate && "text-muted-foreground"
                       )}
                     >
-                      {startDate ? format(startDate, "PPP") : "اختر التاريخ"}
+                      {startDate ? formatDateInArabic(startDate) : "اختر التاريخ"}
                     </span>
                     <RiCalendarLine
                       size={16}
@@ -286,6 +287,8 @@ export function EventDialog({
                     mode="single"
                     selected={startDate}
                     defaultMonth={startDate}
+                    locale={customArLocale}
+                    dir="rtl"
                     onSelect={(date) => {
                       if (date) {
                         setStartDate(date)
@@ -320,7 +323,7 @@ export function EventDialog({
                         !endDate && "text-muted-foreground"
                       )}
                     >
-                      {endDate ? format(endDate, "PPP") : "اختر التاريخ"}
+                      {endDate ? formatDateInArabic(endDate) : "اختر التاريخ"}
                     </span>
                     <RiCalendarLine
                       size={16}
@@ -335,6 +338,8 @@ export function EventDialog({
                     selected={endDate}
                     defaultMonth={endDate}
                     disabled={{ before: startDate }}
+                    locale={customArLocale}
+                    dir="rtl"
                     onSelect={(date) => {
                       if (date) {
                         setEndDate(date)

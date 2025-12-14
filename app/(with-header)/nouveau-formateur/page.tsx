@@ -9,14 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { motion, AnimatePresence } from "framer-motion"
 import localFont from "next/font/local"
 import { X, ChevronRight } from "lucide-react"
+import { ToastProvider, useToast } from "@/components/ui/ultra-quality-toast"
 
 const notoNaskhArabic = localFont({
   src: "../../fonts/NotoNaskhArabic.woff2",
   display: "swap",
 })
 
-export default function NouveauFormateurPage() {
+function NouveauFormateurPageContent() {
   const router = useRouter()
+  const { addToast } = useToast()
   const RIBInputRef = React.useRef<HTMLInputElement>(null)
   const [formData, setFormData] = React.useState({
     nomPrenom: "",
@@ -28,13 +30,8 @@ export default function NouveauFormateurPage() {
   })
   const [loading, setLoading] = React.useState(false)
   const [success, setSuccess] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
   const [errors, setErrors] = React.useState({
     nomPrenom: false,
-    grade: false,
-    unite: false,
-    numero: false,
-    RIB: false,
   })
 
   const grades = [
@@ -77,15 +74,19 @@ export default function NouveauFormateurPage() {
   }
 
   const validateForm = () => {
-    const newErrors = {
-      nomPrenom: formData.nomPrenom.trim() === "",
-      grade: formData.grade === "",
-      unite: formData.unite.trim() === "",
-      numero: formData.numero.trim() === "",
-      RIB: formData.RIB.length !== 20,
+    const nomPrenomError = formData.nomPrenom.trim() === ""
+    setErrors({ nomPrenom: nomPrenomError })
+
+    if (nomPrenomError) {
+      addToast({
+        title: "خطأ في الإسم و اللقب",
+        description: "يرجى إدخال الإسم و اللقب",
+        variant: "error",
+      })
+      return false
     }
-    setErrors(newErrors)
-    return !Object.values(newErrors).some((error) => error)
+
+    return true
   }
 
   const handleSubmit = async () => {
@@ -94,7 +95,6 @@ export default function NouveauFormateurPage() {
     }
 
     setLoading(true)
-    setError(null)
 
     try {
       const response = await fetch('/api/formateurs', {
@@ -115,19 +115,19 @@ export default function NouveauFormateurPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        // Si c'est une erreur de RIB dupliqué
-        if (response.status === 409) {
-          setErrors({ ...errors, RIB: true })
-          // Donner le focus et sélectionner le contenu
-          setTimeout(() => {
-            if (RIBInputRef.current) {
-              RIBInputRef.current.focus()
-              RIBInputRef.current.select()
-            }
-          }, 100)
-        }
+        addToast({
+          title: "خطأ في الإنشاء",
+          description: data.error || 'حدث خطأ أثناء إنشاء المكون',
+          variant: "error",
+        })
         throw new Error(data.error || 'Erreur lors de la création du formateur')
       }
+
+      addToast({
+        title: "تم بنجاح",
+        description: "تم إنشاء المكون بنجاح",
+        variant: "success",
+      })
 
       setSuccess(true)
 
@@ -136,7 +136,6 @@ export default function NouveauFormateurPage() {
         router.push('/liste-formateur')
       }, 2000)
     } catch (err: any) {
-      setError(err.message)
       setLoading(false)
     }
   }
@@ -212,14 +211,10 @@ export default function NouveauFormateurPage() {
                 <Select
                   dir="rtl"
                   value={formData.grade}
-                  onValueChange={(value) => {
-                    handleChange("grade", value)
-                    if (errors.grade) setErrors({ ...errors, grade: false })
-                  }}
-                  required
+                  onValueChange={(value) => handleChange("grade", value)}
                 >
                   <SelectTrigger
-                    className={`mt-2 w-full rounded ${notoNaskhArabic.className} ${errors.grade ? "border-red-500 focus:ring-red-500" : ""}`}
+                    className={`mt-2 w-full rounded ${notoNaskhArabic.className}`}
                   >
                     <SelectValue placeholder="اختر الرتبة" />
                   </SelectTrigger>
@@ -246,24 +241,15 @@ export default function NouveauFormateurPage() {
                 <Label className="text-[12px]" htmlFor="unite">
                   الــوحــدة
                 </Label>
-                <div className="relative">
-                  <Input
-                    id="unite"
-                    type="text"
-                    placeholder="أدخل الوحدة"
-                    value={formData.unite}
-                    onChange={(e) => {
-                      handleChange("unite", e.target.value)
-                      if (errors.unite) setErrors({ ...errors, unite: false })
-                    }}
-                    className={`mt-2 rounded ${notoNaskhArabic.className} ${errors.unite ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                    autoComplete="off"
-                    required
-                  />
-                  {errors.unite && (
-                    <X className="absolute left-3 top-1/2 -translate-y-1/2 mt-1 h-4 w-4 text-red-500" />
-                  )}
-                </div>
+                <Input
+                  id="unite"
+                  type="text"
+                  placeholder="أدخل الوحدة"
+                  value={formData.unite}
+                  onChange={(e) => handleChange("unite", e.target.value)}
+                  className={`mt-2 rounded ${notoNaskhArabic.className}`}
+                  autoComplete="off"
+                />
               </motion.div>
 
               <motion.div
@@ -295,26 +281,17 @@ export default function NouveauFormateurPage() {
                 <Label className="text-[12px]" htmlFor="numero">
                   رقـم الهـاتـف
                 </Label>
-                <div className="relative">
-                  <Input
-                    id="numero"
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="xx xxx xxx"
-                    value={formData.numero}
-                    onChange={(e) => {
-                      handlePhoneChange(e.target.value)
-                      if (errors.numero) setErrors({ ...errors, numero: false })
-                    }}
-                    className={`mt-2 rounded ${notoNaskhArabic.className} text-right ${errors.numero ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                    dir="ltr"
-                    autoComplete="off"
-                    required
-                  />
-                  {errors.numero && (
-                    <X className="absolute left-3 top-1/2 -translate-y-1/2 mt-1 h-4 w-4 text-red-500" />
-                  )}
-                </div>
+                <Input
+                  id="numero"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="xx xxx xxx"
+                  value={formData.numero}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  className={`mt-2 rounded ${notoNaskhArabic.className} text-right`}
+                  dir="ltr"
+                  autoComplete="off"
+                />
               </motion.div>
 
               <motion.div
@@ -326,41 +303,20 @@ export default function NouveauFormateurPage() {
                 <Label className="text-[12px]" htmlFor="RIB">
                   RIB
                 </Label>
-                <div className="relative">
-                  <Input
-                    ref={RIBInputRef}
-                    id="RIB"
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="أدخل RIB (20 رقم)"
-                    value={formData.RIB}
-                    onChange={(e) => {
-                      handleRIBChange(e.target.value)
-                      if (errors.RIB) setErrors({ ...errors, RIB: false })
-                    }}
-                    className={`mt-2 rounded ${notoNaskhArabic.className} text-right ${errors.RIB ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                    dir="ltr"
-                    maxLength={20}
-                    autoComplete="off"
-                    required
-                  />
-                  {errors.RIB && (
-                    <X className="absolute left-3 top-1/2 -translate-y-1/2 mt-1 h-4 w-4 text-red-500" />
-                  )}
-                </div>
+                <Input
+                  ref={RIBInputRef}
+                  id="RIB"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="أدخل RIB (20 رقم)"
+                  value={formData.RIB}
+                  onChange={(e) => handleRIBChange(e.target.value)}
+                  className={`mt-2 rounded ${notoNaskhArabic.className} text-right`}
+                  dir="ltr"
+                  maxLength={20}
+                  autoComplete="off"
+                />
               </motion.div>
-
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md"
-                >
-                  <p className={`text-sm text-red-600 dark:text-red-400 text-center ${notoNaskhArabic.className}`}>
-                    {error}
-                  </p>
-                </motion.div>
-              )}
 
               {/* Séparateur */}
               <div className="w-full h-px bg-border my-6" />
@@ -419,5 +375,13 @@ export default function NouveauFormateurPage() {
         )}
       </motion.div>
     </div>
+  )
+}
+
+export default function NouveauFormateurPage() {
+  return (
+    <ToastProvider>
+      <NouveauFormateurPageContent />
+    </ToastProvider>
   )
 }

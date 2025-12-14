@@ -1,7 +1,6 @@
 "use client"
 
 import localFont from "next/font/local"
-import { useRouter } from "next/navigation"
 import { EventCalendar } from "@/components/event-calendar"
 import { type CalendarEvent } from "@/components/event-calendar/types"
 import { transformSessionsToEvents } from "@/lib/calendar-utils"
@@ -22,6 +21,9 @@ interface Formation {
 interface SessionPlanningProps {
   sessions: SessionFormation[]
   formations: Formation[]
+  onSessionCreated?: (session: SessionFormation) => void
+  onSessionUpdated?: (session: SessionFormation) => void
+  onSessionDeleted?: (sessionId: string) => void
 }
 
 /**
@@ -45,8 +47,13 @@ interface SessionPlanningProps {
  * - ✅ Event update (dates, color, participants) with toast notification
  * - ✅ Event deletion with toast notification
  */
-export function SessionPlanning({ sessions, formations }: SessionPlanningProps) {
-  const router = useRouter()
+export function SessionPlanning({
+  sessions,
+  formations,
+  onSessionCreated,
+  onSessionUpdated,
+  onSessionDeleted,
+}: SessionPlanningProps) {
   const { addToast } = useToast()
 
   // Transform sessions to calendar events
@@ -98,7 +105,7 @@ export function SessionPlanning({ sessions, formations }: SessionPlanningProps) 
         throw new Error(errorData.error || `Failed to create session: ${response.status}`)
       }
 
-      await response.json()
+      const newSession = await response.json()
 
       // Show success toast
       addToast({
@@ -107,8 +114,8 @@ export function SessionPlanning({ sessions, formations }: SessionPlanningProps) 
         description: "تم إضافة الجلسة بنجاح",
       })
 
-      // Refresh the page to show new data
-      router.refresh()
+      // Propager au parent pour synchroniser avec l'autre onglet
+      onSessionCreated?.(newSession)
     } catch (error) {
       console.error("❌ Error creating session:", error)
       addToast({
@@ -201,8 +208,8 @@ export function SessionPlanning({ sessions, formations }: SessionPlanningProps) 
         throw new Error(errorData.error || `Failed to update event: ${response.status}`)
       }
 
-      const result = await response.json()
-      console.log("✅ Event updated successfully:", result)
+      const updatedSession = await response.json()
+      console.log("✅ Event updated successfully:", updatedSession)
 
       // Show success toast
       addToast({
@@ -211,8 +218,8 @@ export function SessionPlanning({ sessions, formations }: SessionPlanningProps) 
         description: "تم تحديث الجلسة بنجاح",
       })
 
-      // Refresh the page to show updated data
-      router.refresh()
+      // Propager au parent pour synchroniser avec l'autre onglet
+      onSessionUpdated?.(updatedSession)
     } catch (error) {
       console.error("❌ Error updating event:", error)
       addToast({
@@ -250,8 +257,8 @@ export function SessionPlanning({ sessions, formations }: SessionPlanningProps) 
         description: "تم حذف الدورة بنجاح",
       })
 
-      // Refresh the page to show updated data
-      router.refresh()
+      // Propager au parent pour synchroniser avec l'autre onglet
+      onSessionDeleted?.(eventId)
     } catch (error) {
       console.error("❌ Error deleting event:", error)
       addToast({

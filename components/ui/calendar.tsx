@@ -3,17 +3,26 @@
 import * as React from "react"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import { DayPicker } from "react-day-picker"
+import localFont from "next/font/local"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
+
+const notoNaskhArabic = localFont({
+  src: "../../app/fonts/NotoNaskhArabic.woff2",
+  variable: "--font-noto-naskh-arabic",
+})
 
 function Calendar({
   className,
   classNames,
   showOutsideDays = true,
   components: userComponents,
+  dir,
   ...props
 }: React.ComponentProps<typeof DayPicker>) {
+  const isRTL = dir === "rtl"
+
   const defaultClassNames = {
     months: "relative flex flex-col sm:flex-row gap-4",
     month: "w-full",
@@ -29,7 +38,10 @@ function Calendar({
       buttonVariants({ variant: "ghost" }),
       "size-9 text-muted-foreground/80 hover:text-foreground p-0"
     ),
-    weekday: "size-9 p-0 text-xs font-medium text-muted-foreground/80",
+    weekday: cn(
+      "size-9 p-0 text-xs font-medium text-muted-foreground/80",
+      isRTL && notoNaskhArabic.variable
+    ),
     day_button:
       "relative flex size-9 items-center justify-center whitespace-nowrap rounded-md p-0 text-foreground group-[[data-selected]:not(.range-middle)]:[transition-property:color,background-color,border-radius,box-shadow] group-[[data-selected]:not(.range-middle)]:duration-150 group-data-disabled:pointer-events-none focus-visible:z-10 hover:not-in-data-selected:bg-accent group-data-selected:bg-primary hover:not-in-data-selected:text-foreground group-data-selected:text-primary-foreground group-data-disabled:text-foreground/30 group-data-disabled:line-through group-data-outside:text-foreground/30 group-data-selected:group-data-outside:text-primary-foreground outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px] group-[.range-start:not(.range-end)]:rounded-e-none group-[.range-end:not(.range-start)]:rounded-s-none group-[.range-middle]:rounded-none group-[.range-middle]:group-data-selected:bg-accent group-[.range-middle]:group-data-selected:text-foreground",
     day: "group size-9 px-0 py-px text-sm",
@@ -66,10 +78,19 @@ function Calendar({
       disabled?: boolean
       orientation?: "left" | "right" | "up" | "down"
     }) => {
+      // Inverser les chevrons en mode RTL
       if (props.orientation === "left") {
-        return <ChevronLeftIcon size={16} {...props} aria-hidden="true" />
+        return isRTL ? (
+          <ChevronRightIcon size={16} {...props} aria-hidden="true" />
+        ) : (
+          <ChevronLeftIcon size={16} {...props} aria-hidden="true" />
+        )
       }
-      return <ChevronRightIcon size={16} {...props} aria-hidden="true" />
+      return isRTL ? (
+        <ChevronLeftIcon size={16} {...props} aria-hidden="true" />
+      ) : (
+        <ChevronRightIcon size={16} {...props} aria-hidden="true" />
+      )
     },
   }
 
@@ -79,13 +100,24 @@ function Calendar({
   }
 
   return (
-    <DayPicker
-      showOutsideDays={showOutsideDays}
-      className={cn("w-fit", className)}
-      classNames={mergedClassNames}
-      components={mergedComponents}
-      {...props}
-    />
+    <div
+      className={isRTL ? notoNaskhArabic.variable : ""}
+      style={
+        isRTL
+          ? { fontFamily: "var(--font-noto-naskh-arabic)" }
+          : undefined
+      }
+    >
+      <DayPicker
+        showOutsideDays={showOutsideDays}
+        className={cn("w-fit", className)}
+        classNames={mergedClassNames}
+        components={mergedComponents}
+        dir={dir}
+        weekStartsOn={1}
+        {...props}
+      />
+    </div>
   )
 }
 

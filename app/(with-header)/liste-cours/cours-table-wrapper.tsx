@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { AnimatePresence } from "framer-motion"
+import { useRouter } from "next/navigation"
 import CoursSimpleTable, { SimpleCours } from "@/components/ui/cours-simple-table"
 import { ToastProvider, useToast } from "@/components/ui/ultra-quality-toast"
 import DialogueCours, { type CoursData } from "@/components/dialogue-cours"
@@ -18,6 +19,7 @@ interface CoursTableWrapperProps {
 }
 
 function CoursTableWrapperContent({ cours: initialCours }: CoursTableWrapperProps) {
+  const router = useRouter()
   const [cours, setCours] = useState<SimpleCours[]>(
     initialCours.map((item, index) => ({
       id: item.id,
@@ -140,9 +142,17 @@ function CoursTableWrapperContent({ cours: initialCours }: CoursTableWrapperProp
     }
   }
 
+  const handleAddNewCours = () => {
+    router.push('/nouveau-cours')
+  }
+
   return (
     <div className="w-full">
-      <CoursSimpleTable cours={cours} onEditClick={handleEditClick} />
+      <CoursSimpleTable
+        cours={cours}
+        onEditClick={handleEditClick}
+        onAddNewCours={handleAddNewCours}
+      />
 
       {/* Dialogue d'édition de cours */}
       <AnimatePresence mode="wait">

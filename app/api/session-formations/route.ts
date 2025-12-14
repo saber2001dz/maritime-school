@@ -134,12 +134,19 @@ export async function POST(request: NextRequest) {
             id: true,
             formation: true,
             typeFormation: true,
+            specialite: true,
           }
         }
       }
     })
 
-    return NextResponse.json({ session: newSession }, { status: 201 })
+    // Retourner avec le statut calculé pour cohérence avec GET
+    const sessionWithStatus = {
+      ...newSession,
+      statut: computeSessionStatus(newSession.dateDebut, newSession.dateFin)
+    }
+
+    return NextResponse.json(sessionWithStatus, { status: 201 })
   } catch (error: any) {
     console.error('Erreur lors de la création de la session:', error)
 

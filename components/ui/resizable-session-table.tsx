@@ -33,7 +33,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { ToastProvider, useToast } from "@/components/ui/ultra-quality-toast"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
-import DialogueSessionFormation from "@/components/dialogue-session-formation"
 
 export interface SessionFormation {
   id: string
@@ -58,7 +57,7 @@ interface ResizableSessionTableProps {
   sessions: SessionFormation[]
   onSessionSelect?: (sessionId: string) => void
   onAddNewSession?: () => void
-  onSaveEdit?: (session: SessionFormation) => Promise<{ success: boolean; error?: string }>
+  onEditSession?: (session: SessionFormation) => void
   className?: string
   enableAnimations?: boolean
 }
@@ -108,7 +107,7 @@ export function ResizableSessionTable({
   sessions: initialSessions,
   onSessionSelect,
   onAddNewSession,
-  onSaveEdit,
+  onEditSession,
   className = "",
   enableAnimations = true,
 }: ResizableSessionTableProps) {
@@ -126,8 +125,6 @@ export function ResizableSessionTable({
   const [selectedSessions, setSelectedSessions] = useState<string[]>([])
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [sessionToDelete, setSessionToDelete] = useState<SessionFormation | null>(null)
-  const [editingSession, setEditingSession] = useState<SessionFormation | null>(null)
-  const [isUpdating, setIsUpdating] = useState(false)
 
   const shouldReduceMotion = useReducedMotion()
   const { theme } = useTheme()
@@ -344,6 +341,13 @@ export function ResizableSessionTable({
       setDeleteDialogOpen(false)
       setSessionToDelete(null)
       setSelectedSessions([])
+
+      // Si c'est la dernière ligne de la page actuelle et qu'on n'est pas sur la page 1,
+      // revenir à la page précédente
+      if (paginatedSessions.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1)
+      }
+
       window.location.reload()
     } catch (error) {
       addToast({
@@ -356,66 +360,7 @@ export function ResizableSessionTable({
 
   // Gestion de l'édition
   const handleEditClick = (session: SessionFormation) => {
-    setEditingSession(session)
-  }
-
-  const handleCancelEdit = () => {
-    setEditingSession(null)
-  }
-
-  const handleSaveEdit = async (session: SessionFormation) => {
-    if (!onSaveEdit) return
-
-    // Validation
-    if (!session.formationId || !session.dateDebut || !session.dateFin) {
-      addToast({
-        variant: "error",
-        title: "خطأ",
-        description: "يجب ملء جميع الحقول المطلوبة",
-      })
-      return
-    }
-
-    const dateDebutObj = new Date(session.dateDebut)
-    const dateFinObj = new Date(session.dateFin)
-
-    if (dateDebutObj >= dateFinObj) {
-      addToast({
-        variant: "error",
-        title: "خطأ",
-        description: "يجب أن يكون تاريخ البداية قبل تاريخ النهاية",
-      })
-      return
-    }
-
-    setIsUpdating(true)
-
-    try {
-      const result = await onSaveEdit(session)
-
-      if (result.success) {
-        addToast({
-          variant: "success",
-          title: "نجح",
-          description: "تم تحديث البيانات بنجاح",
-        })
-        handleCancelEdit()
-      } else {
-        addToast({
-          variant: "error",
-          title: "خطأ",
-          description: result.error || "حدث خطأ أثناء تحديث البيانات",
-        })
-      }
-    } catch (error) {
-      addToast({
-        variant: "error",
-        title: "خطأ",
-        description: "حدث خطأ أثناء تحديث البيانات",
-      })
-    } finally {
-      setIsUpdating(false)
-    }
+    onEditSession?.(session)
   }
 
   const formatDateYYYYMMDD = (date: Date) => {
@@ -886,7 +831,7 @@ export function ResizableSessionTable({
               <motion.div
                 key={`page-${currentPage}-filter-${filterFormationType || "all"}-sort-${
                   sortField || "none"
-                }-search-${searchQuery}-reference-${searchReference}`}
+                }-search-${searchQuery}-reference-${searchReference}-count-${initialSessions.length}`}
                 variants={shouldAnimate ? containerVariants : {}}
                 initial={shouldAnimate ? "hidden" : "visible"}
                 animate="visible"
@@ -1105,36 +1050,67 @@ export function ResizableSessionTable({
           </div>
 
           <div className="flex gap-1.5">
-            <button
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-              className="px-2 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
-            >
-              <ChevronsRight size={16} />
-            </button>
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
-              style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
-            >
-              السابق
-            </button>
-            <button
-              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
-              style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
-            >
-              التالي
-            </button>
-            <button
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages}
-              className="px-2 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
-            >
-              <ChevronsLeft size={16} />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
+                >
+                  <ChevronsRight size={16} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>الصفحة الأولى</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
+                  style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                >
+                  السابق
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>الصفحة السابقة</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
+                  style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                >
+                  التالي
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>الصفحة التالية</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
+                >
+                  <ChevronsLeft size={16} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>الصفحة الأخيرة</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
       )}
@@ -1162,19 +1138,6 @@ export function ResizableSessionTable({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Edit Session Dialog */}
-      <AnimatePresence mode="wait">
-        {editingSession && (
-          <DialogueSessionFormation
-            session={editingSession}
-            isOpen={true}
-            onClose={handleCancelEdit}
-            onSave={handleSaveEdit}
-            isUpdating={isUpdating}
-          />
-        )}
-      </AnimatePresence>
     </div>
   )
 }

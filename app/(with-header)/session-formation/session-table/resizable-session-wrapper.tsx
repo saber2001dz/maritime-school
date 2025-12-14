@@ -1,14 +1,24 @@
 "use client"
 
+import { useState } from "react"
 import { ResizableSessionTableWithToast, type SessionFormation } from "@/components/ui/resizable-session-table"
-import { useRouter } from "next/navigation"
+import { SessionEventDialogAdapter } from "@/components/session-event-dialog-adapter"
 
 interface ResizableSessionWrapperProps {
   sessions: SessionFormation[]
+  onSessionCreated?: (session: SessionFormation) => void
+  onSessionUpdated?: (session: SessionFormation) => void
+  onSessionDeleted?: (sessionId: string) => void
 }
 
-export function ResizableSessionWrapper({ sessions }: ResizableSessionWrapperProps) {
-  const router = useRouter()
+export function ResizableSessionWrapper({
+  sessions,
+  onSessionCreated,
+  onSessionUpdated,
+  onSessionDeleted,
+}: ResizableSessionWrapperProps) {
+  const [selectedSession, setSelectedSession] = useState<SessionFormation | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const handleSessionSelect = (sessionId: string) => {
     // TODO: Implement session selection handler
@@ -19,55 +29,54 @@ export function ResizableSessionWrapper({ sessions }: ResizableSessionWrapperPro
     // (voir resizable-session-table.tsx ligne 1069-1075)
   }
 
-  const handleSaveEdit = async (session: SessionFormation): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const response = await fetch(`/api/session-formations/${session.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          formationId: session.formationId,
-          dateDebut: session.dateDebut.toISOString(),
-          dateFin: session.dateFin.toISOString(),
-          reference: session.reference || null,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        return {
-          success: false,
-          error: data.error || 'حدث خطأ أثناء تحديث البيانات'
-        }
-      }
-
-      // Rafraîchir les données de la page
-      router.refresh()
-
-      return { success: true }
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error)
-      return {
-        success: false,
-        error: 'حدث خطأ أثناء تحديث البيانات'
-      }
-    }
+  const handleAddNewSession = () => {
+    setSelectedSession(null)  // null = create mode
+    setIsDialogOpen(true)
   }
 
-  const handleAddNewSession = () => {
-    // Rafraîchir après ajout d'une session
-    router.refresh()
+  const handleEditSession = (session: SessionFormation) => {
+    setSelectedSession(session)  // edit mode
+    setIsDialogOpen(true)
+  }
+
+  const handleDialogClose = () => {
+    setIsDialogOpen(false)
+    setSelectedSession(null)
+  }
+
+  const handleSessionCreated = (newSession: SessionFormation) => {
+    // Propager au parent pour synchroniser avec l'autre onglet
+    onSessionCreated?.(newSession)
+  }
+
+  const handleSessionUpdated = (updatedSession: SessionFormation) => {
+    // Propager au parent pour synchroniser avec l'autre onglet
+    onSessionUpdated?.(updatedSession)
+  }
+
+  const handleSessionDeleted = (sessionId: string) => {
+    // Propager au parent pour synchroniser avec l'autre onglet
+    onSessionDeleted?.(sessionId)
   }
 
   return (
-    <ResizableSessionTableWithToast
-      title="Session"
-      sessions={sessions}
-      onSessionSelect={handleSessionSelect}
-      onAddNewSession={handleAddNewSession}
-      onSaveEdit={handleSaveEdit}
-    />
+    <>
+      <ResizableSessionTableWithToast
+        title="Session"
+        sessions={sessions}
+        onSessionSelect={handleSessionSelect}
+        onAddNewSession={handleAddNewSession}
+        onEditSession={handleEditSession}
+      />
+
+      <SessionEventDialogAdapter
+        session={selectedSession}
+        isOpen={isDialogOpen}
+        onClose={handleDialogClose}
+        onSessionCreated={handleSessionCreated}
+        onSessionUpdated={handleSessionUpdated}
+        onSessionDeleted={handleSessionDeleted}
+      />
+    </>
   )
 }

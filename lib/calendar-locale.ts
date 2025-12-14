@@ -3,6 +3,9 @@
  * Provides day and month names in Arabic
  */
 
+import { ar } from "date-fns/locale"
+import type { Locale } from "date-fns"
+
 /**
  * Arabic day names (full and abbreviated)
  * Week starts on Monday (index 0 = Monday)
@@ -97,4 +100,16 @@ export function formatDateInArabic(date: Date): string {
   const year = date.getFullYear()
 
   return `${dayName}، ${dayOfMonth} ${monthName} ${year}`
+}
+
+/**
+ * Custom Arabic locale for date-fns with custom month names
+ * Based on the standard Arabic locale but with regional month names
+ */
+export const customArLocale: Locale = {
+  ...ar,
+  localize: {
+    ...ar.localize,
+    month: (monthIndex: number) => arabicMonthNames.full[monthIndex],
+  },
 }

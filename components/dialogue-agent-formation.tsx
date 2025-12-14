@@ -4,9 +4,9 @@ import { useId, useState, useEffect } from "react"
 import { XIcon } from "lucide-react"
 import localFont from "next/font/local"
 import { AnimatePresence } from "framer-motion"
-import Image from "next/image"
 
 import { useFileUpload } from "@/hooks/use-file-upload"
+import { useToast } from "@/components/ui/ultra-quality-toast"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -29,11 +29,11 @@ const notoNaskhArabic = localFont({
 // Image de fond pour le profil
 const initialBgImage = [
   {
-    name: "nautique.png",
+    name: "stagiaire.png",
     size: 1528737,
     type: "image/png",
-    url: "/images/nautique.png",
-    id: "nautique-bg-123456789",
+    url: "/images/stagiaire.png",
+    id: "stagiaire-bg-123456789",
   },
 ]
 
@@ -98,6 +98,7 @@ export default function DialogueAgentFormation({
   error,
 }: DialogueAgentFormationProps = {}) {
   const id = useId()
+  const { addToast } = useToast()
 
   // Utiliser les données contrôlées si disponibles, sinon utiliser l'état interne
   const [internalFormationId, setInternalFormationId] = useState("")
@@ -108,6 +109,11 @@ export default function DialogueAgentFormation({
   const [internalMoyenne, setInternalMoyenne] = useState(0)
   const [internalIsOpen, setInternalIsOpen] = useState(false)
   const [dateError, setDateError] = useState("")
+  const [formationError, setFormationError] = useState(false)
+  const [dateDebutError, setDateDebutError] = useState(false)
+  const [dateFinError, setDateFinError] = useState(false)
+  const [resultatError, setResultatError] = useState(false)
+  const [invalidDateField, setInvalidDateField] = useState<"debut" | "fin" | null>(null)
 
   // Utiliser controlledIsOpen si fourni, sinon utiliser l'état interne
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen
@@ -130,16 +136,33 @@ export default function DialogueAgentFormation({
       setInternalResultat("")
       setInternalMoyenne(0)
       setDateError("")
+      setFormationError(false)
+      setDateDebutError(false)
+      setDateFinError(false)
+      setResultatError(false)
+      setInvalidDateField(null)
     }
   }, [isOpen, formationData])
 
-  // Valider la date de fin quand elle change ou quand la date de début change
-  const validateDateFin = (dateDebutValue: string, dateFinValue: string) => {
-    if (dateDebutValue && dateFinValue && dateFinValue < dateDebutValue) {
-      setDateError("* تاريخ نهاية التكوين غير صحيح")
-    } else {
-      setDateError("")
+  // Valider l'année (doit être entre 1950 et 2050)
+  const validateYear = (dateValue: string, field: "debut" | "fin", showAlert: boolean = false): boolean => {
+    if (!dateValue) {
+      return true
     }
+    const year = parseInt(dateValue.split("-")[0])
+    if (year < 1950 || year > 2050) {
+      if (showAlert) {
+        setInvalidDateField(field)
+        addToast({
+          title: "خطأ في التاريخ",
+          description: "السنة يجب أن تكون بين 1950 و 2050",
+          variant: "error",
+          duration: 4000,
+        })
+      }
+      return false
+    }
+    return true
   }
 
   const handleClose = () => {
@@ -151,6 +174,24 @@ export default function DialogueAgentFormation({
   }
 
   const handleChange = (field: string, value: string | number) => {
+    // Réinitialiser les erreurs pour tous les modes (contrôlé et non contrôlé)
+    switch (field) {
+      case "formationId":
+        setFormationError(false)
+        break
+      case "dateDebut":
+        setDateDebutError(false)
+        setInvalidDateField(null)
+        break
+      case "dateFin":
+        setDateFinError(false)
+        setInvalidDateField(null)
+        break
+      case "resultat":
+        setResultatError(false)
+        break
+    }
+
     if (onChange) {
       onChange(field, value)
     } else {
@@ -161,11 +202,21 @@ export default function DialogueAgentFormation({
           break
         case "dateDebut":
           setInternalDateDebut(value as string)
-          // Valider la date de fin quand la date de début change
-          validateDateFin(value as string, dateFin)
+          // Valider uniquement la relation entre dates (sans bordure rouge ni alerte)
+          if (value && dateFin && dateFin < (value as string)) {
+            setDateError("* تاريخ نهاية التكوين غير صحيح")
+          } else {
+            setDateError("")
+          }
           break
         case "dateFin":
           setInternalDateFin(value as string)
+          // Valider uniquement la relation entre dates (sans bordure rouge ni alerte)
+          if (dateDebut && value && (value as string) < dateDebut) {
+            setDateError("* تاريخ نهاية التكوين غير صحيح")
+          } else {
+            setDateError("")
+          }
           break
         case "reference":
           setInternalReference(value as string)
@@ -180,16 +231,77 @@ export default function DialogueAgentFormation({
     }
   }
 
-  const handleDateFinBlur = () => {
-    validateDateFin(dateDebut, dateFin)
-  }
-
   const handleSave = () => {
-    // Valider la date avant l'enregistrement
-    validateDateFin(dateDebut, dateFin)
+    // Réinitialiser les erreurs
+    setDateError("")
+    setFormationError(false)
+    setDateDebutError(false)
+    setDateFinError(false)
+    setResultatError(false)
 
-    // Ne pas enregistrer si la date est invalide
+    // Valider les champs requis
+    let hasError = false
+
+    if (!formationId) {
+      setFormationError(true)
+      addToast({
+        title: "خطأ في الـدورة التكوينية",
+        description: "يجب اختيار الدورة التكوينية",
+        variant: "error",
+        duration: 4000,
+      })
+      hasError = true
+    }
+
+    if (!dateDebut) {
+      setDateDebutError(true)
+      addToast({
+        title: "خطأ في تاريخ بداية التكوين",
+        description: "يجب إدخال تاريخ بداية صحيح",
+        variant: "error",
+        duration: 4000,
+      })
+      hasError = true
+    }
+
+    if (!dateFin) {
+      setDateFinError(true)
+      addToast({
+        title: "خطأ في التاريخ نهاية التكوين",
+        description: "يجب إدخال تاريخ نهاية صحيح",
+        variant: "error",
+        duration: 4000,
+      })
+      hasError = true
+    }
+
+    if (!resultat) {
+      setResultatError(true)
+      addToast({
+        title: "خطأ في إختيار الوضعية",
+        description: "يجب اختيار الوضعية",
+        variant: "error",
+        duration: 4000,
+      })
+      hasError = true
+    }
+
+    // Valider les années individuellement si les dates sont présentes
+    if (dateDebut && !validateYear(dateDebut, "debut", true)) {
+      hasError = true
+    }
+    if (dateFin && !validateYear(dateFin, "fin", true)) {
+      hasError = true
+    }
+
+    // Valider la relation entre date de début et date de fin (sans toast)
     if (dateDebut && dateFin && dateFin < dateDebut) {
+      setDateError("* تاريخ نهاية التكوين غير صحيح")
+      hasError = true
+    }
+
+    // Ne pas enregistrer s'il y a des erreurs
+    if (hasError) {
       return
     }
 
@@ -252,7 +364,11 @@ export default function DialogueAgentFormation({
                   onValueChange={(value) => handleChange("formationId", value)}
                   disabled={isLoadingFormations}
                 >
-                  <SelectTrigger className={`w-full rounded ${notoNaskhArabic.className}`}>
+                  <SelectTrigger
+                    className={`w-full rounded ${notoNaskhArabic.className} ${
+                      formationError ? "border-red-500 focus:ring-red-500" : ""
+                    }`}
+                  >
                     <SelectValue placeholder={isLoadingFormations ? "جاري التحميل..." : "اختر الدورة التكوينية"} />
                   </SelectTrigger>
                   <SelectContent className={notoNaskhArabic.className}>
@@ -276,7 +392,11 @@ export default function DialogueAgentFormation({
                     value={dateDebut}
                     onChange={(e) => handleChange("dateDebut", e.target.value)}
                     required
-                    className="text-start"
+                    className={`text-start ${
+                      dateError || dateDebutError || invalidDateField === "debut"
+                        ? "border-red-500 focus-visible:ring-red-500"
+                        : ""
+                    }`}
                   />
                 </div>
                 <div className="flex-1 space-y-2">
@@ -289,9 +409,12 @@ export default function DialogueAgentFormation({
                     type="date"
                     value={dateFin}
                     onChange={(e) => handleChange("dateFin", e.target.value)}
-                    onBlur={handleDateFinBlur}
                     required
-                    className={`text-start ${dateError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    className={`text-start ${
+                      dateError || dateFinError || invalidDateField === "fin"
+                        ? "border-red-500 focus-visible:ring-red-500"
+                        : ""
+                    }`}
                   />
                   {dateError && (
                     <p className={`text-xs text-red-500 leading-tight -mb-6 ${notoNaskhArabic.className}`}>
@@ -321,7 +444,11 @@ export default function DialogueAgentFormation({
                   الــوضـعـيـــة :
                 </Label>
                 <Select dir="rtl" value={resultat} onValueChange={(value) => handleChange("resultat", value)}>
-                  <SelectTrigger className={`w-full rounded ${notoNaskhArabic.className}`}>
+                  <SelectTrigger
+                    className={`w-full rounded ${notoNaskhArabic.className} ${
+                      resultatError ? "border-red-500 focus:ring-red-500" : ""
+                    }`}
+                  >
                     <SelectValue placeholder="اختر النتيجة" />
                   </SelectTrigger>
                   <SelectContent className={notoNaskhArabic.className}>
@@ -406,7 +533,6 @@ export default function DialogueAgentFormation({
 }
 
 function ProfileBg() {
-  const [isLoading, setIsLoading] = useState(true)
   const [{ files }] = useFileUpload({
     accept: "image/*",
     initialFiles: initialBgImage,
@@ -417,22 +543,13 @@ function ProfileBg() {
   return (
     <div className="h-32">
       <div className="relative flex size-full items-center justify-center overflow-hidden bg-muted">
-        {/* Spinner loader pendant le chargement */}
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-muted">
-            <Spinner className="size-8 text-muted-foreground" />
-          </div>
-        )}
-
         {currentImage && (
-          <Image
+          <img
+            className="size-full object-cover"
             src={currentImage}
             alt={files[0]?.preview ? "Preview of uploaded image" : "Default profile background"}
-            fill
-            className="object-cover"
-            priority
-            onLoad={() => setIsLoading(false)}
-            onError={() => setIsLoading(false)}
+            width={512}
+            height={96}
           />
         )}
       </div>
@@ -441,7 +558,6 @@ function ProfileBg() {
 }
 
 function Avatar() {
-  const [isLoading, setIsLoading] = useState(true)
   const [{ files }] = useFileUpload({
     accept: "image/*",
     initialFiles: initialAvatarImage,
@@ -452,23 +568,8 @@ function Avatar() {
   return (
     <div className="-mt-10 px-6">
       <div className="relative flex size-20 items-center justify-center overflow-hidden rounded-full border-4 border-background bg-muted shadow-xs shadow-black/10">
-        {/* Spinner loader pendant le chargement */}
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-full">
-            <Spinner className="size-6 text-muted-foreground" />
-          </div>
-        )}
-
         {currentImage && (
-          <Image
-            src={currentImage}
-            alt="Profile image"
-            fill
-            className="object-cover"
-            priority
-            onLoad={() => setIsLoading(false)}
-            onError={() => setIsLoading(false)}
-          />
+          <img src={currentImage} className="size-full object-cover" width={80} height={80} alt="Profile image" />
         )}
       </div>
     </div>

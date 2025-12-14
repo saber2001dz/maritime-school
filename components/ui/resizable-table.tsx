@@ -18,6 +18,8 @@ import {
   UserPlus,
   MoreVertical,
   Trash2,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -314,6 +316,12 @@ export function ResizableTable({
       setDeleteDialogOpen(false)
       setAgentToDelete(null)
       setSelectedAgents((prev) => prev.filter((id) => id !== agentToDelete.id))
+
+      // Si c'est la dernière ligne de la page actuelle et qu'on n'est pas sur la page 1,
+      // revenir à la page précédente
+      if (paginatedAgents.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1)
+      }
 
       // Refresh data
       if (onFormationSaved) {
@@ -1436,22 +1444,67 @@ export function ResizableTable({
           </div>
 
           <div className="flex gap-1.5">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
-              style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
-            >
-              السابق
-            </button>
-            <button
-              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
-              style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
-            >
-              التالي
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
+                >
+                  <ChevronsRight size={16} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>الصفحة الأولى</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
+                  style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                >
+                  السابق
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>الصفحة السابقة</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
+                  style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                >
+                  التالي
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>الصفحة التالية</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
+                >
+                  <ChevronsLeft size={16} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>الصفحة الأخيرة</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
       )}

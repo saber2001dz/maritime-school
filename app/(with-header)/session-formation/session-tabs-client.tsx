@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { CalendarDays, Table } from "lucide-react"
 import { ResizableSessionWrapper } from "./session-table/resizable-session-wrapper"
@@ -17,7 +18,22 @@ interface SessionTabsClientProps {
   formations: Formation[]
 }
 
-export function SessionTabsClient({ sessions, formations }: SessionTabsClientProps) {
+export function SessionTabsClient({ sessions: initialSessions, formations }: SessionTabsClientProps) {
+  // État partagé des sessions entre les deux onglets
+  const [sessions, setSessions] = useState<SessionFormation[]>(initialSessions)
+
+  const handleSessionCreated = (newSession: SessionFormation) => {
+    setSessions(prev => [newSession, ...prev])
+  }
+
+  const handleSessionUpdated = (updatedSession: SessionFormation) => {
+    setSessions(prev => prev.map(s => s.id === updatedSession.id ? updatedSession : s))
+  }
+
+  const handleSessionDeleted = (sessionId: string) => {
+    setSessions(prev => prev.filter(s => s.id !== sessionId))
+  }
+
   return (
     <ToastProvider>
       <div className="bg-background py-6 md:py-10">
@@ -43,11 +59,22 @@ export function SessionTabsClient({ sessions, formations }: SessionTabsClientPro
 
             <div>
               <TabsContent value="list">
-                <ResizableSessionWrapper sessions={sessions} />
+                <ResizableSessionWrapper
+                  sessions={sessions}
+                  onSessionCreated={handleSessionCreated}
+                  onSessionUpdated={handleSessionUpdated}
+                  onSessionDeleted={handleSessionDeleted}
+                />
               </TabsContent>
 
               <TabsContent value="schedule">
-                <SessionPlanning sessions={sessions} formations={formations} />
+                <SessionPlanning
+                  sessions={sessions}
+                  formations={formations}
+                  onSessionCreated={handleSessionCreated}
+                  onSessionUpdated={handleSessionUpdated}
+                  onSessionDeleted={handleSessionDeleted}
+                />
               </TabsContent>
             </div>
           </Tabs>

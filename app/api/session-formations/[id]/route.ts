@@ -126,6 +126,7 @@ export async function PUT(
             id: true,
             formation: true,
             typeFormation: true,
+            specialite: true,
           }
         }
       }
@@ -137,7 +138,7 @@ export async function PUT(
       statut: computeSessionStatus(updatedSession.dateDebut, updatedSession.dateFin)
     }
 
-    return NextResponse.json({ session: sessionWithStatus })
+    return NextResponse.json(sessionWithStatus)
   } catch (error: any) {
     console.error('Erreur lors de la mise à jour de la session:', error)
 

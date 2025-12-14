@@ -18,6 +18,8 @@ import {
   GraduationCap,
   CirclePlus,
   Trash2,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { ToastProvider, useToast } from "@/components/ui/ultra-quality-toast"
@@ -34,6 +36,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import DialogueFormateur from "@/components/dialogue-formateur"
+import DialogueAjouterCoursFormateur, { type Cours, type CoursFormateurData } from "@/components/dialogue-ajouter-cours-formateur"
 
 export interface Formateur {
   id: string
@@ -133,6 +136,10 @@ export function ResizableTableFormateur({
   const [editingFormateur, setEditingFormateur] = useState<Formateur | null>(null)
   const [selectedFormateurs, setSelectedFormateurs] = useState<string[]>(selectedFromUrl)
   const [formateurToDelete, setFormateurToDelete] = useState<Formateur | null>(null)
+  const [addCoursDialogOpen, setAddCoursDialogOpen] = useState(false)
+  const [formateurForAddCours, setFormateurForAddCours] = useState<Formateur | null>(null)
+  const [coursList, setCoursList] = useState<Cours[]>([])
+  const [isLoadingCours, setIsLoadingCours] = useState(false)
 
   // Column width state avec les mêmes largeurs que liste-agent
   const [columnWidths] = useState<Record<string, number>>({
@@ -364,11 +371,79 @@ export function ResizableTableFormateur({
 
       setFormateurToDelete(null)
       setSelectedFormateurs((prev) => prev.filter((id) => id !== formateurToDelete.id))
+
+      // Si c'est la dernière ligne de la page actuelle et qu'on n'est pas sur la page 1,
+      // revenir à la page précédente
+      if (paginatedFormateurs.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1)
+      }
+
       router.refresh()
     } catch (err: any) {
       addToast({
         title: "خطأ",
         description: err.message || "حدث خطأ أثناء حذف المكون",
+        variant: "error",
+      })
+    }
+  }
+
+  const handleOpenAddCoursDialog = async (formateur: Formateur) => {
+    setFormateurForAddCours(formateur)
+    setIsLoadingCours(true)
+    setAddCoursDialogOpen(true)
+
+    try {
+      const response = await fetch('/api/cours')
+      if (!response.ok) throw new Error('Erreur de chargement')
+      const data = await response.json()
+      setCoursList(data)
+    } catch (err: any) {
+      addToast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تحميل قائمة الدروس",
+        variant: "error",
+      })
+    } finally {
+      setIsLoadingCours(false)
+    }
+  }
+
+  const handleSaveAddCours = async (data: CoursFormateurData) => {
+    if (!formateurForAddCours) return
+
+    try {
+      const response = await fetch('/api/cours-formations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          formateurId: formateurForAddCours.id,
+          coursId: data.coursId,
+          dateDebut: data.dateDebut,
+          dateFin: data.dateFin,
+          nombreHeures: data.nombreHeures,
+          reference: data.reference,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erreur lors de l\'ajout')
+      }
+
+      addToast({
+        title: "نجـاح العمليـة",
+        description: "تم إضافة الدرس بنجاح",
+        variant: "success",
+      })
+
+      setAddCoursDialogOpen(false)
+      setFormateurForAddCours(null)
+      router.refresh()
+    } catch (err: any) {
+      addToast({
+        title: "خطأ",
+        description: err.message || "حدث خطأ أثناء إضافة الدرس",
         variant: "error",
       })
     }
@@ -966,10 +1041,7 @@ export function ResizableTableFormateur({
                                     className="gap-2 cursor-pointer"
                                     onClick={() => {
                                       if (selectedFormateurs.includes(formateur.id)) {
-                                        // Preserve current URL params
-                                        const params = new URLSearchParams(searchParams?.toString())
-                                        const returnUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname
-                                        router.push(`/nouveau-cours?formateurId=${formateur.id}&returnUrl=${encodeURIComponent(returnUrl)}`)
+                                        handleOpenAddCoursDialog(formateur)
                                       }
                                     }}
                                     disabled={!selectedFormateurs.includes(formateur.id)}
@@ -1013,22 +1085,67 @@ export function ResizableTableFormateur({
           </div>
 
           <div className="flex gap-1.5">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
-              style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
-            >
-              السابق
-            </button>
-            <button
-              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
-              style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
-            >
-              التالي
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
+                >
+                  <ChevronsRight size={16} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>الصفحة الأولى</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
+                  style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                >
+                  السابق
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>الصفحة السابقة</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
+                  style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                >
+                  التالي
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>الصفحة التالية</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 bg-background border border-border text-foreground text-xs hover:bg-muted/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors rounded-md"
+                >
+                  <ChevronsLeft size={16} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>الصفحة الأخيرة</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
       )}
@@ -1040,6 +1157,20 @@ export function ResizableTableFormateur({
         onClose={() => setEditingFormateur(null)}
         onSave={handleSaveEditInternal}
         isUpdating={isUpdating}
+      />
+
+      {/* Dialog d'ajout de cours */}
+      <DialogueAjouterCoursFormateur
+        formateur={formateurForAddCours || undefined}
+        coursList={coursList}
+        isOpen={addCoursDialogOpen}
+        onClose={() => {
+          setAddCoursDialogOpen(false)
+          setFormateurForAddCours(null)
+        }}
+        onSave={handleSaveAddCours}
+        isCreating={isUpdating}
+        isLoadingCours={isLoadingCours}
       />
 
       {/* AlertDialog de confirmation de suppression */}

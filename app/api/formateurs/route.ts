@@ -46,41 +46,44 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { nomPrenom, grade, unite, responsabilite, telephone, RIB } = body
 
-    // Validation des champs requis
-    if (!nomPrenom || !grade || !unite || !responsabilite || !telephone || !RIB) {
+    // Validation du champ obligatoire (nomPrenom uniquement)
+    if (!nomPrenom || nomPrenom.trim() === '') {
       return NextResponse.json(
-        { error: 'جميع الحقول مطلوبة' },
+        { error: 'الإسم و اللقب مطلوب' },
         { status: 400 }
       )
     }
 
-    // Validation du RIB (20 chiffres)
-    if (RIB.length !== 20) {
+    // Validation du RIB (20 chiffres) seulement s'il est fourni
+    if (RIB && RIB.length !== 20) {
       return NextResponse.json(
         { error: 'يجب أن يكون RIB 20 رقمًا' },
         { status: 400 }
       )
     }
 
-    // Nettoyer le numéro de téléphone (supprimer les espaces)
-    const cleanedTelephone = telephone.replace(/\s/g, '')
-    const telephoneNumber = parseInt(cleanedTelephone)
+    // Nettoyer et valider le numéro de téléphone seulement s'il est fourni
+    let telephoneNumber = 0 // Valeur par défaut si non fourni
+    if (telephone && telephone.trim()) {
+      const cleanedTelephone = telephone.replace(/\s/g, '')
+      telephoneNumber = parseInt(cleanedTelephone)
 
-    if (isNaN(telephoneNumber)) {
-      return NextResponse.json(
-        { error: 'رقم الهاتف غير صالح' },
-        { status: 400 }
-      )
+      if (isNaN(telephoneNumber)) {
+        return NextResponse.json(
+          { error: 'رقم الهاتف غير صالح' },
+          { status: 400 }
+        )
+      }
     }
 
     const formateur = await prisma.formateur.create({
       data: {
         nomPrenom: nomPrenom.trim(),
-        grade,
-        unite: unite.trim(),
-        responsabilite: responsabilite.trim(),
+        grade: grade || '',
+        unite: unite?.trim() || '',
+        responsabilite: responsabilite?.trim() || '',
         telephone: telephoneNumber,
-        RIB,
+        RIB: RIB || '',
       },
     })
 
