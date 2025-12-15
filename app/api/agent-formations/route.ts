@@ -44,22 +44,35 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { agentId, formationId, dateDebut, dateFin, reference, resultat, moyenne } = body;
+    const { agentId, sessionFormationId, dateDebut, dateFin, reference, resultat, moyenne } = body;
 
     // Validation basique
-    if (!agentId || !formationId || !dateDebut || !dateFin || moyenne === undefined) {
+    if (!agentId || !sessionFormationId || moyenne === undefined) {
       return NextResponse.json(
-        { error: "Les champs agentId, formationId, dateDebut, dateFin et moyenne sont requis" },
+        { error: "Les champs agentId, sessionFormationId et moyenne sont requis" },
         { status: 400 }
+      );
+    }
+
+    // Récupérer la session de formation pour obtenir le formationId
+    const sessionFormation = await prisma.sessionFormation.findUnique({
+      where: { id: sessionFormationId }
+    });
+
+    if (!sessionFormation) {
+      return NextResponse.json(
+        { error: "Session de formation introuvable" },
+        { status: 404 }
       );
     }
 
     const newAgentFormation = await prisma.agentFormation.create({
       data: {
         agentId,
-        formationId,
-        dateDebut,
-        dateFin,
+        formationId: sessionFormation.formationId,
+        sessionFormationId,
+        dateDebut: dateDebut || sessionFormation.dateDebut.toISOString().split('T')[0],
+        dateFin: dateFin || sessionFormation.dateFin.toISOString().split('T')[0],
         reference,
         resultat,
         moyenne: parseFloat(moyenne),
@@ -67,6 +80,7 @@ export async function POST(request: Request) {
       include: {
         formation: true,
         agent: true,
+        sessionFormation: true,
       },
     });
 

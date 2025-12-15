@@ -13,10 +13,11 @@ export default async function PrincipalPage() {
     prisma.cours.count(),
   ])
 
-  // Récupérer les sessions de formation en cours et à venir
+  // Récupérer les sessions de formation avec le même tri que la table principale
   const now = new Date()
+  now.setHours(0, 0, 0, 0) // Normaliser au début du jour
 
-  // Sessions en cours (dateDebut <= now <= dateFin)
+  // Sessions en cours (dateDebut <= now <= dateFin) - tri croissant
   const sessionsEnCours = await prisma.sessionFormation.findMany({
     where: {
       dateDebut: { lte: now },
@@ -26,12 +27,12 @@ export default async function PrincipalPage() {
       formation: true,
     },
     orderBy: {
-      dateDebut: 'desc',
+      dateDebut: 'asc',
     },
   })
 
-  // Sessions à venir (dateDebut > now)
-  const sessionsAVenir = await prisma.sessionFormation.findMany({
+  // Sessions programmées (dateDebut > now) - tri croissant (plus proche en premier)
+  const sessionsProgrammees = await prisma.sessionFormation.findMany({
     where: {
       dateDebut: { gt: now },
     },
@@ -41,11 +42,23 @@ export default async function PrincipalPage() {
     orderBy: {
       dateDebut: 'asc',
     },
-    take: 5 - sessionsEnCours.length, // Compléter jusqu'à 5
   })
 
-  // Combiner les sessions : en cours d'abord, puis à venir
-  const recentSessions = [...sessionsEnCours, ...sessionsAVenir].slice(0, 5)
+  // Sessions terminées (dateFin < now) - tri décroissant (plus récent en premier)
+  const sessionsTerminees = await prisma.sessionFormation.findMany({
+    where: {
+      dateFin: { lt: now },
+    },
+    include: {
+      formation: true,
+    },
+    orderBy: {
+      dateDebut: 'desc',
+    },
+  })
+
+  // Combiner dans l'ordre : en cours, programmées, terminées - prendre les 5 premiers
+  const recentSessions = [...sessionsEnCours, ...sessionsProgrammees, ...sessionsTerminees].slice(0, 5)
 
   // Fonction pour formater les dates au format yyyy-mm-dd
   const formatDate = (date: Date | string) => {

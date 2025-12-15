@@ -116,7 +116,7 @@ export default function CoursFormateurClient({ initialData, formateurInfo, notoN
   };
 
   return (
-    <div className="min-h-screen bg-background py-6 md:py-12">
+    <div className="bg-background py-6 md:py-12">
       <div className="container mx-auto px-2 sm:px-4 max-w-7xl">
         <div className="mb-8 md:mb-12 pt-10">
           {/* Header avec le même style que liste-formation */}

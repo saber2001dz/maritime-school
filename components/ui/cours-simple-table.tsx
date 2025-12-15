@@ -23,6 +23,7 @@ interface CoursSimpleTableProps {
   className?: string
   onEditClick?: (cours: SimpleCours) => void
   onAddNewCours?: () => void
+  countText?: string
 }
 
 export default function CoursSimpleTable({
@@ -30,6 +31,7 @@ export default function CoursSimpleTable({
   className = "",
   onEditClick,
   onAddNewCours,
+  countText,
 }: CoursSimpleTableProps) {
   const [mounted, setMounted] = useState(false)
   const { resolvedTheme } = useTheme()
@@ -41,29 +43,37 @@ export default function CoursSimpleTable({
 
   return (
     <div className={`w-full max-w-6xl mx-auto ${className}`}>
-      {/* Header avec bouton d'ajout */}
-      {onAddNewCours && (
-        <div className="mb-4 flex justify-end ml-4 -mt-8">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={onAddNewCours}
-                className={`p-2 border border-border text-sm transition-colors flex items-center justify-center rounded-md cursor-pointer ${
-                  mounted
-                    ? isDark
-                      ? "bg-blue-950/40 text-foreground/90 hover:bg-blue-950/60"
-                      : "bg-slate-100 text-[#06407F] hover:bg-slate-200"
-                    : "bg-muted/5 text-foreground hover:bg-muted/10"
-                }`}
-                aria-label="إضافة درس جديد"
-              >
-                <Plus size={16} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <span className={notoNaskhArabic.className}>إضافة درس جديد</span>
-            </TooltipContent>
-          </Tooltip>
+      {/* Header avec compteur et bouton d'ajout */}
+      {(onAddNewCours || countText) && (
+        <div className="mb-4 flex items-center justify-between ml-4 -mt-8">
+          {countText && (
+            <p className={`text-sm text-muted-foreground mr-2 ${notoNaskhArabic.className}`}>
+              {countText}
+            </p>
+          )}
+          {!countText && <div />}
+          {onAddNewCours && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onAddNewCours}
+                  className={`p-2 border border-border text-sm transition-colors flex items-center justify-center rounded-md cursor-pointer ${
+                    mounted
+                      ? isDark
+                        ? "bg-blue-950/40 text-foreground/90 hover:bg-blue-950/60"
+                        : "bg-slate-100 text-[#06407F] hover:bg-slate-200"
+                      : "bg-muted/5 text-foreground hover:bg-muted/10"
+                  }`}
+                  aria-label="إضافة درس جديد"
+                >
+                  <Plus size={16} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <span className={notoNaskhArabic.className}>إضافة درس جديد</span>
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
       )}
 
@@ -128,7 +138,7 @@ export default function CoursSimpleTable({
               {/* Contenu de la ligne */}
               <div
                 className="relative grid gap-4 items-center"
-                style={{ gridTemplateColumns: "1fr 6fr 1fr" }}
+                style={{ gridTemplateColumns: "3rem 1fr auto" }}
               >
                 {/* Column 1: N/O (Numero d'ordre) */}
                 <div>

@@ -45,7 +45,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import NeumorphButton from "@/components/ui/neumorph-button"
 import DialogueStyle from "@/components/dialogue-agent"
-import DialogueAgentFormation, { type Formation } from "@/components/dialogue-agent-formation"
+import DialogueAgentFormation, { type SessionFormationOption } from "@/components/dialogue-agent-formation"
 import { ToastProvider, useToast } from "@/components/ui/ultra-quality-toast"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
@@ -189,7 +189,7 @@ export function ResizableTable({
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null)
   const [addingFormationAgent, setAddingFormationAgent] = useState<Agent | null>(null)
   const [formationFormData, setFormationFormData] = useState<{
-    formationId: string
+    sessionFormationId: string
     dateDebut: string
     dateFin: string
     reference: string
@@ -197,7 +197,7 @@ export function ResizableTable({
     moyenne: number
   } | null>(null)
   const [formationError, setFormationError] = useState<string | null>(null)
-  const [availableFormations, setAvailableFormations] = useState<Formation[]>([])
+  const [availableSessionFormations, setAvailableSessionFormations] = useState<SessionFormationOption[]>([])
   const [isLoadingFormations, setIsLoadingFormations] = useState(false)
   const [isSavingFormation, setIsSavingFormation] = useState(false)
   const [selectedAgents, setSelectedAgents] = useState<string[]>(selectedFromUrl)
@@ -512,7 +512,7 @@ export function ResizableTable({
   const handleAddFormationClick = async (agent: Agent) => {
     setAddingFormationAgent(agent)
     setFormationFormData({
-      formationId: "",
+      sessionFormationId: "",
       dateDebut: "",
       dateFin: "",
       reference: "",
@@ -520,16 +520,16 @@ export function ResizableTable({
       moyenne: 0,
     })
 
-    // Charger les formations disponibles
+    // Charger les sessions de formation disponibles
     setIsLoadingFormations(true)
     try {
-      const response = await fetch("/api/formations")
+      const response = await fetch("/api/session-formations")
       if (response.ok) {
-        const formations = await response.json()
-        setAvailableFormations(formations)
+        const data = await response.json()
+        setAvailableSessionFormations(data.sessions || [])
       }
     } catch (error) {
-      console.error("Error loading formations:", error)
+      console.error("Error loading session formations:", error)
     } finally {
       setIsLoadingFormations(false)
     }
@@ -537,6 +537,21 @@ export function ResizableTable({
 
   const handleFormationFormChange = (field: string, value: string | number) => {
     if (formationFormData) {
+      // Si on change la session, auto-remplir les autres champs
+      if (field === "sessionFormationId") {
+        const selectedSession = availableSessionFormations.find(s => s.id === value)
+        if (selectedSession) {
+          setFormationFormData({
+            ...formationFormData,
+            sessionFormationId: value as string,
+            dateDebut: new Date(selectedSession.dateDebut).toISOString().split("T")[0],
+            dateFin: new Date(selectedSession.dateFin).toISOString().split("T")[0],
+            reference: selectedSession.reference || "",
+          })
+          return
+        }
+      }
+
       setFormationFormData({
         ...formationFormData,
         [field]: value,
@@ -549,7 +564,7 @@ export function ResizableTable({
       setFormationError(null)
 
       // Validation
-      if (!formationFormData.formationId) {
+      if (!formationFormData.sessionFormationId) {
         addToast({
           variant: "warning",
           title: "تحذير",
@@ -592,7 +607,7 @@ export function ResizableTable({
           },
           body: JSON.stringify({
             agentId: addingFormationAgent.id,
-            formationId: formationFormData.formationId,
+            sessionFormationId: formationFormData.sessionFormationId,
             dateDebut: formationFormData.dateDebut,
             dateFin: formationFormData.dateFin,
             reference: formationFormData.reference?.trim() || "",
@@ -1411,7 +1426,7 @@ export function ResizableTable({
                                 {addingFormationAgent?.id === agent.id && (
                                   <DialogueAgentFormation
                                     agent={addingFormationAgent}
-                                    formations={availableFormations}
+                                    sessionFormations={availableSessionFormations}
                                     formationData={formationFormData}
                                     isOpen={true}
                                     onClose={handleCancelFormation}

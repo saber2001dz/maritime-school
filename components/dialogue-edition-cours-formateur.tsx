@@ -1,9 +1,9 @@
 "use client"
 
-import { useId, useState, useEffect } from "react"
-import { XIcon, Trash2 } from "lucide-react"
+import { useId, useState, useEffect, useMemo, useCallback } from "react"
+import { XIcon, Trash2, Search, Send, BookOpen, Check } from "lucide-react"
 import localFont from "next/font/local"
-import { AnimatePresence } from "framer-motion"
+import { AnimatePresence, motion } from "framer-motion"
 
 import { useFileUpload } from "@/hooks/use-file-upload"
 import { Button } from "@/components/ui/button"
@@ -27,8 +27,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
+import useDebounce from "@/hooks/use-debounce"
 
 const notoNaskhArabic = localFont({
   src: "../app/fonts/NotoNaskhArabic.woff2",
@@ -271,25 +271,12 @@ export default function DialogueEditionCoursFormateur({
                 <Label htmlFor={`${id}-cours`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
                   الــــــدرس :
                 </Label>
-                <Select
-                  dir="rtl"
-                  value={coursId}
-                  onValueChange={(value) => handleChange("coursId", value)}
-                  disabled={isLoadingCours}
-                >
-                  <SelectTrigger className={`w-full rounded ${notoNaskhArabic.className}`}>
-                    <SelectValue
-                      placeholder={isLoadingCours ? "جاري التحميل..." : "اختر الدرس"}
-                    />
-                  </SelectTrigger>
-                  <SelectContent className={notoNaskhArabic.className}>
-                    {coursList.map((cours) => (
-                      <SelectItem key={cours.id} value={cours.id} className="text-[15px]">
-                        {cours.titre}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CoursSearchBar
+                  coursList={coursList}
+                  selectedCoursId={coursId}
+                  onCoursSelect={(id) => handleChange("coursId", id)}
+                  isLoading={isLoadingCours}
+                />
               </div>
 
               <div className="flex flex-col gap-4 sm:flex-row">
@@ -452,6 +439,242 @@ export default function DialogueEditionCoursFormateur({
         </AlertDialogContent>
       </AlertDialog>
     </>
+  )
+}
+
+// Animation variants for the search bar
+const ANIMATION_VARIANTS = {
+  container: {
+    hidden: { opacity: 0, height: 0 },
+    show: {
+      opacity: 1,
+      height: "auto",
+      transition: {
+        height: { duration: 0.4 },
+        staggerChildren: 0.06,
+      },
+    },
+    exit: {
+      opacity: 0,
+      height: 0,
+      transition: {
+        height: { duration: 0.3 },
+        opacity: { duration: 0.2 },
+      },
+    },
+  },
+  item: {
+    hidden: { opacity: 0, y: 20 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.3 },
+    },
+    exit: {
+      opacity: 0,
+      y: -10,
+      transition: { duration: 0.2 },
+    },
+  },
+} as const
+
+interface CoursSearchBarProps {
+  coursList: Cours[]
+  selectedCoursId: string
+  onCoursSelect: (coursId: string) => void
+  isLoading?: boolean
+  hasError?: boolean
+}
+
+function CoursSearchBar({
+  coursList,
+  selectedCoursId,
+  onCoursSelect,
+  isLoading = false,
+  hasError = false,
+}: CoursSearchBarProps) {
+  const [query, setQuery] = useState("")
+  const [isFocused, setIsFocused] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(-1)
+  const debouncedQuery = useDebounce(query, 200)
+
+  // Initialize query with selected course name
+  useEffect(() => {
+    if (selectedCoursId && !isFocused) {
+      const selected = coursList.find((c) => c.id === selectedCoursId)
+      if (selected) {
+        setQuery(selected.titre)
+      }
+    }
+  }, [selectedCoursId, coursList, isFocused])
+
+  // Filter courses based on search
+  const filteredCours = useMemo(() => {
+    if (!debouncedQuery) return coursList
+    const normalizedQuery = debouncedQuery.toLowerCase().trim()
+    return coursList.filter((cours) => cours.titre.toLowerCase().includes(normalizedQuery))
+  }, [debouncedQuery, coursList])
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value)
+    setActiveIndex(-1)
+  }, [])
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (!filteredCours.length) return
+
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault()
+          setActiveIndex((prev) => (prev < filteredCours.length - 1 ? prev + 1 : 0))
+          break
+        case "ArrowUp":
+          e.preventDefault()
+          setActiveIndex((prev) => (prev > 0 ? prev - 1 : filteredCours.length - 1))
+          break
+        case "Enter":
+          e.preventDefault()
+          if (activeIndex >= 0 && filteredCours[activeIndex]) {
+            const selected = filteredCours[activeIndex]
+            onCoursSelect(selected.id)
+            setQuery(selected.titre)
+            setIsFocused(false)
+          }
+          break
+        case "Escape":
+          setIsFocused(false)
+          setActiveIndex(-1)
+          break
+      }
+    },
+    [filteredCours, activeIndex, onCoursSelect]
+  )
+
+  const handleCoursClick = useCallback(
+    (coursId: string, coursTitre: string) => {
+      onCoursSelect(coursId)
+      setQuery(coursTitre)
+      setIsFocused(false)
+    },
+    [onCoursSelect]
+  )
+
+  const handleFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+    setIsFocused(true)
+    setActiveIndex(-1)
+    // Select all text when focused
+    e.target.select()
+  }, [])
+
+  const handleBlur = useCallback(() => {
+    setTimeout(() => {
+      setIsFocused(false)
+      setActiveIndex(-1)
+    }, 200)
+  }, [])
+
+  return (
+    <div className="w-full">
+      <div className="relative">
+        <div className="relative">
+          <Input
+            type="text"
+            placeholder={isLoading ? "جاري التحميل..." : "ابحث عن الدرس..."}
+            value={query}
+            onChange={handleInputChange}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            disabled={isLoading}
+            role="combobox"
+            aria-expanded={isFocused && filteredCours.length > 0}
+            aria-autocomplete="list"
+            aria-activedescendant={activeIndex >= 0 ? `cours-${filteredCours[activeIndex]?.id}` : undefined}
+            autoComplete="off"
+            dir="rtl"
+            className={`pr-3 pl-9 py-1.5 h-9 text-sm rounded-lg focus-visible:ring-offset-0 ${notoNaskhArabic.className} ${
+              hasError ? "border-red-500 focus-visible:ring-red-500" : ""
+            }`}
+          />
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4">
+            <AnimatePresence mode="popLayout">
+              {query.length > 0 ? (
+                <motion.div
+                  key="send"
+                  initial={{ y: -20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 20, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Send className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="search"
+                  initial={{ y: -20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 20, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Search className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        <AnimatePresence mode="wait">
+          {isFocused && !isLoading && filteredCours.length > 0 && (
+            <motion.div
+              key={`search-results-${debouncedQuery}-${filteredCours.length}`}
+              className="absolute w-full border rounded-md shadow-lg overflow-hidden dark:border-gray-800 bg-white dark:bg-black mt-1 z-50 max-h-48 overflow-y-auto"
+              variants={ANIMATION_VARIANTS.container}
+              role="listbox"
+              aria-label="قائمة الدروس"
+              initial="hidden"
+              animate="show"
+              exit="exit"
+            >
+              <motion.ul role="none">
+                {filteredCours.map((cours, index) => (
+                  <motion.li
+                    key={cours.id}
+                    id={`cours-${cours.id}`}
+                    className={`px-3 py-2 flex items-center justify-between hover:bg-gray-200 dark:hover:bg-zinc-900 cursor-pointer rounded-md ${
+                      activeIndex === index ? "bg-gray-100 dark:bg-zinc-800" : ""
+                    } ${selectedCoursId === cours.id ? "bg-blue-50 dark:bg-blue-950/30" : ""}`}
+                    variants={ANIMATION_VARIANTS.item}
+                    layout
+                    onClick={() => handleCoursClick(cours.id, cours.titre)}
+                    role="option"
+                    aria-selected={activeIndex === index}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500" aria-hidden="true">
+                        <BookOpen className="h-4 w-4 text-blue-500" />
+                      </span>
+                      <span className={`text-sm font-medium text-gray-900 dark:text-gray-100 ${notoNaskhArabic.className}`}>
+                        {cours.titre}
+                      </span>
+                    </div>
+                    {selectedCoursId === cours.id && (
+                      <Check className="h-4 w-4 text-blue-500" />
+                    )}
+                  </motion.li>
+                ))}
+              </motion.ul>
+              <div className="px-3 py-2 border-t border-gray-100 dark:border-gray-800">
+                <div className={`flex items-center justify-between text-xs text-gray-500 ${notoNaskhArabic.className}`}>
+                  <span>استخدم ↑↓ للتنقل</span>
+                  <span>ESC للإلغاء</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   )
 }
 

@@ -8,11 +8,12 @@ const notoNaskhArabic = localFont({
   display: "swap",
 });
 
-// Interface pour les données de Prisma (SQLite stocke les dates comme des strings)
+// Interface pour les données de Prisma
 interface AgentFormationData {
   id: string;
   agentId: string;
   formationId: string;
+  sessionFormationId: string | null;
   dateDebut: string;
   dateFin: string;
   reference: string | null;
@@ -56,6 +57,7 @@ function transformAgentFormations(data: AgentFormationData[]): Project[] {
       variant: getStatusVariant(item.resultat),
     },
     formationId: item.formationId, // ID de la formation pour l'édition
+    sessionFormationId: item.sessionFormationId || undefined, // ID de la session de formation pour l'édition
   }));
 
   // Trier par date de début du plus récent au moins récent

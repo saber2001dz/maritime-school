@@ -143,15 +143,16 @@ function CoursTableWrapperContent({ cours: initialCours }: CoursTableWrapperProp
   }
 
   const handleAddNewCours = () => {
-    router.push('/nouveau-cours')
+    router.push("/nouveau-cours")
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full mt-4">
       <CoursSimpleTable
         cours={cours}
         onEditClick={handleEditClick}
         onAddNewCours={handleAddNewCours}
+        countText={`عدد الدروس: ${cours.length}`}
       />
 
       {/* Dialogue d'édition de cours */}

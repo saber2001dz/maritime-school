@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { ProjectDataTable, Project } from "@/components/ui/project-data-table";
-import DialogueEditionFormation, { AgentFormationData, Formation } from "@/components/dialogue-edition-formation";
+import DialogueEditionFormation, { AgentFormationData, SessionFormationOption } from "@/components/dialogue-edition-formation";
 
 interface FormationAgentClientProps {
   data: Project[];
@@ -26,7 +26,7 @@ export default function FormationAgentClient({
   const [visibleColumns, setVisibleColumns] = useState<Set<keyof Project>>(new Set(allColumns));
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [formations, setFormations] = useState<Formation[]>([]);
+  const [sessionFormations, setSessionFormations] = useState<SessionFormationOption[]>([]);
   const [isLoadingFormations, setIsLoadingFormations] = useState(false);
   const [editFormationData, setEditFormationData] = useState<AgentFormationData | null>(null);
   const [error, setError] = useState("");
@@ -37,22 +37,22 @@ export default function FormationAgentClient({
     setSelectedProject(project);
     setIsLoadingFormations(true);
 
-    // Charger les formations via l'API
+    // Charger les sessions de formation via l'API
     try {
-      const response = await fetch("/api/formations");
+      const response = await fetch("/api/session-formations");
       if (response.ok) {
-        const loadedFormations = await response.json();
-        setFormations(loadedFormations);
+        const data = await response.json();
+        setSessionFormations(data.sessions || []);
       }
     } catch (err) {
-      console.error("Erreur lors du chargement des formations:", err);
+      console.error("Erreur lors du chargement des sessions de formation:", err);
     }
 
     setIsLoadingFormations(false);
 
-    // Définir les données du formulaire avec le formationId du project
+    // Définir les données du formulaire avec le sessionFormationId du project
     setEditFormationData({
-      formationId: project.formationId || "",
+      sessionFormationId: project.sessionFormationId || "",
       dateDebut: project.team || "",
       dateFin: project.tech || "",
       reference: project.createdAt || "",
@@ -83,7 +83,7 @@ export default function FormationAgentClient({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          formationId: data.formationId,
+          sessionFormationId: data.sessionFormationId,
           dateDebut: data.dateDebut,
           dateFin: data.dateFin,
           reference: data.reference,
@@ -146,7 +146,7 @@ export default function FormationAgentClient({
   };
 
   return (
-    <div className="min-h-screen bg-background py-6 md:py-12">
+    <div className="bg-background py-6 md:py-12">
       <div className="container mx-auto px-2 sm:px-4 max-w-7xl">
         <div className="mb-8 md:mb-12 pt-10">
           {/* Header avec le même style que liste-formation */}
@@ -186,7 +186,7 @@ export default function FormationAgentClient({
               grade: agentInfo.grade,
               matricule: "",
             }}
-            formations={formations}
+            sessionFormations={sessionFormations}
             formationData={editFormationData}
             agentFormationId={selectedProject?.id}
             isOpen={isEditDialogOpen}

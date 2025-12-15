@@ -1,9 +1,10 @@
 "use client"
 
-import { useId, useState, useEffect } from "react"
-import { XIcon, Trash2 } from "lucide-react"
+import { useId, useState, useEffect, useMemo, useCallback } from "react"
+import { XIcon, Trash2, Search, GraduationCap, Calendar } from "lucide-react"
 import localFont from "next/font/local"
-import { AnimatePresence } from "framer-motion"
+import { AnimatePresence, motion } from "framer-motion"
+import useDebounce from "@/hooks/use-debounce"
 
 import { useFileUpload } from "@/hooks/use-file-upload"
 import { Button } from "@/components/ui/button"
@@ -56,17 +57,21 @@ const initialAvatarImage = [
   },
 ]
 
-export interface Formation {
+export interface SessionFormationOption {
   id: string
-  formation: string
-  typeFormation: string
-  specialite?: string | null
-  duree?: string | null
-  capaciteAbsorption?: number | null
+  formationId: string
+  dateDebut: string
+  dateFin: string
+  reference?: string | null
+  formation: {
+    id: string
+    formation: string
+    typeFormation: string
+  }
 }
 
 export interface AgentFormationData {
-  formationId: string
+  sessionFormationId: string
   dateDebut: string
   dateFin: string
   reference: string
@@ -83,7 +88,7 @@ interface Agent {
 
 interface DialogueEditionFormationProps {
   agent?: Agent
-  formations?: Formation[]
+  sessionFormations?: SessionFormationOption[]
   formationData?: AgentFormationData | null
   agentFormationId?: string
   isOpen?: boolean
@@ -97,9 +102,45 @@ interface DialogueEditionFormationProps {
   error?: string
 }
 
+// Animation variants for the search results
+const ANIMATION_VARIANTS = {
+  container: {
+    hidden: { opacity: 0, height: 0 },
+    show: {
+      opacity: 1,
+      height: "auto",
+      transition: {
+        height: { duration: 0.4 },
+        staggerChildren: 0.1,
+      },
+    },
+    exit: {
+      opacity: 0,
+      height: 0,
+      transition: {
+        height: { duration: 0.3 },
+        opacity: { duration: 0.2 },
+      },
+    },
+  },
+  item: {
+    hidden: { opacity: 0, y: 20 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.3 },
+    },
+    exit: {
+      opacity: 0,
+      y: -10,
+      transition: { duration: 0.2 },
+    },
+  },
+} as const
+
 export default function DialogueEditionFormation({
   agent,
-  formations = [],
+  sessionFormations = [],
   formationData,
   agentFormationId,
   isOpen: controlledIsOpen,
@@ -115,57 +156,55 @@ export default function DialogueEditionFormation({
   const id = useId()
 
   // Utiliser les données contrôlées si disponibles, sinon utiliser l'état interne
-  const [internalFormationId, setInternalFormationId] = useState("")
+  const [internalSessionFormationId, setInternalSessionFormationId] = useState("")
   const [internalDateDebut, setInternalDateDebut] = useState("")
   const [internalDateFin, setInternalDateFin] = useState("")
   const [internalReference, setInternalReference] = useState("")
   const [internalResultat, setInternalResultat] = useState("")
   const [internalMoyenne, setInternalMoyenne] = useState(0)
   const [internalIsOpen, setInternalIsOpen] = useState(false)
-  const [dateError, setDateError] = useState("")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   // Utiliser controlledIsOpen si fourni, sinon utiliser l'état interne
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen
 
   // Utiliser les données contrôlées ou l'état interne
-  const formationId = formationData?.formationId ?? internalFormationId
+  const sessionFormationId = formationData?.sessionFormationId ?? internalSessionFormationId
   const dateDebut = formationData?.dateDebut ?? internalDateDebut
   const dateFin = formationData?.dateFin ?? internalDateFin
   const reference = formationData?.reference ?? internalReference
   const resultat = formationData?.resultat ?? internalResultat
   const moyenne = formationData?.moyenne ?? internalMoyenne
 
+  // Vérifier si la session de formation est terminée (date de fin atteinte)
+  const isSessionTerminee = (() => {
+    if (!dateFin) return false
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const endDate = new Date(dateFin)
+    endDate.setHours(0, 0, 0, 0)
+    return today >= endDate
+  })()
+
   // Initialiser les champs avec les données existantes quand le dialogue s'ouvre
   useEffect(() => {
     if (isOpen && formationData) {
-      setInternalFormationId(formationData.formationId)
+      setInternalSessionFormationId(formationData.sessionFormationId)
       setInternalDateDebut(formationData.dateDebut)
       setInternalDateFin(formationData.dateFin)
       setInternalReference(formationData.reference)
       setInternalResultat(formationData.resultat)
       setInternalMoyenne(formationData.moyenne)
-      setDateError("")
     } else if (isOpen && !formationData) {
       // Réinitialiser si pas de données
-      setInternalFormationId("")
+      setInternalSessionFormationId("")
       setInternalDateDebut("")
       setInternalDateFin("")
       setInternalReference("")
       setInternalResultat("")
       setInternalMoyenne(0)
-      setDateError("")
     }
   }, [isOpen, formationData])
-
-  // Valider la date de fin quand elle change ou quand la date de début change
-  const validateDateFin = (dateDebutValue: string, dateFinValue: string) => {
-    if (dateDebutValue && dateFinValue && dateFinValue < dateDebutValue) {
-      setDateError("* تاريخ نهاية التكوين غير صحيح")
-    } else {
-      setDateError("")
-    }
-  }
 
   const handleClose = () => {
     if (onClose) {
@@ -181,19 +220,15 @@ export default function DialogueEditionFormation({
     } else {
       // Mode non contrôlé - mettre à jour l'état interne
       switch (field) {
-        case "formationId":
-          setInternalFormationId(value as string)
-          break
-        case "dateDebut":
-          setInternalDateDebut(value as string)
-          // Valider la date de fin quand la date de début change
-          validateDateFin(value as string, dateFin)
-          break
-        case "dateFin":
-          setInternalDateFin(value as string)
-          break
-        case "reference":
-          setInternalReference(value as string)
+        case "sessionFormationId":
+          setInternalSessionFormationId(value as string)
+          // Auto-remplir les champs lors de la sélection d'une session
+          const selectedSession = sessionFormations.find(s => s.id === value)
+          if (selectedSession) {
+            setInternalDateDebut(formatDateForInput(selectedSession.dateDebut))
+            setInternalDateFin(formatDateForInput(selectedSession.dateFin))
+            setInternalReference(selectedSession.reference || "")
+          }
           break
         case "resultat":
           setInternalResultat(value as string)
@@ -205,22 +240,10 @@ export default function DialogueEditionFormation({
     }
   }
 
-  const handleDateFinBlur = () => {
-    validateDateFin(dateDebut, dateFin)
-  }
-
   const handleSave = () => {
-    // Valider la date avant l'enregistrement
-    validateDateFin(dateDebut, dateFin)
-
-    // Ne pas enregistrer si la date est invalide
-    if (dateDebut && dateFin && dateFin < dateDebut) {
-      return
-    }
-
     if (onSave) {
       onSave({
-        formationId,
+        sessionFormationId,
         dateDebut,
         dateFin,
         reference,
@@ -283,30 +306,13 @@ export default function DialogueEditionFormation({
           <Avatar />
           <div className="px-6 pt-4 pb-6">
             <form className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor={`${id}-formation`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
-                  الدورة التكوينية :
-                </Label>
-                <Select
-                  dir="rtl"
-                  value={formationId}
-                  onValueChange={(value) => handleChange("formationId", value)}
-                  disabled={isLoadingFormations}
-                >
-                  <SelectTrigger className={`w-full rounded ${notoNaskhArabic.className}`}>
-                    <SelectValue
-                      placeholder={isLoadingFormations ? "جاري التحميل..." : "اختر الدورة التكوينية"}
-                    />
-                  </SelectTrigger>
-                  <SelectContent className={notoNaskhArabic.className}>
-                    {formations.map((formation) => (
-                      <SelectItem key={formation.id} value={formation.id} className="text-[15px]">
-                        {formation.formation}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Search Bar for Session Formations */}
+              <SessionFormationSearchBar
+                sessionFormations={sessionFormations}
+                isLoadingFormations={isLoadingFormations}
+                onSelect={(selectedSessionId) => handleChange("sessionFormationId", selectedSessionId)}
+                selectedId={sessionFormationId}
+              />
 
               <div className="flex flex-col gap-4 sm:flex-row">
                 <div className="flex-1 space-y-2">
@@ -315,11 +321,11 @@ export default function DialogueEditionFormation({
                   </Label>
                   <Input
                     id={`${id}-date-debut`}
-                    type="date"
-                    value={dateDebut}
-                    onChange={(e) => handleChange("dateDebut", e.target.value)}
-                    required
-                    className="text-start"
+                    type="text"
+                    value={dateDebut ? formatDateForSelect(dateDebut) : ""}
+                    readOnly
+                    disabled
+                    className="text-right bg-muted cursor-not-allowed"
                   />
                 </div>
                 <div className="flex-1 space-y-2">
@@ -328,18 +334,12 @@ export default function DialogueEditionFormation({
                   </Label>
                   <Input
                     id={`${id}-date-fin`}
-                    type="date"
-                    value={dateFin}
-                    onChange={(e) => handleChange("dateFin", e.target.value)}
-                    onBlur={handleDateFinBlur}
-                    required
-                    className={`text-start ${dateError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    type="text"
+                    value={dateFin ? formatDateForSelect(dateFin) : ""}
+                    readOnly
+                    disabled
+                    className="text-right bg-muted cursor-not-allowed"
                   />
-                  {dateError && (
-                    <p className={`text-xs text-red-500 leading-tight -mb-6 ${notoNaskhArabic.className}`}>
-                      {dateError}
-                    </p>
-                  )}
                 </div>
               </div>
 
@@ -350,11 +350,10 @@ export default function DialogueEditionFormation({
                 <Input
                   id={`${id}-reference`}
                   type="text"
-                  placeholder="أدخل المرجع"
                   value={reference}
-                  onChange={(e) => handleChange("reference", e.target.value)}
-                  className={`text-right placeholder:text-muted-foreground/50 ${notoNaskhArabic.className}`}
-                  autoComplete="off"
+                  readOnly
+                  disabled
+                  className={`text-right bg-muted cursor-not-allowed ${notoNaskhArabic.className}`}
                 />
               </div>
 
@@ -371,7 +370,13 @@ export default function DialogueEditionFormation({
                     <SelectValue placeholder="اختر النتيجة" />
                   </SelectTrigger>
                   <SelectContent className={notoNaskhArabic.className}>
-                    <SelectItem value="نجاح" className="text-[15px]">نجاح</SelectItem>
+                    <SelectItem
+                      value="نجاح"
+                      className="text-[15px]"
+                      disabled={!isSessionTerminee}
+                    >
+                      نجاح {!isSessionTerminee && sessionFormationId && "(التكوين لم ينتهِ بعد)"}
+                    </SelectItem>
                     <SelectItem value="قيد التكوين" className="text-[15px]">قيد التكوين</SelectItem>
                     <SelectItem value="انقطع" className="text-[15px]">انقطع</SelectItem>
                     <SelectItem value="لم يلتحق" className="text-[15px]">لم يلتحق</SelectItem>
@@ -382,6 +387,9 @@ export default function DialogueEditionFormation({
               <div className="space-y-2">
                 <Label htmlFor={`${id}-moyenne`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
                   المعدل (0-20) :
+                  {!isSessionTerminee && sessionFormationId && (
+                    <span className="text-xs text-muted-foreground mr-2">(التكوين لم ينتهِ بعد)</span>
+                  )}
                 </Label>
                 <Input
                   id={`${id}-moyenne`}
@@ -392,7 +400,10 @@ export default function DialogueEditionFormation({
                   placeholder="0.00"
                   value={moyenne}
                   onChange={(e) => handleChange("moyenne", parseFloat(e.target.value) || 0)}
-                  className="text-right placeholder:text-muted-foreground/50"
+                  disabled={!isSessionTerminee && !!sessionFormationId}
+                  className={`text-right placeholder:text-muted-foreground/50 ${
+                    !isSessionTerminee && sessionFormationId ? "bg-muted cursor-not-allowed" : ""
+                  }`}
                 />
               </div>
 
@@ -490,6 +501,219 @@ export default function DialogueEditionFormation({
         </AlertDialogContent>
       </AlertDialog>
     </>
+  )
+}
+
+// Fonction utilitaire pour formater une date ISO en YYYY-MM-DD
+function formatDateForInput(isoDate: string): string {
+  if (!isoDate) return ""
+  const date = new Date(isoDate)
+  return date.toISOString().split("T")[0]
+}
+
+// Fonction utilitaire pour formater une date pour le select (YYYY-MM-DD)
+function formatDateForSelect(isoDate: string): string {
+  if (!isoDate) return ""
+  const date = new Date(isoDate)
+  const day = date.getDate().toString().padStart(2, "0")
+  const month = (date.getMonth() + 1).toString().padStart(2, "0")
+  const year = date.getFullYear()
+  return `${year}-${month}-${day}`
+}
+
+// Session Formation Search Bar Component
+interface SessionFormationSearchBarProps {
+  sessionFormations: SessionFormationOption[]
+  isLoadingFormations: boolean
+  onSelect: (sessionId: string) => void
+  selectedId: string
+  hasError?: boolean
+}
+
+function SessionFormationSearchBar({
+  sessionFormations,
+  isLoadingFormations,
+  onSelect,
+  selectedId,
+  hasError = false,
+}: SessionFormationSearchBarProps) {
+  const [query, setQuery] = useState("")
+  const [isFocused, setIsFocused] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(-1)
+  const debouncedQuery = useDebounce(query, 200)
+
+  // Initialize query with selected session formation name
+  useEffect(() => {
+    if (selectedId && !isFocused) {
+      const selected = sessionFormations.find((s) => s.id === selectedId)
+      if (selected) {
+        setQuery(selected.formation.formation)
+      }
+    }
+  }, [selectedId, sessionFormations, isFocused])
+
+  const filteredSessions = useMemo(() => {
+    if (!debouncedQuery) return sessionFormations
+    const normalizedQuery = debouncedQuery.toLowerCase().trim()
+    return sessionFormations.filter((session) => {
+      const searchableText = `${session.formation.formation} ${session.formation.typeFormation} ${session.reference || ""}`.toLowerCase()
+      return searchableText.includes(normalizedQuery)
+    })
+  }, [debouncedQuery, sessionFormations])
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value)
+    setActiveIndex(-1)
+  }, [])
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (!filteredSessions.length) return
+
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault()
+          setActiveIndex((prev) => (prev < filteredSessions.length - 1 ? prev + 1 : 0))
+          break
+        case "ArrowUp":
+          e.preventDefault()
+          setActiveIndex((prev) => (prev > 0 ? prev - 1 : filteredSessions.length - 1))
+          break
+        case "Enter":
+          e.preventDefault()
+          if (activeIndex >= 0 && filteredSessions[activeIndex]) {
+            const selected = filteredSessions[activeIndex]
+            onSelect(selected.id)
+            setQuery(selected.formation.formation)
+            setIsFocused(false)
+          }
+          break
+        case "Escape":
+          setIsFocused(false)
+          setActiveIndex(-1)
+          break
+      }
+    },
+    [filteredSessions, activeIndex, onSelect]
+  )
+
+  const handleSessionClick = useCallback(
+    (sessionId: string, formationName: string) => {
+      onSelect(sessionId)
+      setQuery(formationName)
+      setIsFocused(false)
+    },
+    [onSelect]
+  )
+
+  const handleFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+    setIsFocused(true)
+    setActiveIndex(-1)
+    e.target.select()
+  }, [])
+
+  const handleBlur = useCallback(() => {
+    setTimeout(() => {
+      setIsFocused(false)
+      setActiveIndex(-1)
+    }, 200)
+  }, [])
+
+  return (
+    <div className="space-y-2">
+      <Label className={`text-sm font-light ${notoNaskhArabic.className}`}>الدورة التكوينية :</Label>
+      <div className="relative">
+        <Input
+          type="text"
+          placeholder={isLoadingFormations ? "جاري التحميل..." : "ابحث عن الدورة التكوينية..."}
+          value={query}
+          onChange={handleInputChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          disabled={isLoadingFormations}
+          dir="rtl"
+          className={`pr-3 pl-9 py-1.5 h-9 text-sm rounded-lg focus-visible:ring-offset-0 ${notoNaskhArabic.className} ${
+            hasError ? "border-red-500 focus:ring-red-500" : ""
+          }`}
+          role="combobox"
+          aria-expanded={isFocused && filteredSessions.length > 0}
+          aria-autocomplete="list"
+          autoComplete="off"
+        />
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4">
+          <AnimatePresence mode="popLayout">
+            <motion.div
+              key="search"
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 20, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Search className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        <AnimatePresence mode="wait">
+          {isFocused && filteredSessions.length > 0 && (
+            <motion.div
+              key={`search-results-${debouncedQuery}-${filteredSessions.length}`}
+              className="absolute z-50 w-full border rounded-md shadow-lg overflow-hidden dark:border-gray-800 bg-white dark:bg-black mt-1 max-h-48 overflow-y-auto"
+              variants={ANIMATION_VARIANTS.container}
+              role="listbox"
+              aria-label="نتائج البحث"
+              initial="hidden"
+              animate="show"
+              exit="exit"
+            >
+              <motion.ul role="none">
+                {filteredSessions.map((session, index) => (
+                  <motion.li
+                    key={session.id}
+                    id={`session-${session.id}`}
+                    className={`px-3 py-2 flex items-center justify-between hover:bg-gray-200 dark:hover:bg-zinc-900 cursor-pointer ${
+                      activeIndex === index ? "bg-gray-100 dark:bg-zinc-800" : ""
+                    } ${selectedId === session.id ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                    variants={ANIMATION_VARIANTS.item}
+                    layout
+                    onClick={() => handleSessionClick(session.id, session.formation.formation)}
+                    role="option"
+                    aria-selected={activeIndex === index}
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="text-gray-500" aria-hidden="true">
+                        <GraduationCap className="h-4 w-4 text-blue-500" />
+                      </span>
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className={`text-sm font-medium text-gray-900 dark:text-gray-100 truncate ${notoNaskhArabic.className}`}>
+                          {session.formation.formation}
+                        </span>
+                        <span className={`text-xs text-gray-400 ${notoNaskhArabic.className}`}>
+                          {session.formation.typeFormation}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 mr-2">
+                      <Calendar className="h-3 w-3 text-gray-400" />
+                      <span className="text-xs text-gray-400 whitespace-nowrap">
+                        {formatDateForSelect(session.dateDebut)} - {formatDateForSelect(session.dateFin)}
+                      </span>
+                    </div>
+                  </motion.li>
+                ))}
+              </motion.ul>
+              <div className="px-3 py-2 border-t border-gray-100 dark:border-gray-800">
+                <div className={`flex items-center justify-between text-xs text-gray-500 ${notoNaskhArabic.className}`}>
+                  <span>↑↓ للتنقل</span>
+                  <span>ESC للإلغاء</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   )
 }
 

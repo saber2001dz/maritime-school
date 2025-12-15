@@ -75,29 +75,29 @@ const normalizeArabicText = (text: string): string => {
 // Helper function to get status badge colors
 const getStatusColor = (statut: string, isDark: boolean) => {
   switch (statut) {
-    case 'مبرمجة': // Scheduled
+    case "مبرمجة": // Scheduled
       return {
-        bgColor: isDark ? 'bg-blue-500/10' : 'bg-blue-50',
-        textColor: isDark ? 'text-blue-400' : 'text-blue-600',
-        dotColor: isDark ? 'bg-blue-400' : 'bg-blue-600'
+        bgColor: isDark ? "bg-blue-500/10" : "bg-blue-50",
+        textColor: isDark ? "text-blue-400" : "text-blue-600",
+        dotColor: isDark ? "bg-blue-400" : "bg-blue-600",
       }
-    case 'قيد التنفيذ': // In Progress
+    case "قيد التنفيذ": // In Progress
       return {
-        bgColor: isDark ? 'bg-green-500/10' : 'bg-green-50',
-        textColor: isDark ? 'text-green-400' : 'text-green-600',
-        dotColor: isDark ? 'bg-green-400' : 'bg-green-600'
+        bgColor: isDark ? "bg-green-500/10" : "bg-green-50",
+        textColor: isDark ? "text-green-400" : "text-green-600",
+        dotColor: isDark ? "bg-green-400" : "bg-green-600",
       }
-    case 'انتهت': // Completed
+    case "انتهت": // Completed
       return {
-        bgColor: isDark ? 'bg-gray-500/10' : 'bg-gray-50',
-        textColor: isDark ? 'text-gray-400' : 'text-gray-600',
-        dotColor: isDark ? 'bg-gray-400' : 'bg-gray-600'
+        bgColor: isDark ? "bg-orange-500/10" : "bg-orange-50",
+        textColor: isDark ? "text-orange-400" : "text-orange-600",
+        dotColor: isDark ? "bg-orange-400" : "bg-orange-600",
       }
     default:
       return {
-        bgColor: isDark ? 'bg-gray-500/10' : 'bg-gray-50',
-        textColor: isDark ? 'text-gray-400' : 'text-gray-600',
-        dotColor: isDark ? 'bg-gray-400' : 'bg-gray-600'
+        bgColor: isDark ? "bg-gray-500/10" : "bg-gray-50",
+        textColor: isDark ? "text-gray-400" : "text-gray-600",
+        dotColor: isDark ? "bg-gray-400" : "bg-gray-600",
       }
   }
 }
@@ -120,6 +120,8 @@ export function ResizableSessionTable({
   const [showExportMenu, setShowExportMenu] = useState(false)
   const [filterFormationType, setFilterFormationType] = useState<string | null>(null)
   const [filterStatut, setFilterStatut] = useState<string | null>(null)
+  const [filterYear, setFilterYear] = useState<number | null>(null)
+  const [showYearMenu, setShowYearMenu] = useState(false)
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [searchReference, setSearchReference] = useState<string>("")
   const [selectedSessions, setSelectedSessions] = useState<string[]>([])
@@ -163,6 +165,14 @@ export function ResizableSessionTable({
       result = result.filter((session) => session.statut === filterStatut)
     }
 
+    // Filtrage par année (basé sur dateDebut)
+    if (filterYear) {
+      result = result.filter((session) => {
+        const year = new Date(session.dateDebut).getFullYear()
+        return year === filterYear
+      })
+    }
+
     // Recherche par nom de formation
     if (searchQuery) {
       const normalizedQuery = normalizeArabicText(searchQuery)
@@ -178,15 +188,54 @@ export function ResizableSessionTable({
     }
 
     return result
-  }, [initialSessions, filterFormationType, filterStatut, searchQuery, searchReference])
+  }, [initialSessions, filterFormationType, filterStatut, filterYear, searchQuery, searchReference])
+
+  // Helper function to get status priority for sorting
+  // Priority: "قيد التنفيذ" (In Progress) = 1, "مبرمجة" (Scheduled) = 2, "انتهت" (Completed) = 3
+  const getStatusPriority = (statut: string): number => {
+    switch (statut) {
+      case "قيد التنفيذ":
+        return 1
+      case "مبرمجة":
+        return 2
+      case "انتهت":
+        return 3
+      default:
+        return 4
+    }
+  }
 
   // Tri
   const sortedSessions = useMemo(() => {
-    if (!sortField) return filteredSessions
+    // Default sort: by status priority, then by dateDebut with different logic per status
+    if (!sortField || sortField === "createdAt") {
+      return [...filteredSessions].sort((a, b) => {
+        // First, sort by status priority
+        const statusPriorityA = getStatusPriority(a.statut)
+        const statusPriorityB = getStatusPriority(b.statut)
+
+        if (statusPriorityA !== statusPriorityB) {
+          return statusPriorityA - statusPriorityB
+        }
+
+        // Parse dates ensuring consistent handling of both Date objects and ISO strings
+        const dateA = a.dateDebut instanceof Date ? a.dateDebut.getTime() : new Date(a.dateDebut).getTime()
+        const dateB = b.dateDebut instanceof Date ? b.dateDebut.getTime() : new Date(b.dateDebut).getTime()
+
+        // Within each status group, apply different sorting logic:
+        // - "قيد التنفيذ" (In Progress): ascending order (started earliest first)
+        // - "مبرمجة" (Scheduled/future): ascending order (closest date first)
+        // - "انتهت" (Completed): descending order (most recent first)
+        if (a.statut === "قيد التنفيذ" || a.statut === "مبرمجة") {
+          return dateA - dateB // Ascending
+        }
+        return dateB - dateA // Descending: most recent date first
+      })
+    }
 
     return [...filteredSessions].sort((a, b) => {
-      let aValue: any
-      let bValue: any
+      let aValue: number | string
+      let bValue: number | string
 
       switch (sortField) {
         case "formation":
@@ -194,20 +243,16 @@ export function ResizableSessionTable({
           bValue = b.formation.formation
           break
         case "dateDebut":
-          aValue = new Date(a.dateDebut).getTime()
-          bValue = new Date(b.dateDebut).getTime()
+          aValue = a.dateDebut instanceof Date ? a.dateDebut.getTime() : new Date(a.dateDebut).getTime()
+          bValue = b.dateDebut instanceof Date ? b.dateDebut.getTime() : new Date(b.dateDebut).getTime()
           break
         case "dateFin":
-          aValue = new Date(a.dateFin).getTime()
-          bValue = new Date(b.dateFin).getTime()
+          aValue = a.dateFin instanceof Date ? a.dateFin.getTime() : new Date(a.dateFin).getTime()
+          bValue = b.dateFin instanceof Date ? b.dateFin.getTime() : new Date(b.dateFin).getTime()
           break
         case "nombreParticipants":
           aValue = a.nombreParticipants
           bValue = b.nombreParticipants
-          break
-        case "createdAt":
-          aValue = new Date(a.createdAt).getTime()
-          bValue = new Date(b.createdAt).getTime()
           break
         default:
           return 0
@@ -240,7 +285,7 @@ export function ResizableSessionTable({
     } else {
       setSortField(field)
       // Pour les dates, trier du plus récent au moins récent par défaut
-      setSortOrder((field === "dateDebut" || field === "dateFin" || field === "createdAt") ? "desc" : "asc")
+      setSortOrder(field === "dateDebut" || field === "dateFin" || field === "createdAt" ? "desc" : "asc")
     }
     setShowSortMenu(false)
   }
@@ -550,7 +595,7 @@ export function ResizableSessionTable({
             <button
               onClick={() => setShowFilterMenu(!showFilterMenu)}
               className={`px-3 py-1.5 bg-background border border-border text-foreground text-sm hover:bg-muted/30 transition-colors flex items-center gap-2 rounded-md cursor-pointer ${
-                (filterFormationType || filterStatut) ? "ring-2 ring-primary/30" : ""
+                filterFormationType || filterStatut ? "ring-2 ring-primary/30" : ""
               }`}
               style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
             >
@@ -571,7 +616,10 @@ export function ResizableSessionTable({
                 <div className="fixed inset-0 z-10" onClick={() => setShowFilterMenu(false)} />
                 <div className="absolute right-0 mt-1 w-56 bg-background border border-border/50 shadow-lg rounded-md z-20 py-1">
                   {/* Formation Type Filter */}
-                  <div className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b border-border/50" style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+                  <div
+                    className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b border-border/50"
+                    style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                  >
                     نـوع التـكـويـن
                   </div>
                   <button
@@ -600,7 +648,10 @@ export function ResizableSessionTable({
                   ))}
 
                   {/* Status Filter */}
-                  <div className="px-3 py-2 text-xs font-semibold text-muted-foreground border-t border-b border-border/50 mt-1" style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+                  <div
+                    className="px-3 py-2 text-xs font-semibold text-muted-foreground border-t border-b border-border/50 mt-1"
+                    style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                  >
                     الوضعية
                   </div>
                   <button
@@ -633,6 +684,66 @@ export function ResizableSessionTable({
                     >
                       <span>{status}</span>
                       {filterStatut === status && <Check className="h-4 w-4 text-primary" />}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Bouton de filtrage par année */}
+          <div className="relative">
+            <button
+              onClick={() => setShowYearMenu(!showYearMenu)}
+              className={`px-3 py-1.5 bg-background border border-border text-foreground text-sm hover:bg-muted/30 transition-colors flex items-center gap-2 rounded-md cursor-pointer ${
+                filterYear ? "ring-2 ring-primary/30" : ""
+              }`}
+              style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+            >
+              <CalendarDays size={14} />
+              السنوات
+              {filterYear && (
+                <span className="ml-1 text-xs bg-primary text-primary-foreground rounded-sm px-1.5 pt-1">
+                  {filterYear}
+                </span>
+              )}
+              <ChevronDown size={14} className="opacity-50" />
+            </button>
+
+            {showYearMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowYearMenu(false)} />
+                <div className="absolute right-0 mt-1 w-48 bg-background border border-border/50 shadow-lg rounded-md z-20 py-1 max-h-64 overflow-y-auto">
+                  <button
+                    onClick={() => {
+                      setFilterYear(null)
+                      setCurrentPage(1)
+                      setShowYearMenu(false)
+                    }}
+                    className={`w-full px-3 py-2 text-start text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
+                      !filterYear ? "bg-muted/30" : ""
+                    }`}
+                    style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                  >
+                    <span>كل السنوات</span>
+                    {!filterYear && <Check className="h-4 w-4 text-primary" />}
+                  </button>
+
+                  {Array.from({ length: 2032 - 2010 + 1 }, (_, i) => 2032 - i).map((year) => (
+                    <button
+                      key={year}
+                      onClick={() => {
+                        setFilterYear(year)
+                        setCurrentPage(1)
+                        setShowYearMenu(false)
+                      }}
+                      className={`w-full px-3 py-2 text-start text-sm hover:bg-muted/50 transition-colors flex items-center justify-between ${
+                        filterYear === year ? "bg-muted/30" : ""
+                      }`}
+                      style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                    >
+                      <span>{year}</span>
+                      {filterYear === year && <Check className="h-4 w-4 text-primary" />}
                     </button>
                   ))}
                 </div>
@@ -829,9 +940,11 @@ export function ResizableSessionTable({
             {/* Corps du tableau */}
             <AnimatePresence mode="wait">
               <motion.div
-                key={`page-${currentPage}-filter-${filterFormationType || "all"}-sort-${
-                  sortField || "none"
-                }-search-${searchQuery}-reference-${searchReference}-count-${initialSessions.length}`}
+                key={`page-${currentPage}-filter-${filterFormationType || "all"}-statut-${filterStatut || "all"}-year-${
+                  filterYear || "all"
+                }-sort-${sortField || "none"}-search-${searchQuery}-reference-${searchReference}-count-${
+                  initialSessions.length
+                }`}
                 variants={shouldAnimate ? containerVariants : {}}
                 initial={shouldAnimate ? "hidden" : "visible"}
                 animate="visible"
@@ -846,197 +959,208 @@ export function ResizableSessionTable({
                       <motion.div key={session.id} variants={shouldAnimate ? rowVariants : {}}>
                         <div
                           className={`flex items-center text-sm ${
-                      selectedSessions.includes(session.id)
-                        ? isDark
-                          ? "bg-zinc-700/60"
-                          : "bg-gray-300/40"
-                        : "bg-muted/5 hover:bg-muted/20"
-                    } ${
-                      mounted
-                        ? isDark
-                          ? "border-b border-zinc-700"
-                          : "border-b border-zinc-200"
-                        : "border-b-2 border-border"
-                    } transition-colors`}
-                  >
-                    {/* Checkbox */}
-                    <div
-                      className={`flex items-center justify-center py-2 ${
-                        mounted
-                          ? isDark
-                            ? "border-l border-zinc-700"
-                            : "border-l border-zinc-200"
-                          : "border-l-2 border-border"
-                      }`}
-                      style={{ width: columnWidths.number }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedSessions.includes(session.id)}
-                        onChange={() => handleCheckboxChange(session.id)}
-                        className="w-4 h-4 rounded border-border/40 cursor-pointer"
-                        style={
-                          mounted
-                            ? {
-                                accentColor: isDark ? "rgb(113, 113, 122)" : "rgb(161, 161, 170)",
+                            selectedSessions.includes(session.id)
+                              ? isDark
+                                ? "bg-zinc-700/60"
+                                : "bg-gray-300/40"
+                              : "bg-muted/5 hover:bg-muted/20"
+                          } ${
+                            mounted
+                              ? isDark
+                                ? "border-b border-zinc-700"
+                                : "border-b border-zinc-200"
+                              : "border-b-2 border-border"
+                          } transition-colors`}
+                        >
+                          {/* Checkbox */}
+                          <div
+                            className={`flex items-center justify-center py-2 ${
+                              mounted
+                                ? isDark
+                                  ? "border-l border-zinc-700"
+                                  : "border-l border-zinc-200"
+                                : "border-l-2 border-border"
+                            }`}
+                            style={{ width: columnWidths.number }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedSessions.includes(session.id)}
+                              onChange={() => handleCheckboxChange(session.id)}
+                              className="w-4 h-4 rounded border-border/40 cursor-pointer"
+                              style={
+                                mounted
+                                  ? {
+                                      accentColor: isDark ? "rgb(113, 113, 122)" : "rgb(161, 161, 170)",
+                                    }
+                                  : {}
                               }
-                            : {}
-                        }
-                      />
-                    </div>
-
-                    {/* Formation */}
-                    <div
-                      className={`px-3 py-2 ${
-                        mounted
-                          ? isDark
-                            ? "border-l border-zinc-700"
-                            : "border-l border-zinc-200"
-                          : "border-l-2 border-border"
-                      }`}
-                      style={{ width: columnWidths.formation, fontFamily: "'Noto Naskh Arabic', sans-serif" }}
-                    >
-                      <div className="font-medium">{session.formation.formation}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">{session.formation.typeFormation}</div>
-                    </div>
-
-                    {/* Date début */}
-                    <div
-                      className={`px-3 py-2 ${
-                        mounted
-                          ? isDark
-                            ? "border-l border-zinc-700"
-                            : "border-l border-zinc-200"
-                          : "border-l-2 border-border"
-                      }`}
-                      style={{ width: columnWidths.dateDebut }}
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <CalendarDays size={14} className="text-muted-foreground" />
-                        {formatDateYYYYMMDD(session.dateDebut)}
-                      </div>
-                    </div>
-
-                    {/* Date fin */}
-                    <div
-                      className={`px-3 py-2 ${
-                        mounted
-                          ? isDark
-                            ? "border-l border-zinc-700"
-                            : "border-l border-zinc-200"
-                          : "border-l-2 border-border"
-                      }`}
-                      style={{ width: columnWidths.dateFin }}
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <CalendarDays size={14} className="text-muted-foreground" />
-                        {formatDateYYYYMMDD(session.dateFin)}
-                      </div>
-                    </div>
-
-                    {/* Nombre participants */}
-                    <div
-                      className={`px-3 py-2 ${
-                        mounted
-                          ? isDark
-                            ? "border-l border-zinc-700"
-                            : "border-l border-zinc-200"
-                          : "border-l-2 border-border"
-                      }`}
-                      style={{ width: columnWidths.nombreParticipants }}
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <Users size={14} className="text-muted-foreground" />
-                        {session.nombreParticipants}
-                      </div>
-                    </div>
-
-                    {/* Référence */}
-                    <div
-                      className={`px-3 py-2 ${
-                        mounted
-                          ? isDark
-                            ? "border-l border-zinc-700"
-                            : "border-l border-zinc-200"
-                          : "border-l-2 border-border"
-                      }`}
-                      style={{ width: columnWidths.reference, fontFamily: "'Noto Naskh Arabic', sans-serif" }}
-                    >
-                      {session.reference || "-"}
-                    </div>
-
-                    {/* Statut */}
-                    <div
-                      className={`px-3 py-2 ${
-                        mounted
-                          ? isDark
-                            ? "border-l border-zinc-700"
-                            : "border-l border-zinc-200"
-                          : "border-l-2 border-border"
-                      }`}
-                      style={{ width: columnWidths.statut }}
-                    >
-                      {(() => {
-                        const { bgColor, textColor, dotColor } = getStatusColor(session.statut, isDark)
-                        return (
-                          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium whitespace-nowrap ${bgColor} ${textColor} rounded-md`}>
-                            <div className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></div>
-                            <span style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}>
-                              {session.statut}
-                            </span>
+                            />
                           </div>
-                        )
-                      })()}
-                    </div>
 
-                    {/* Actions */}
-                    <div className="flex mx-2 items-center justify-center" style={{ width: columnWidths.actions }}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="opacity-60 hover:opacity-100 transition-opacity cursor-pointer flex items-center">
-                            <MoreVertical size={16} />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" side="bottom">
-                          <DropdownMenuItem
-                            dir="rtl"
-                            className="gap-2 cursor-pointer"
-                            onClick={() => handleEditClick(session)}
-                            disabled={!selectedSessions.includes(session.id)}
+                          {/* Formation */}
+                          <div
+                            className={`px-3 py-2 ${
+                              mounted
+                                ? isDark
+                                  ? "border-l border-zinc-700"
+                                  : "border-l border-zinc-200"
+                                : "border-l-2 border-border"
+                            }`}
+                            style={{ width: columnWidths.formation, fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                           >
-                            <SquarePen size={14} />
-                            <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>تعـديـل بيــانـــات</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            dir="rtl"
-                            className="gap-2 cursor-pointer"
-                            onClick={() => {
-                              // TODO: Implement participant list view
-                            }}
-                            disabled={!selectedSessions.includes(session.id)}
+                            <div className="font-medium">{session.formation.formation}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              {session.formation.typeFormation}
+                            </div>
+                          </div>
+
+                          {/* Date début */}
+                          <div
+                            className={`px-3 py-2 ${
+                              mounted
+                                ? isDark
+                                  ? "border-l border-zinc-700"
+                                  : "border-l border-zinc-200"
+                                : "border-l-2 border-border"
+                            }`}
+                            style={{ width: columnWidths.dateDebut }}
                           >
-                            <Users size={14} />
-                            <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>قائمـة المشاركيــن</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            dir="rtl"
-                            className="gap-2 cursor-pointer text-red-600 focus:text-red-600"
-                            onClick={() => handleDeleteClick(session)}
-                            disabled={!selectedSessions.includes(session.id)}
+                            <div className="flex items-center gap-1.5">
+                              <CalendarDays size={14} className="text-muted-foreground" />
+                              {formatDateYYYYMMDD(session.dateDebut)}
+                            </div>
+                          </div>
+
+                          {/* Date fin */}
+                          <div
+                            className={`px-3 py-2 ${
+                              mounted
+                                ? isDark
+                                  ? "border-l border-zinc-700"
+                                  : "border-l border-zinc-200"
+                                : "border-l-2 border-border"
+                            }`}
+                            style={{ width: columnWidths.dateFin }}
                           >
-                            <Trash2 size={14} />
-                            <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>حـــــــــــــــــــــذف</span>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </>
-          )}
-        </motion.div>
-      </AnimatePresence>
+                            <div className="flex items-center gap-1.5">
+                              <CalendarDays size={14} className="text-muted-foreground" />
+                              {formatDateYYYYMMDD(session.dateFin)}
+                            </div>
+                          </div>
+
+                          {/* Nombre participants */}
+                          <div
+                            className={`px-3 py-2 ${
+                              mounted
+                                ? isDark
+                                  ? "border-l border-zinc-700"
+                                  : "border-l border-zinc-200"
+                                : "border-l-2 border-border"
+                            }`}
+                            style={{ width: columnWidths.nombreParticipants }}
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <Users size={14} className="text-muted-foreground" />
+                              {session.nombreParticipants}
+                            </div>
+                          </div>
+
+                          {/* Référence */}
+                          <div
+                            className={`px-3 py-2 ${
+                              mounted
+                                ? isDark
+                                  ? "border-l border-zinc-700"
+                                  : "border-l border-zinc-200"
+                                : "border-l-2 border-border"
+                            }`}
+                            style={{ width: columnWidths.reference, fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+                          >
+                            {session.reference || "-"}
+                          </div>
+
+                          {/* Statut */}
+                          <div
+                            className={`px-3 py-2 ${
+                              mounted
+                                ? isDark
+                                  ? "border-l border-zinc-700"
+                                  : "border-l border-zinc-200"
+                                : "border-l-2 border-border"
+                            }`}
+                            style={{ width: columnWidths.statut }}
+                          >
+                            {(() => {
+                              const { bgColor, textColor, dotColor } = getStatusColor(session.statut, isDark)
+                              return (
+                                <div
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium whitespace-nowrap ${bgColor} ${textColor} rounded-md`}
+                                >
+                                  <div className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></div>
+                                  <span style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}>{session.statut}</span>
+                                </div>
+                              )
+                            })()}
+                          </div>
+
+                          {/* Actions */}
+                          <div
+                            className="flex mx-2 items-center justify-center"
+                            style={{ width: columnWidths.actions }}
+                          >
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button className="opacity-60 hover:opacity-100 transition-opacity cursor-pointer flex items-center">
+                                  <MoreVertical size={16} />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start" side="bottom">
+                                <DropdownMenuItem
+                                  dir="rtl"
+                                  className="gap-2 cursor-pointer"
+                                  onClick={() => handleEditClick(session)}
+                                  disabled={!selectedSessions.includes(session.id)}
+                                >
+                                  <SquarePen size={14} />
+                                  <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+                                    تعـديـل بيــانـــات
+                                  </span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  dir="rtl"
+                                  className="gap-2 cursor-pointer"
+                                  onClick={() => {
+                                    // TODO: Implement participant list view
+                                  }}
+                                  disabled={!selectedSessions.includes(session.id)}
+                                >
+                                  <Users size={14} />
+                                  <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+                                    قائمـة المشاركيــن
+                                  </span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  dir="rtl"
+                                  className="gap-2 cursor-pointer text-red-600 focus:text-red-600"
+                                  onClick={() => handleDeleteClick(session)}
+                                  disabled={!selectedSessions.includes(session.id)}
+                                >
+                                  <Trash2 size={14} />
+                                  <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+                                    حـــــــــــــــــــــذف
+                                  </span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </div>
@@ -1119,7 +1243,12 @@ export function ResizableSessionTable({
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-start font-bold text-xl" style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>تأكيــد الحـــــذف</AlertDialogTitle>
+            <AlertDialogTitle
+              className="text-start font-bold text-xl"
+              style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
+            >
+              تأكيــد الحـــــذف
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-start" style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
               هل أنت متأكد من حذف هذه الدورة التكوينية؟
               <br />
@@ -1127,7 +1256,9 @@ export function ResizableSessionTable({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="cursor-pointer" style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>إلغـــاء</AlertDialogCancel>
+            <AlertDialogCancel className="cursor-pointer" style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+              إلغـــاء
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               className="bg-red-600 hover:bg-red-700 cursor-pointer"

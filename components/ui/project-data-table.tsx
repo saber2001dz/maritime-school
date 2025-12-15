@@ -30,6 +30,7 @@ export interface Project {
     variant: StatusVariant;
   };
   formationId?: string;  // ID de la formation pour l'édition
+  sessionFormationId?: string;  // ID de la session de formation pour l'édition
 }
 
 // --- PROPS INTERFACE ---
@@ -98,7 +99,7 @@ export const ProjectDataTable = ({ projects, visibleColumns, onEditClick }: Proj
     { key: "team", label: "تــاريـخ البــدايــة", width: "w-28" },
     { key: "tech", label: "تــاريـخ النهــايـــة", width: "w-28" },
     { key: "createdAt", label: "المــرجــــــــع", width: "w-50" },
-    { key: "contributors", label: "عــدد الســاعــات", width: "w-26" },
+    { key: "contributors", label: "المعـــــــدل", width: "w-26" },
     { key: "status", label: "النـتـيـجــــــة", width: "w-12" },
     { key: "actions", label: "خيــــارات", width: "w-18" },
   ];

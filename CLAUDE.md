@@ -71,7 +71,13 @@ ClientComponent (Client Component)
 
 ## Project Overview
 
-This is a Next.js 16.0.1 application (using the App Router) built with React 19.2.0, TypeScript, and Tailwind CSS v4. The project is intended for a maritime school management system with comprehensive authentication, user management, agent tracking, and training (formation) management capabilities.
+This is a Next.js 16.0.10 application (using the App Router) built with React 19.2.0, TypeScript, and Tailwind CSS v4. The project is a comprehensive maritime school management system featuring:
+- **Agent Management** - Track agents with their formations and training history
+- **Formation Management** - Manage training programs with sessions and schedules
+- **Formateur (Trainer) Management** - Track trainers and their course assignments
+- **Cours (Courses) Management** - Manage individual courses taught by trainers
+- **Session Planning** - Calendar-based session scheduling with drag-and-drop support
+- **Authentication & RBAC** - Role-based access control with Better-Auth
 
 ## Development Commands
 
@@ -119,6 +125,11 @@ npm run lint
   - [liste-formation/page.tsx](app/(with-header)/liste-formation/page.tsx) - Formations listing page
   - [nouvelle-formarion/page.tsx](app/(with-header)/nouvelle-formarion/page.tsx) - New formation creation page
   - [formation-agent/page.tsx](app/(with-header)/formation-agent/page.tsx) - Agent's formations listing page
+  - [session-formation/page.tsx](app/(with-header)/session-formation/page.tsx) - Session formation calendar with drag-and-drop planning
+  - [liste-formateur/page.tsx](app/(with-header)/liste-formateur/page.tsx) - Trainers (formateurs) listing page
+  - [nouveau-formateur/page.tsx](app/(with-header)/nouveau-formateur/page.tsx) - New trainer creation page
+  - [liste-cours/page.tsx](app/(with-header)/liste-cours/page.tsx) - Courses (دروس) listing page
+  - [cours-formateur/page.tsx](app/(with-header)/cours-formateur/page.tsx) - Courses taught by trainers
 
 - **app/admin/** - Admin panel with protected routes and sidebar navigation
   - [layout.tsx](app/admin/layout.tsx) - Admin layout with Sidebar and authentication guard
@@ -128,6 +139,9 @@ npm run lint
     - [liste-agents/page.tsx](app/admin/database/liste-agents/page.tsx) - Manage agents
     - [liste-formations/page.tsx](app/admin/database/liste-formations/page.tsx) - Manage formations
     - [formations-agent/page.tsx](app/admin/database/formations-agent/page.tsx) - Manage agent-formation relationships
+    - [liste-formateur/page.tsx](app/admin/database/liste-formateur/page.tsx) - Manage trainers (formateurs)
+    - [liste-cours/page.tsx](app/admin/database/liste-cours/page.tsx) - Manage courses
+    - [cours-formateur/page.tsx](app/admin/database/cours-formateur/page.tsx) - Manage course-trainer relationships
   - **auth-management/** - User and role management
     - [users/page.tsx](app/admin/auth-management/users/page.tsx) - User management (CRUD, role assignment, session control)
     - [roles/page.tsx](app/admin/auth-management/roles/page.tsx) - Role management and permissions overview
@@ -176,9 +190,21 @@ npm run lint
 
 ### Animation & Interaction
 - Framer Motion 12.23.24 (animations)
-- Motion 12.23.24
+- Motion 12.23.26
 - react-resizable 3.0.5 (resizable table columns)
 - react-use-measure 2.1.7 (element measurements)
+- @dnd-kit/core 6.3.1 (drag and drop for calendar)
+- @dnd-kit/utilities 3.2.2 (DnD utilities)
+
+### Calendar & Date
+- date-fns 4.1.0 (date utilities with Arabic locale support)
+- react-day-picker 9.12.0 (calendar date picker)
+
+### Charts
+- Recharts 2.15.4 (dashboard statistics and charts)
+
+### Additional Icons
+- @remixicon/react 4.7.0 (additional icon library)
 
 ### Database & Backend
 - Prisma 6.19.0 with PostgreSQL database
@@ -444,6 +470,7 @@ Junction table linking agents to formations:
 - id (String, cuid, primary key)
 - agentId (String, FK to Agent)
 - formationId (String, FK to Formation)
+- sessionFormationId (String, FK to SessionFormation, optional) - Links to specific session
 - dateDebut (String) - Start date
 - dateFin (String) - End date
 - reference (String, optional) - Reference number
@@ -453,7 +480,65 @@ Junction table linking agents to formations:
 - updatedAt (DateTime, auto-updated)
 - formation (Formation relation, cascade delete)
 - agent (Agent relation, cascade delete)
-- Indexes on agentId and formationId for query optimization
+- sessionFormation (SessionFormation relation, optional)
+- Indexes on agentId, formationId, and sessionFormationId for query optimization
+
+#### SessionFormation Model
+Training sessions - instances of formations with specific dates:
+- id (String, cuid, primary key)
+- formationId (String, FK to Formation)
+- dateDebut (DateTime) - Session start date/time (stored in UTC)
+- dateFin (DateTime) - Session end date/time (stored in UTC)
+- nombreParticipants (Int, default: 0) - Number of participants
+- reference (String, optional) - Reference number
+- statut (String, optional) - Session status (مبرمجة, قيد التنفيذ, انتهت)
+- color (String, optional) - Custom calendar color
+- createdAt (DateTime, default: now())
+- updatedAt (DateTime, auto-updated)
+- agentFormations (AgentFormation[]) - Agent enrollments
+- formation (Formation relation, cascade delete)
+- Indexes on dateDebut and formationId
+
+**Session Status Values:**
+- مبرمجة (Scheduled) - Future sessions
+- قيد التنفيذ (In Progress) - Currently running sessions
+- انتهت (Completed) - Past sessions
+
+#### Formateur Model
+Trainers/instructors with fields:
+- id (String, cuid, primary key)
+- nomPrenom (String) - Full name
+- grade (String) - Grade/rank
+- unite (String) - Unit/department
+- responsabilite (String) - Responsibility/position
+- telephone (Int) - Phone number
+- RIB (String, VarChar(20), unique) - Bank account number (20 digits)
+- createdAt (DateTime, default: now())
+- updatedAt (DateTime, auto-updated)
+- coursFormateurs (CoursFormateur[]) - Related course assignments
+
+#### Cours Model
+Individual courses/lessons:
+- id (String, cuid, primary key)
+- titre (String) - Course title
+- createdAt (DateTime, default: now())
+- updatedAt (DateTime, auto-updated)
+- coursFormateurs (CoursFormateur[]) - Related trainer assignments
+
+#### CoursFormateur Model
+Junction table linking courses to trainers:
+- id (String, cuid, primary key)
+- formateurId (String, FK to Formateur)
+- coursId (String, FK to Cours)
+- dateDebut (String) - Start date
+- dateFin (String) - End date
+- nombreHeures (Float) - Number of hours taught
+- reference (String, optional) - Reference number
+- createdAt (DateTime, default: now())
+- updatedAt (DateTime, auto-updated)
+- cours (Cours relation, cascade delete)
+- formateur (Formateur relation, cascade delete)
+- Indexes on coursId and formateurId for query optimization
 
 ### API Routes
 
@@ -483,6 +568,51 @@ Junction table linking agents to formations:
   - GET - Get single agent-formation by ID
   - PUT - Update agent-formation by ID
   - DELETE - Delete agent-formation by ID
+
+#### Session-Formations API (Training Sessions)
+- [app/api/session-formations/route.ts](app/api/session-formations/route.ts)
+  - GET - List sessions with optional filtering (`?formationId=xxx`, `?dateDebut_gte=xxx`)
+    - Includes related formations and agent enrollments
+    - Computes session status automatically (مبرمجة/قيد التنفيذ/انتهت)
+  - POST - Create new session formation
+    - Validates date logic (dateDebut < dateFin)
+    - UTC time handling (stores 09:00-18:00 UTC)
+    - Automatic status computation
+- [app/api/session-formations/[id]/route.ts](app/api/session-formations/[id]/route.ts)
+  - GET - Get single session by ID
+  - PUT - Update session by ID
+  - DELETE - Delete session by ID
+
+#### Formateurs API (Trainers)
+- [app/api/formateurs/route.ts](app/api/formateurs/route.ts)
+  - GET - List all trainers with authentication
+  - POST - Create new trainer
+    - Validates RIB (20 digits requirement)
+    - Handles phone number normalization
+    - Arabic error messages
+- [app/api/formateurs/[id]/route.ts](app/api/formateurs/[id]/route.ts)
+  - GET - Get single trainer by ID
+  - PUT - Update trainer by ID
+  - DELETE - Delete trainer by ID
+
+#### Cours API (Courses)
+- [app/api/cours/route.ts](app/api/cours/route.ts)
+  - GET - List all courses
+  - POST - Create new course (validates `titre` required)
+- [app/api/cours/[id]/route.ts](app/api/cours/[id]/route.ts)
+  - GET - Get single course by ID
+  - PUT - Update course by ID
+  - DELETE - Delete course by ID
+
+#### Cours-Formations API (Course-Trainer Junction)
+- [app/api/cours-formations/route.ts](app/api/cours-formations/route.ts)
+  - GET - List course-trainer mappings with optional filtering (`?formateurId=xxx`, `?coursId=xxx`)
+  - POST - Create course-trainer relationship
+    - Validates required fields: formateurId, coursId, dateDebut, dateFin, nombreHeures
+- [app/api/cours-formations/[id]/route.ts](app/api/cours-formations/[id]/route.ts)
+  - GET - Get single mapping by ID
+  - PUT - Update mapping by ID
+  - DELETE - Delete mapping by ID
 
 #### Authentication API (Better-Auth)
 - [app/api/auth/[...all]/route.ts](app/api/auth/[...all]/route.ts)
@@ -586,11 +716,38 @@ Required in `.env` (Neon cloud configuration):
 - [components/dialogue-formation.tsx](components/dialogue-formation.tsx) - Dialog for creating/editing formations
 - [components/dialogue-agent-formation.tsx](components/dialogue-agent-formation.tsx) - Dialog for assigning formations to agents
 - [components/dialogue-edition-formation.tsx](components/dialogue-edition-formation.tsx) - Dialog for editing agent formations
+- [components/dialogue-formateur.tsx](components/dialogue-formateur.tsx) - Dialog for creating/editing trainers
+- [components/dialogue-cours.tsx](components/dialogue-cours.tsx) - Dialog for creating/editing courses
+- [components/dialogue-ajouter-cours-formateur.tsx](components/dialogue-ajouter-cours-formateur.tsx) - Dialog for adding course-trainer relationships
+- [components/dialogue-edition-cours-formateur.tsx](components/dialogue-edition-cours-formateur.tsx) - Dialog for editing course-trainer mappings
+
+### Event Calendar System
+Complete drag-and-drop calendar for session planning:
+- [components/event-calendar/event-calendar.tsx](components/event-calendar/event-calendar.tsx) - Main calendar component (month/week/day/agenda views)
+- [components/event-calendar/event-dialog.tsx](components/event-calendar/event-dialog.tsx) - Dialog for creating/editing events
+- [components/event-calendar/draggable-event.tsx](components/event-calendar/draggable-event.tsx) - Draggable event items
+- [components/event-calendar/droppable-cell.tsx](components/event-calendar/droppable-cell.tsx) - Drop zones for calendar cells
+- [components/event-calendar/calendar-dnd-context.tsx](components/event-calendar/calendar-dnd-context.tsx) - Drag-and-drop context provider
+- [components/event-calendar/month-view.tsx](components/event-calendar/month-view.tsx) - Month view mode
+- [components/event-calendar/week-view.tsx](components/event-calendar/week-view.tsx) - Week view mode
+- [components/event-calendar/day-view.tsx](components/event-calendar/day-view.tsx) - Day view mode
+- [components/event-calendar/agenda-view.tsx](components/event-calendar/agenda-view.tsx) - Agenda view mode
+- [components/event-calendar/event-item.tsx](components/event-calendar/event-item.tsx) - Event display item
+- [components/event-calendar/events-popup.tsx](components/event-calendar/events-popup.tsx) - Popup for event details
+- [components/event-calendar/types.ts](components/event-calendar/types.ts) - TypeScript types for calendar
+- [components/event-calendar/constants.ts](components/event-calendar/constants.ts) - Calendar constants
+- [components/event-calendar/utils.ts](components/event-calendar/utils.ts) - Calendar utilities
+
+### Client Components
+- [components/formation-agent-client.tsx](components/formation-agent-client.tsx) - Client component for agent formations page
+- [components/cours-formateur-client.tsx](components/cours-formateur-client.tsx) - Client component for course-trainer display
+- [components/liste-formation-client.tsx](components/liste-formation-client.tsx) - Client component for formation listing
+- [components/session-event-dialog-adapter.tsx](components/session-event-dialog-adapter.tsx) - Adapter between session data and event dialogs
 
 ### Utility Components
-- [components/formation-agent-client.tsx](components/formation-agent-client.tsx) - Client component for agent formations page
 - [components/theme-provider.tsx](components/theme-provider.tsx) - Theme provider wrapper for next-themes
 - [components/ui/ultra-quality-toast.tsx](components/ui/ultra-quality-toast.tsx) - Enhanced toast notifications
+- [components/database-indicator.tsx](components/database-indicator.tsx) - Database connection indicator
 
 ### Base UI Components (Radix UI Styled)
 - [components/ui/button.tsx](components/ui/button.tsx) - Button variants
@@ -614,12 +771,22 @@ Required in `.env` (Neon cloud configuration):
 - [components/ui/RevealText.tsx](components/ui/RevealText.tsx) - Animated text reveal
 - [components/ui/menu-toggle-icon.tsx](components/ui/menu-toggle-icon.tsx) - Animated menu icon
 - [components/ui/use-scroll.tsx](components/ui/use-scroll.tsx) - Scroll position hook
+- [components/ui/resizable-table-formateur.tsx](components/ui/resizable-table-formateur.tsx) - Resizable table for trainers
+- [components/ui/resizable-session-table.tsx](components/ui/resizable-session-table.tsx) - Resizable table for sessions
+- [components/ui/cours-simple-table.tsx](components/ui/cours-simple-table.tsx) - Simple table for courses
+- [components/ui/calendar.tsx](components/ui/calendar.tsx) - Calendar date picker component
+- [components/ui/tabs.tsx](components/ui/tabs.tsx) - Tab component
+- [components/ui/chart.tsx](components/ui/chart.tsx) - Chart components for dashboard
+- [components/ui/skeleton.tsx](components/ui/skeleton.tsx) - Loading skeleton placeholders
+- [components/ui/spinner.tsx](components/ui/spinner.tsx) - Loading spinner
+- [components/ui/checkbox.tsx](components/ui/checkbox.tsx) - Checkbox component
+- [components/ui/radio-group.tsx](components/ui/radio-group.tsx) - Radio group component
 
 ## Project Structure Summary
 
 ### Route Organization
 1. **Public Routes**: `/` (home), `/login`
-2. **Authenticated Routes (with-header)**: `/principal`, `/liste-agent`, `/nouveau-agent`, `/liste-formation`, `/nouvelle-formarion`, `/formation-agent`
+2. **Authenticated Routes (with-header)**: `/principal`, `/liste-agent`, `/nouveau-agent`, `/liste-formation`, `/nouvelle-formarion`, `/formation-agent`, `/session-formation`, `/liste-formateur`, `/nouveau-formateur`, `/liste-cours`, `/cours-formateur`
 3. **Admin Routes**: All under `/admin/*` with sidebar navigation and authentication guard
 
 ### Key Libraries
@@ -630,10 +797,18 @@ Required in `.env` (Neon cloud configuration):
 - [lib/check-permission.ts](lib/check-permission.ts) - Permission utilities
 - [lib/dal.ts](lib/dal.ts) - Data access layer
 - [lib/utils.ts](lib/utils.ts) - Utility functions (cn, etc.)
+- [lib/session-utils.ts](lib/session-utils.ts) - `computeSessionStatus()` function for calculating session status
+- [lib/calendar-utils.ts](lib/calendar-utils.ts) - Transform functions between SessionFormation and CalendarEvent objects
+- [lib/calendar-locale.ts](lib/calendar-locale.ts) - Localization support for calendar (Arabic month names)
+- [lib/timezone-utils.ts](lib/timezone-utils.ts) - Timezone handling (UTC to GMT+1 conversions)
+
+### Custom Hooks
+- [hooks/use-debounce.ts](hooks/use-debounce.ts) - Debounce hook for search/input optimization
+- [hooks/use-file-upload.ts](hooks/use-file-upload.ts) - File upload hook
 
 ### Admin Panel Features
-- Dashboard with statistics and system overview
-- Database management (Agents, Formations, Agent-Formations)
+- Dashboard with statistics and system overview (with charts via Recharts)
+- Database management (Agents, Formations, Agent-Formations, Formateurs, Cours, Cours-Formateur)
 - User management with role assignment and ban functionality
 - Session management with ability to terminate sessions
 - Role and permission management
@@ -645,6 +820,39 @@ Required in `.env` (Neon cloud configuration):
 - [prisma/seed.ts](prisma/seed.ts) - Database seeding script
 - Run with: `npm run db:seed`
 - Seeds default users, agents, formations, and relationships
+
+### Data Model Architecture
+
+The application manages several interconnected entities:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           FORMATION SYSTEM                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  Formation ──────┬──────────── SessionFormation ────── AgentFormation   │
+│  (Training       │             (Session instances     (Agent enrollment  │
+│   Programs)      │              with dates)            in sessions)      │
+│                  │                                            │          │
+│                  └─────────────────────────────────────── Agent         │
+│                                                          (Trainees)      │
+│                                                                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                           TRAINER SYSTEM                                 │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  Formateur ─────────────── CoursFormateur ─────────────── Cours         │
+│  (Trainers)               (Course assignments          (Courses/        │
+│                            with hours)                  Lessons)         │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Key Relationships:**
+- A `Formation` can have multiple `SessionFormation` instances (different dates)
+- An `Agent` enrolls in sessions via `AgentFormation` (linked to both Formation and optionally SessionFormation)
+- A `Formateur` teaches courses via `CoursFormateur` junction table
+- A `Cours` can be taught by multiple trainers
 
 ## Important Notes
 
@@ -689,6 +897,31 @@ This project uses Tailwind CSS v4 with breaking changes from v3:
 4. Admin routes protected by session check in layout
 5. Roles determine access to features (RBAC)
 
+### Session Calendar System
+The session formation page uses a comprehensive calendar system with:
+- **Drag-and-drop support** via @dnd-kit for rescheduling sessions
+- **Multiple view modes**: Month, Week, Day, Agenda
+- **Color coding** by formation type:
+  - تكوين إختصاص (Specialization) → sky (blue)
+  - تكوين تخصصي (Specialized) → violet (purple)
+  - تكوين مستمر (Continuous) → emerald (green)
+- **Automatic status computation** based on current date:
+  - مبرمجة (Scheduled) - Future sessions
+  - قيد التنفيذ (In Progress) - Currently running
+  - انتهت (Completed) - Past sessions
+- **Timezone handling**: Dates stored in UTC, displayed in GMT+1 (Algeria timezone)
+
+**Key utilities:**
+```typescript
+// Compute session status
+import { computeSessionStatus } from '@/lib/session-utils'
+const status = computeSessionStatus(dateDebut, dateFin)
+
+// Transform sessions to calendar events
+import { transformSessionsToEvents, transformEventToSessionData } from '@/lib/calendar-utils'
+const events = transformSessionsToEvents(sessions)
+```
+
 ### Best Practices
 - Always use `prisma` from `@/lib/db` (singleton pattern)
 - Use Better-Auth hooks from `@/lib/auth-client` for client-side auth
@@ -696,6 +929,8 @@ This project uses Tailwind CSS v4 with breaking changes from v3:
 - Use `cn()` utility from `@/lib/utils` for conditional classes
 - Handle form submissions with proper validation and error handling
 - Display user feedback using Sonner toast notifications
+- Use `computeSessionStatus()` for consistent session status across the application
+- Store dates in UTC and convert to local time for display using `lib/timezone-utils.ts`
 
 ### Development Workflow
 
