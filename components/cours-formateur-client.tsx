@@ -16,6 +16,18 @@ interface CoursFormateurClientProps {
 
 const allColumns: (keyof Project)[] = ["name", "repository", "team", "tech", "createdAt", "contributors", "status"];
 
+// En-têtes personnalisés pour la page cours-formateur
+const coursFormateurHeaders = [
+  { key: "name" as const, label: "#", width: "w-10" },
+  { key: "repository" as const, label: "الــــــــــدورة التـكــويـنـيــــة", width: "w-60" },
+  { key: "team" as const, label: "تــاريـخ البــدايــة", width: "w-28" },
+  { key: "tech" as const, label: "تــاريـخ النهــايـــة", width: "w-28" },
+  { key: "createdAt" as const, label: "المــرجــــــــع", width: "w-50" },
+  { key: "contributors" as const, label: "عــدد الساعـات", width: "w-26" },
+  { key: "status" as const, label: "النـتـيـجــــــة", width: "w-12" },
+  { key: "actions" as const, label: "خيــــارات", width: "w-18" },
+];
+
 export default function CoursFormateurClient({ initialData, formateurInfo, notoNaskhArabicClassName, returnUrl = '/liste-formateur' }: CoursFormateurClientProps) {
   const router = useRouter();
   const [visibleColumns, setVisibleColumns] = useState<Set<keyof Project>>(new Set(allColumns));
@@ -142,7 +154,7 @@ export default function CoursFormateurClient({ initialData, formateurInfo, notoN
             </div>
           </div>
 
-          <ProjectDataTable projects={initialData} visibleColumns={visibleColumns} onEditClick={handleEditClick} />
+          <ProjectDataTable projects={initialData} visibleColumns={visibleColumns} onEditClick={handleEditClick} customHeaders={coursFormateurHeaders} />
         </div>
       </div>
 

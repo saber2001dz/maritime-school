@@ -38,6 +38,7 @@ interface ProjectDataTableProps {
   projects: Project[];
   visibleColumns: Set<keyof Project>;
   onEditClick?: (project: Project) => void;
+  customHeaders?: { key: keyof Project | 'actions'; label: string; width?: string }[];
 }
 
 // --- STATUS BADGE VARIANTS ---
@@ -70,7 +71,7 @@ const dotVariants = cva("w-1.5 h-1.5 rounded-full", {
 });
 
 // --- MAIN COMPONENT ---
-export const ProjectDataTable = ({ projects, visibleColumns, onEditClick }: ProjectDataTableProps) => {
+export const ProjectDataTable = ({ projects, visibleColumns, onEditClick, customHeaders }: ProjectDataTableProps) => {
   const [mounted, setMounted] = React.useState(false);
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -93,7 +94,7 @@ export const ProjectDataTable = ({ projects, visibleColumns, onEditClick }: Proj
     }),
   };
 
-  const tableHeaders: { key: keyof Project | 'actions'; label: string; width?: string }[] = [
+  const defaultHeaders: { key: keyof Project | 'actions'; label: string; width?: string }[] = [
     { key: "name", label: "#", width: "w-10" },
     { key: "repository", label: "الــــــــــدورة التـكــويـنـيــــة", width: "w-60" },
     { key: "team", label: "تــاريـخ البــدايــة", width: "w-28" },
@@ -103,6 +104,8 @@ export const ProjectDataTable = ({ projects, visibleColumns, onEditClick }: Proj
     { key: "status", label: "النـتـيـجــــــة", width: "w-12" },
     { key: "actions", label: "خيــــارات", width: "w-18" },
   ];
+
+  const tableHeaders = customHeaders || defaultHeaders;
 
   return (
     <div className="overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm">
