@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter, usePathname, ReadonlyURLSearchParams } from "next/navigation"
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion"
 import { useTheme } from "next-themes"
+import * as XLSX from "xlsx"
 import {
   Download,
   ChevronDown,
@@ -309,6 +310,33 @@ export function ResizableTableFormateur({
     link.href = URL.createObjectURL(blob)
     link.download = `formateurs-${new Date().toISOString().split("T")[0]}.json`
     link.click()
+  }
+
+  const exportToExcel = () => {
+    const excelData = sortedAndFilteredFormateurs.map((formateur) => ({
+      "الإسم و اللقب": formateur.nomPrenom,
+      "الرتبة": formateur.grade,
+      "الوحدة": formateur.unite,
+      "المسؤولية": formateur.responsabilite,
+      "رقم الهاتف": formateur.telephone,
+      "RIB": formateur.RIB,
+    }))
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, "المكونين")
+
+    if (!worksheet["!cols"]) worksheet["!cols"] = []
+    worksheet["!cols"] = [
+      { wch: 25 }, // الإسم و اللقب
+      { wch: 12 }, // الرتبة
+      { wch: 20 }, // الوحدة
+      { wch: 25 }, // المسؤولية
+      { wch: 12 }, // رقم الهاتف
+      { wch: 22 }, // RIB
+    ]
+
+    XLSX.writeFile(workbook, `formateurs-${new Date().toISOString().split("T")[0]}.xlsx`)
   }
 
   const handleEditClick = async (formateur: Formateur) => {
@@ -658,10 +686,19 @@ export function ResizableTableFormateur({
                 <div className="absolute right-0 mt-1 w-32 bg-background border border-border/50 shadow-lg rounded-md z-20">
                   <button
                     onClick={() => {
-                      exportToCSV()
+                      exportToExcel()
                       setShowExportMenu(false)
                     }}
                     className="w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2"
+                  >
+                    Excel
+                  </button>
+                  <button
+                    onClick={() => {
+                      exportToCSV()
+                      setShowExportMenu(false)
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2 border-t border-border/30"
                   >
                     CSV
                   </button>

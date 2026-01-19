@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import { useRouter, usePathname, ReadonlyURLSearchParams } from "next/navigation"
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion"
 import { useTheme } from "next-themes"
+import * as XLSX from "xlsx"
 import {
   Download,
   ChevronDown,
@@ -501,6 +502,41 @@ export function ResizableTable({
     link.click()
   }
 
+  const exportToExcel = () => {
+    // Préparer les données pour Excel (ordre RTL)
+    const excelData = sortedAndFilteredAgents.map((agent) => ({
+      "الفئة": agent.categorie,
+      "آخر تكوين": agent.derniereDateFormation,
+      "رقم الهاتف": agent.telephone,
+      "المسؤولية": agent.responsabilite,
+      "الرقم": agent.matricule,
+      "الرتبة": agent.grade,
+      "الإسم و اللقب": agent.nomPrenom,
+    }))
+
+    // Créer un workbook et une worksheet
+    const worksheet = XLSX.utils.json_to_sheet(excelData)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, "المتربصين")
+
+    // Configurer la direction RTL pour la feuille
+    if (!worksheet["!cols"]) worksheet["!cols"] = []
+
+    // Définir la largeur des colonnes pour une meilleure lisibilité
+    worksheet["!cols"] = [
+      { wch: 15 }, // الفئة
+      { wch: 12 }, // آخر تكوين
+      { wch: 12 }, // رقم الهاتف
+      { wch: 25 }, // المسؤولية
+      { wch: 10 }, // الرقم
+      { wch: 12 }, // الرتبة
+      { wch: 25 }, // الإسم و اللقب
+    ]
+
+    // Générer et télécharger le fichier Excel
+    XLSX.writeFile(workbook, `agents-${new Date().toISOString().split("T")[0]}.xlsx`)
+  }
+
   const handleEditClick = (agent: Agent) => {
     setEditingAgent(agent)
   }
@@ -526,7 +562,19 @@ export function ResizableTable({
       const response = await fetch("/api/session-formations")
       if (response.ok) {
         const data = await response.json()
-        setAvailableSessionFormations(data.sessions || [])
+        const allSessions = data.sessions || []
+
+        // Filtrer les sessions dont la date de fin n'est pas dépassée
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+
+        const activeSessions = allSessions.filter((session: SessionFormationOption) => {
+          const endDate = new Date(session.dateFin)
+          endDate.setHours(0, 0, 0, 0)
+          return endDate >= today
+        })
+
+        setAvailableSessionFormations(activeSessions)
       }
     } catch (error) {
       console.error("Error loading session formations:", error)
@@ -893,10 +941,19 @@ export function ResizableTable({
                 <div className="absolute right-0 mt-1 w-32 bg-background border border-border/50 shadow-lg rounded-md z-20">
                   <button
                     onClick={() => {
-                      exportToCSV()
+                      exportToExcel()
                       setShowExportMenu(false)
                     }}
                     className="w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2"
+                  >
+                    Excel
+                  </button>
+                  <button
+                    onClick={() => {
+                      exportToCSV()
+                      setShowExportMenu(false)
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2 border-t border-border/30"
                   >
                     CSV
                   </button>

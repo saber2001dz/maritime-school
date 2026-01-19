@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react"
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion"
 import { useTheme } from "next-themes"
+import * as XLSX from "xlsx"
 import {
   Download,
   ChevronDown,
@@ -343,6 +344,42 @@ export function ResizableSessionTable({
     addToast({
       title: "تـــم التــصــديــر",
       description: "تم تصدير البيانات بنجاح إلى ملف JSON",
+      variant: "success",
+    })
+  }
+
+  // Export Excel
+  const exportToExcel = () => {
+    const excelData = sortedSessions.map((session) => ({
+      "التكوين": session.formation.formation,
+      "نوع التكوين": session.formation.typeFormation,
+      "تاريخ البداية": new Date(session.dateDebut).toLocaleDateString("fr-FR"),
+      "تاريخ النهاية": new Date(session.dateFin).toLocaleDateString("fr-FR"),
+      "عدد المشاركين": session.nombreParticipants,
+      "المرجع": session.reference || "-",
+      "الوضعية": session.statut || "-",
+    }))
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, "دورات التكوين")
+
+    if (!worksheet["!cols"]) worksheet["!cols"] = []
+    worksheet["!cols"] = [
+      { wch: 35 }, // التكوين
+      { wch: 18 }, // نوع التكوين
+      { wch: 15 }, // تاريخ البداية
+      { wch: 15 }, // تاريخ النهاية
+      { wch: 15 }, // عدد المشاركين
+      { wch: 20 }, // المرجع
+      { wch: 15 }, // الوضعية
+    ]
+
+    XLSX.writeFile(workbook, `sessions_formation_${new Date().toISOString().split("T")[0]}.xlsx`)
+
+    addToast({
+      title: "تـــم التــصــديــر",
+      description: "تم تصدير البيانات بنجاح إلى ملف Excel",
       variant: "success",
     })
   }
@@ -769,10 +806,19 @@ export function ResizableSessionTable({
                 <div className="absolute right-0 mt-1 w-32 bg-background border border-border/50 shadow-lg rounded-md z-20">
                   <button
                     onClick={() => {
-                      exportToCSV()
+                      exportToExcel()
                       setShowExportMenu(false)
                     }}
                     className="w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2"
+                  >
+                    Excel
+                  </button>
+                  <button
+                    onClick={() => {
+                      exportToCSV()
+                      setShowExportMenu(false)
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2 border-t border-border/30"
                   >
                     CSV
                   </button>

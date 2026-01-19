@@ -34,24 +34,11 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { CalendarEvent, EventColor } from "@/components/event-calendar"
-import {
-  DefaultEndHour,
-  DefaultStartHour,
-} from "@/components/event-calendar/constants"
+import { DefaultEndHour, DefaultStartHour } from "@/components/event-calendar/constants"
 
 interface EventDialogProps {
   event: CalendarEvent | null
@@ -62,14 +49,7 @@ interface EventDialogProps {
   formations?: Array<{ id: string; formation: string }>
 }
 
-export function EventDialog({
-  event,
-  isOpen,
-  onClose,
-  onSave,
-  onDelete,
-  formations = [],
-}: EventDialogProps) {
+export function EventDialog({ event, isOpen, onClose, onSave, onDelete, formations = [] }: EventDialogProps) {
   const [formationId, setFormationId] = useState("")
   const [reference, setReference] = useState("")
   const [startDate, setStartDate] = useState<Date>(new Date())
@@ -137,7 +117,7 @@ export function EventDialog({
     }
 
     // Get formation title
-    const selectedFormation = formations.find(f => f.id === formationId)
+    const selectedFormation = formations.find((f) => f.id === formationId)
     const eventTitle = selectedFormation?.formation || "(بدون عنوان)"
 
     onSave({
@@ -214,25 +194,30 @@ export function EventDialog({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className={`sm:max-w-[425px] ${notoNaskhArabic.variable}`} style={{ fontFamily: "var(--font-noto-naskh-arabic)" }} dir="rtl">
+        <DialogContent
+          className={`sm:max-w-[425px] ${notoNaskhArabic.variable}`}
+          style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}
+          dir="rtl"
+        >
           <DialogHeader>
-            <DialogTitle className="text-start font-bold text-[#1071c7]">{event?.id ? "تعديل الــدورة" : "إنشاء الــدورة"}</DialogTitle>
+            <DialogTitle className="text-start font-bold text-[#1071c7]">
+              {event?.id ? "تعديل الــدورة" : "إنشاء الــدورة"}
+            </DialogTitle>
             <DialogDescription className="sr-only">
-              {event?.id
-                ? "تعديل تفاصيل هذه الــدورة"
-                : "إضافة دورة جديدة إلى البرنامج"}
+              {event?.id ? "تعديل تفاصيل هذه الــدورة" : "إضافة دورة جديدة إلى البرنامج"}
             </DialogDescription>
           </DialogHeader>
-          {error && (
-            <div className="bg-destructive/15 text-destructive rounded-md px-3 py-2 text-sm">
-              {error}
-            </div>
-          )}
+          {error && <div className="bg-destructive/15 text-destructive rounded-md px-3 py-2 text-sm">{error}</div>}
           <div className="grid gap-4 py-4">
             <div className="*:not-first:mt-1.5">
               <Label htmlFor="formation">الــدورة التكــوينيـــة</Label>
               <Select dir="rtl" value={formationId} onValueChange={setFormationId}>
-                <SelectTrigger id="formation" dir="rtl" className="w-full" style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}>
+                <SelectTrigger
+                  id="formation"
+                  dir="rtl"
+                  className="w-full"
+                  style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}
+                >
                   <SelectValue placeholder="اختر دورة تكوينية" />
                 </SelectTrigger>
                 <SelectContent style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}>
@@ -264,22 +249,13 @@ export function EventDialog({
                     variant={"outline"}
                     className={cn(
                       "group bg-background hover:bg-background border-input w-full justify-between px-3 font-normal outline-offset-0 outline-none focus-visible:outline-[3px]",
-                      !startDate && "text-muted-foreground"
+                      !startDate && "text-muted-foreground",
                     )}
                   >
-                    <span
-                      className={cn(
-                        "truncate",
-                        !startDate && "text-muted-foreground"
-                      )}
-                    >
+                    <span className={cn("truncate", !startDate && "text-muted-foreground")}>
                       {startDate ? formatDateInArabic(startDate) : "اختر التاريخ"}
                     </span>
-                    <RiCalendarLine
-                      size={16}
-                      className="text-muted-foreground/80 shrink-0"
-                      aria-hidden="true"
-                    />
+                    <RiCalendarLine size={16} className="text-muted-foreground/80 shrink-0" aria-hidden="true" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-2" align="start">
@@ -314,22 +290,13 @@ export function EventDialog({
                     variant={"outline"}
                     className={cn(
                       "group bg-background hover:bg-background border-input w-full justify-between px-3 font-normal outline-offset-0 outline-none focus-visible:outline-[3px]",
-                      !endDate && "text-muted-foreground"
+                      !endDate && "text-muted-foreground",
                     )}
                   >
-                    <span
-                      className={cn(
-                        "truncate",
-                        !endDate && "text-muted-foreground"
-                      )}
-                    >
+                    <span className={cn("truncate", !endDate && "text-muted-foreground")}>
                       {endDate ? formatDateInArabic(endDate) : "اختر التاريخ"}
                     </span>
-                    <RiCalendarLine
-                      size={16}
-                      className="text-muted-foreground/80 shrink-0"
-                      aria-hidden="true"
-                    />
+                    <RiCalendarLine size={16} className="text-muted-foreground/80 shrink-0" aria-hidden="true" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-2" align="start">
@@ -353,7 +320,7 @@ export function EventDialog({
             </div>
 
             <div className="*:not-first:mt-1.5">
-              <Label htmlFor="nombreParticipants">عــدد المشاركــيــن</Label>
+              <Label htmlFor="nombreParticipants">عــدد المشاركــيــن الأقصــى</Label>
               <Input
                 id="nombreParticipants"
                 type="number"
@@ -363,9 +330,7 @@ export function EventDialog({
               />
             </div>
             <fieldset className="space-y-4">
-              <legend className="text-foreground text-sm leading-none font-medium">
-                اللــــون
-              </legend>
+              <legend className="text-foreground text-sm leading-none font-medium">اللــــون</legend>
               <RadioGroup
                 className="flex gap-1.5 justify-end"
                 defaultValue={colorOptions[0]?.value}
@@ -378,11 +343,7 @@ export function EventDialog({
                     id={`color-${colorOption.value}`}
                     value={colorOption.value}
                     aria-label={colorOption.label}
-                    className={cn(
-                      "size-6 shadow-none",
-                      colorOption.bgClass,
-                      colorOption.borderClass
-                    )}
+                    className={cn("size-6 shadow-none", colorOption.bgClass, colorOption.borderClass)}
                   />
                 ))}
               </RadioGroup>
@@ -391,7 +352,7 @@ export function EventDialog({
           <DialogFooter className="flex-row sm:justify-between">
             {event?.id && (
               <Button
-              className="cursor-pointer"
+                className="cursor-pointer"
                 variant="outline"
                 size="icon"
                 onClick={handleDeleteClick}
@@ -404,7 +365,9 @@ export function EventDialog({
               <Button variant="outline" onClick={onClose} className="cursor-pointer">
                 إلغــــاء
               </Button>
-              <Button className="cursor-pointer" onClick={handleSave}>حــفــــظ</Button>
+              <Button className="cursor-pointer" onClick={handleSave}>
+                حــفــــظ
+              </Button>
             </div>
           </DialogFooter>
         </DialogContent>
@@ -412,11 +375,13 @@ export function EventDialog({
 
       {/* AlertDialog de confirmation de suppression */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent className={notoNaskhArabic.variable} style={{ fontFamily: "var(--font-noto-naskh-arabic)" }} dir="rtl">
+        <AlertDialogContent
+          className={notoNaskhArabic.variable}
+          style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}
+          dir="rtl"
+        >
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-right cursor-pointer">
-              تأكيد الحـــذف
-            </AlertDialogTitle>
+            <AlertDialogTitle className="text-right cursor-pointer">تأكيد الحـــذف</AlertDialogTitle>
             <AlertDialogDescription className="text-right">
               هل أنت متأكد من حذف هذه الجلسة؟ لا يمكن التراجع عن هذا الإجراء.
             </AlertDialogDescription>
