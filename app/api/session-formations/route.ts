@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { verifySession } from '@/lib/dal'
+import { requirePermission } from '@/lib/check-permission'
 import { computeSessionStatus } from '@/lib/session-utils'
 
 // GET /api/session-formations - Récupérer toutes les sessions de formation
 export async function GET(request: NextRequest) {
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
+  const auth = await requirePermission("sessionFormation", "view")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const { searchParams } = new URL(request.url)
@@ -70,10 +68,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/session-formations - Créer une nouvelle session de formation
 export async function POST(request: NextRequest) {
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
+  const auth = await requirePermission("sessionFormation", "create")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const body = await request.json()

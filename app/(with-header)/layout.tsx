@@ -1,6 +1,7 @@
 import { Header } from "@/components/ui/header"
 import { verifySession } from "@/lib/dal"
 import { redirect } from "next/navigation"
+import { ToastProvider } from "@/components/ui/ultra-quality-toast"
 
 export default async function WithHeaderLayout({
   children,
@@ -14,9 +15,9 @@ export default async function WithHeaderLayout({
   }
 
   return (
-    <>
+    <ToastProvider>
       <Header />
       {children}
-    </>
+    </ToastProvider>
   )
 }

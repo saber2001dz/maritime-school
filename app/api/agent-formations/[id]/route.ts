@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifySession } from "@/lib/dal";
+import { requirePermission } from "@/lib/check-permission";
 
 // GET - Récupérer une AgentFormation par son ID
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
+  const auth = await requirePermission("agentFormation", "view")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const { id } = await params;
@@ -45,20 +43,18 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
+  const auth = await requirePermission("agentFormation", "edit")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const { id } = await params;
     const body = await request.json();
-    const { formationId, dateDebut, dateFin, reference, resultat, moyenne } = body;
+    const { sessionFormationId, dateDebut, dateFin, reference, resultat, moyenne } = body;
 
     // Validation basique
-    if (!formationId || !dateDebut || !dateFin || moyenne === undefined) {
+    if (!sessionFormationId || !dateDebut || !dateFin || moyenne === undefined) {
       return NextResponse.json(
-        { error: "Les champs formationId, dateDebut, dateFin et moyenne sont requis" },
+        { error: "Les champs sessionFormationId, dateDebut, dateFin et moyenne sont requis" },
         { status: 400 }
       );
     }
@@ -66,6 +62,13 @@ export async function PUT(
     // Vérifier que la formation d'agent existe
     const existingAgentFormation = await prisma.agentFormation.findUnique({
       where: { id },
+      include: {
+        sessionFormation: {
+          include: {
+            formation: true,
+          },
+        },
+      },
     });
 
     if (!existingAgentFormation) {
@@ -75,11 +78,25 @@ export async function PUT(
       );
     }
 
+    // Récupérer la session de formation pour obtenir le formationId
+    const sessionFormation = await prisma.sessionFormation.findUnique({
+      where: { id: sessionFormationId },
+      select: { formationId: true },
+    });
+
+    if (!sessionFormation) {
+      return NextResponse.json(
+        { error: "Session de formation non trouvée" },
+        { status: 404 }
+      );
+    }
+
     // Mettre à jour la formation d'agent
     const updatedAgentFormation = await prisma.agentFormation.update({
       where: { id },
       data: {
-        formationId,
+        formationId: sessionFormation.formationId,
+        sessionFormationId,
         dateDebut,
         dateFin,
         reference,
@@ -107,10 +124,8 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
+  const auth = await requirePermission("agentFormation", "delete")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const { id } = await params;

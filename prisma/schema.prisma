@@ -140,10 +140,26 @@ model SessionFormation {
   statut             String?
   color              String?
   agentFormations    AgentFormation[]
+  sessionAgents      SessionAgent[]
   formation          Formation        @relation(fields: [formationId], references: [id], onDelete: Cascade)
 
   @@index([dateDebut])
   @@index([formationId])
+}
+
+model SessionAgent {
+  id                 String           @id @default(cuid())
+  sessionFormationId String
+  nomPrenom          String
+  grade              String
+  matricule          String
+  idAgent            String
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  sessionFormation   SessionFormation @relation(fields: [sessionFormationId], references: [id], onDelete: Cascade)
+
+  @@index([sessionFormationId])
+  @@index([idAgent])
 }
 
 model User {

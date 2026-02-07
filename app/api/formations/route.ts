@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { verifySession } from '@/lib/dal'
+import { requirePermission } from '@/lib/check-permission'
 
 // GET /api/formations - Récupérer toutes les formations
 export async function GET() {
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
+  const auth = await requirePermission("formation", "view")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const formations = await prisma.formation.findMany({
@@ -28,10 +26,8 @@ export async function GET() {
 
 // POST /api/formations - Créer une nouvelle formation
 export async function POST(request: NextRequest) {
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
+  const auth = await requirePermission("formation", "create")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const body = await request.json()

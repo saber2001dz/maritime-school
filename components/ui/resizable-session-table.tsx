@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react"
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion"
 import { useTheme } from "next-themes"
+import { useRouter } from "next/navigation"
 import * as XLSX from "xlsx"
 import {
   Download,
@@ -133,6 +134,7 @@ export function ResizableSessionTable({
   const { theme } = useTheme()
   const isDark = theme === "dark"
   const { addToast } = useToast()
+  const router = useRouter()
 
   // Column width state with default values
   const [columnWidths] = useState<Record<string, number>>({
@@ -443,6 +445,11 @@ export function ResizableSessionTable({
   // Gestion de l'édition
   const handleEditClick = (session: SessionFormation) => {
     onEditSession?.(session)
+  }
+
+  // Gestion de la navigation vers la liste des participants
+  const handleViewParticipants = (session: SessionFormation) => {
+    router.push(`/session-formation/session-agent?sessionFormationId=${session.id}`)
   }
 
   const formatDateYYYYMMDD = (date: Date) => {
@@ -1166,7 +1173,7 @@ export function ResizableSessionTable({
                                   dir="rtl"
                                   className="gap-2 cursor-pointer"
                                   onClick={() => handleEditClick(session)}
-                                  disabled={!selectedSessions.includes(session.id)}
+                                  disabled={!selectedSessions.includes(session.id) || session.statut === "انتهت"}
                                 >
                                   <SquarePen size={14} />
                                   <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
@@ -1176,9 +1183,7 @@ export function ResizableSessionTable({
                                 <DropdownMenuItem
                                   dir="rtl"
                                   className="gap-2 cursor-pointer"
-                                  onClick={() => {
-                                    // TODO: Implement participant list view
-                                  }}
+                                  onClick={() => handleViewParticipants(session)}
                                   disabled={!selectedSessions.includes(session.id)}
                                 >
                                   <Users size={14} />

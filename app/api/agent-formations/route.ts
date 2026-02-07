@@ -1,14 +1,12 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifySession } from "@/lib/dal";
+import { requirePermission } from "@/lib/check-permission";
 
 // GET - Récupérer toutes les AgentFormation avec leurs formations associées
 // Supporte le filtrage par agentId via query param: ?agentId=xxx
 export async function GET(request: NextRequest) {
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
+  const auth = await requirePermission("agentFormation", "view")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -19,13 +17,14 @@ export async function GET(request: NextRequest) {
       include: {
         formation: true, // Inclure les détails de la formation
         agent: true,     // Inclure les détails de l'agent si nécessaire
+        sessionFormation: true, // Inclure la session de formation
       },
       orderBy: {
         createdAt: "desc",
       },
     });
 
-    return NextResponse.json(agentFormations);
+    return NextResponse.json({ agentFormations });
   } catch (error) {
     console.error("Erreur lors de la récupération des formations d'agents:", error);
     return NextResponse.json(
@@ -37,10 +36,8 @@ export async function GET(request: NextRequest) {
 
 // POST - Créer une nouvelle AgentFormation
 export async function POST(request: Request) {
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
+  const auth = await requirePermission("agentFormation", "create")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const body = await request.json();
@@ -63,6 +60,21 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Session de formation introuvable" },
         { status: 404 }
+      );
+    }
+
+    // Vérifier si l'agent est déjà inscrit à cette session
+    const existingEnrollment = await prisma.agentFormation.findFirst({
+      where: {
+        agentId,
+        sessionFormationId
+      }
+    });
+
+    if (existingEnrollment) {
+      return NextResponse.json(
+        { error: "المتربص مسجل بالفعل في هذه الدورة التكوينية" },
+        { status: 409 } // 409 Conflict
       );
     }
 

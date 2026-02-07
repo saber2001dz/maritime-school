@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { requirePermission } from '@/lib/check-permission'
 
 // GET /api/formateurs/[id] - Get a single formateur
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requirePermission("formateur", "view")
+  if (!auth.authorized) return auth.errorResponse!
+
   try {
     const { id } = await params
 
@@ -35,6 +39,9 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requirePermission("formateur", "edit")
+  if (!auth.authorized) return auth.errorResponse!
+
   try {
     const { id } = await params
     const body = await request.json()
@@ -67,6 +74,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requirePermission("formateur", "delete")
+  if (!auth.authorized) return auth.errorResponse!
+
   try {
     const { id } = await params
 

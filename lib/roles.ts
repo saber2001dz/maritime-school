@@ -27,8 +27,21 @@ export const ROLES: readonly Role[] = [
     color: "purple",
   },
   {
+    name: "direction",
+    displayName: "Direction",
+    description: "Supervision et validation des operations",
+    permissions: [
+      "Consulter les agents",
+      "Consulter les formations",
+      "Consulter les sessions",
+      "Valider les operations",
+      "Consulter les rapports",
+    ],
+    color: "indigo",
+  },
+  {
     name: "coordinateur",
-    displayName: "Coordinateur",
+    displayName: "Service Programmation",
     description: "Gestion des agents et des formations",
     permissions: [
       "Modifier les agents",
@@ -41,7 +54,7 @@ export const ROLES: readonly Role[] = [
   },
   {
     name: "formateur",
-    displayName: "Formateur",
+    displayName: "Service Formation",
     description: "Consultation des agents et des formations",
     permissions: [
       "Consulter les agents",

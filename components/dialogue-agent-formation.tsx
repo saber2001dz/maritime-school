@@ -19,7 +19,9 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import useDebounce from "@/hooks/use-debounce"
+import { getSelectableResultatOptions } from "@/lib/resultat-utils"
 
 const notoNaskhArabic = localFont({
   src: "../app/fonts/NotoNaskhArabic.woff2",
@@ -53,6 +55,7 @@ export interface SessionFormationOption {
   dateDebut: string
   dateFin: string
   reference?: string | null
+  isAlreadyEnrolled?: boolean
   formation: {
     id: string
     formation: string
@@ -87,6 +90,7 @@ interface DialogueAgentFormationProps {
   isUpdating?: boolean
   isLoadingFormations?: boolean
   error?: string
+  onShowAllSessionsChange?: (showAll: boolean) => void
 }
 
 // Fonction utilitaire pour formater une date ISO en YYYY-MM-DD
@@ -117,6 +121,7 @@ export default function DialogueAgentFormation({
   isUpdating = false,
   isLoadingFormations = false,
   error,
+  onShowAllSessionsChange,
 }: DialogueAgentFormationProps = {}) {
   const id = useId()
   const { addToast } = useToast()
@@ -151,6 +156,18 @@ export default function DialogueAgentFormation({
     const endDate = new Date(dateFin)
     endDate.setHours(0, 0, 0, 0)
     return today >= endDate
+  })()
+
+  // Vérifier si la session est en cours (entre dateDebut et dateFin)
+  const isSessionEnCours = (() => {
+    if (!dateDebut || !dateFin) return false
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const startDate = new Date(dateDebut)
+    startDate.setHours(0, 0, 0, 0)
+    const endDate = new Date(dateFin)
+    endDate.setHours(0, 0, 0, 0)
+    return today >= startDate && today < endDate
   })()
 
   // Réinitialiser les champs internes quand le dialogue s'ouvre en mode non contrôlé
@@ -209,6 +226,23 @@ export default function DialogueAgentFormation({
           setInternalMoyenne(value as number)
           break
       }
+    }
+  }
+
+  const handleClearSearch = () => {
+    if (onChange) {
+      // Mode contrôlé - notifier le parent de réinitialiser tous les champs
+      onChange("sessionFormationId", "")
+      onChange("resultat", "")
+      onChange("moyenne", 0)
+    } else {
+      // Mode non contrôlé - réinitialiser l'état interne
+      setInternalSessionFormationId("")
+      setInternalDateDebut("")
+      setInternalDateFin("")
+      setInternalReference("")
+      setInternalResultat("")
+      setInternalMoyenne(0)
     }
   }
 
@@ -301,8 +335,10 @@ export default function DialogueAgentFormation({
                 sessionFormations={sessionFormations}
                 isLoadingFormations={isLoadingFormations}
                 onSelect={(sessionId) => handleChange("sessionFormationId", sessionId)}
+                onClear={handleClearSearch}
                 selectedId={sessionFormationId}
                 hasError={formationError}
+                onShowAllSessionsChange={onShowAllSessionsChange}
               />
 
               <div className="flex flex-col gap-4 sm:flex-row">
@@ -337,7 +373,7 @@ export default function DialogueAgentFormation({
 
               <div className="space-y-2">
                 <Label htmlFor={`${id}-reference`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
-                  المرجع :
+                  المــرجـــــع :
                 </Label>
                 <Input
                   id={`${id}-reference`}
@@ -352,32 +388,45 @@ export default function DialogueAgentFormation({
               <div className="space-y-2">
                 <Label htmlFor={`${id}-resultat`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
                   الــوضـعـيـــة :
+                  {!sessionFormationId && (
+                    <span className="text-xs text-muted-foreground mr-2">(اختر دورة تكوينية أولاً)</span>
+                  )}
                 </Label>
-                <Select dir="rtl" value={resultat} onValueChange={(value) => handleChange("resultat", value)}>
+                <Select
+                  dir="rtl"
+                  value={resultat}
+                  onValueChange={(value) => handleChange("resultat", value)}
+                  disabled={!sessionFormationId}
+                >
                   <SelectTrigger
                     className={`w-full rounded ${notoNaskhArabic.className} ${
                       resultatError ? "border-red-500 focus:ring-red-500" : ""
-                    }`}
+                    } ${!sessionFormationId ? "bg-muted cursor-not-allowed" : ""}`}
                   >
                     <SelectValue placeholder="اختر النتيجة" />
                   </SelectTrigger>
                   <SelectContent className={notoNaskhArabic.className}>
-                    <SelectItem
-                      value="نجاح"
-                      className="text-[15px]"
-                      disabled={!isSessionTerminee}
-                    >
-                      نجاح {!isSessionTerminee && sessionFormationId && "(التكوين لم ينتهِ بعد)"}
-                    </SelectItem>
-                    <SelectItem value="قيد التكوين" className="text-[15px]">
-                      قيد التكوين
-                    </SelectItem>
-                    <SelectItem value="انقطع" className="text-[15px]">
-                      انقطع
-                    </SelectItem>
-                    <SelectItem value="لم يلتحق" className="text-[15px]">
-                      لم يلتحق
-                    </SelectItem>
+                    {getSelectableResultatOptions().map((option) => {
+                      const isDisabled =
+                        ((option.variant === "success" || option.variant === "interrupted") && !isSessionTerminee) ||
+                        (option.variant === "inProgress" && !isSessionEnCours)
+
+                      const showMessage = sessionFormationId && (
+                        ((option.variant === "success" || option.variant === "interrupted") && !isSessionTerminee) ||
+                        (option.variant === "inProgress" && !isSessionEnCours)
+                      )
+
+                      return (
+                        <SelectItem
+                          key={option.value}
+                          value={option.value}
+                          className="text-[15px]"
+                          disabled={isDisabled}
+                        >
+                          {option.label} {showMessage && "(التكوين لم ينتهِ بعد)"}
+                        </SelectItem>
+                      )
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -385,7 +434,7 @@ export default function DialogueAgentFormation({
               <div className="space-y-2">
                 <Label htmlFor={`${id}-moyenne`} className={`text-sm font-light ${notoNaskhArabic.className}`}>
                   المعدل (0-20) :
-                  {!isSessionTerminee && sessionFormationId && (
+                  {!isSessionTerminee && (
                     <span className="text-xs text-muted-foreground mr-2">(التكوين لم ينتهِ بعد)</span>
                   )}
                 </Label>
@@ -398,9 +447,9 @@ export default function DialogueAgentFormation({
                   placeholder="0.00"
                   value={moyenne}
                   onChange={(e) => handleChange("moyenne", parseFloat(e.target.value) || 0)}
-                  disabled={!isSessionTerminee && !!sessionFormationId}
+                  disabled={!isSessionTerminee}
                   className={`text-right placeholder:text-muted-foreground/50 ${
-                    !isSessionTerminee && sessionFormationId ? "bg-muted cursor-not-allowed" : ""
+                    !isSessionTerminee ? "bg-muted cursor-not-allowed" : ""
                   }`}
                 />
               </div>
@@ -492,21 +541,33 @@ interface FormationSearchBarProps {
   sessionFormations: SessionFormationOption[]
   isLoadingFormations: boolean
   onSelect: (sessionId: string) => void
+  onClear?: () => void
   selectedId: string
   hasError?: boolean
+  onShowAllSessionsChange?: (showAll: boolean) => void
 }
 
 function FormationSearchBar({
   sessionFormations,
   isLoadingFormations,
   onSelect,
+  onClear,
   selectedId,
   hasError = false,
+  onShowAllSessionsChange,
 }: FormationSearchBarProps) {
   const [query, setQuery] = useState("")
   const [isFocused, setIsFocused] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
+  const [showAllSessions, setShowAllSessions] = useState(false)
   const debouncedQuery = useDebounce(query, 200)
+
+  const handleShowAllSessionsChange = (checked: boolean) => {
+    setShowAllSessions(checked)
+    if (onShowAllSessionsChange) {
+      onShowAllSessionsChange(checked)
+    }
+  }
 
   // Initialize query with selected formation name
   useEffect(() => {
@@ -515,6 +576,9 @@ function FormationSearchBar({
       if (selected) {
         setQuery(selected.formation.formation)
       }
+    } else if (!selectedId) {
+      // Si aucune session n'est sélectionnée, vider le champ
+      setQuery("")
     }
   }, [selectedId, sessionFormations, isFocused])
 
@@ -528,9 +592,15 @@ function FormationSearchBar({
   }, [debouncedQuery, sessionFormations])
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(e.target.value)
+    const newValue = e.target.value
+    setQuery(newValue)
     setActiveIndex(-1)
-  }, [])
+
+    // Si le champ est vidé, réinitialiser la sélection
+    if (!newValue.trim() && onClear) {
+      onClear()
+    }
+  }, [onClear])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -564,7 +634,11 @@ function FormationSearchBar({
   )
 
   const handleSessionClick = useCallback(
-    (sessionId: string, formationName: string) => {
+    (sessionId: string, formationName: string, isAlreadyEnrolled?: boolean) => {
+      // Empêcher la sélection si déjà inscrit
+      if (isAlreadyEnrolled) {
+        return
+      }
       onSelect(sessionId)
       setQuery(formationName)
       setIsFocused(false)
@@ -588,7 +662,23 @@ function FormationSearchBar({
 
   return (
     <div className="space-y-2">
-      <Label className={`text-sm font-light ${notoNaskhArabic.className}`}>البحث عن دورة تكوينية :</Label>
+      <div className="flex items-center justify-between">
+        <Label className={`text-sm font-light ${notoNaskhArabic.className}`}>البحث عن دورة تكوينية :</Label>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="show-all-sessions"
+            checked={showAllSessions}
+            onCheckedChange={handleShowAllSessionsChange}
+            className="h-4 w-4"
+          />
+          <Label
+            htmlFor="show-all-sessions"
+            className={`text-sm font-light cursor-pointer ${notoNaskhArabic.className}`}
+          >
+            جميع الدورات
+          </Label>
+        </div>
+      </div>
       <div className="relative">
         <Input
           type="text"
@@ -635,40 +725,55 @@ function FormationSearchBar({
               exit="exit"
             >
               <motion.ul role="none">
-                {filteredSessions.map((session, index) => (
-                  <motion.li
-                    key={session.id}
-                    id={`session-${session.id}`}
-                    className={`px-3 py-2 flex items-center justify-between hover:bg-gray-200 dark:hover:bg-zinc-900 cursor-pointer ${
-                      activeIndex === index ? "bg-gray-100 dark:bg-zinc-800" : ""
-                    } ${selectedId === session.id ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
-                    variants={ANIMATION_VARIANTS.item}
-                    layout
-                    onClick={() => handleSessionClick(session.id, session.formation.formation)}
-                    role="option"
-                    aria-selected={activeIndex === index}
-                  >
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className="text-gray-500" aria-hidden="true">
-                        <GraduationCap className="h-4 w-4 text-blue-500" />
-                      </span>
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <span className={`text-sm font-medium text-gray-900 dark:text-gray-100 truncate ${notoNaskhArabic.className}`}>
-                          {session.formation.formation}
+                {filteredSessions.map((session, index) => {
+                  const isEnrolled = session.isAlreadyEnrolled
+                  return (
+                    <motion.li
+                      key={session.id}
+                      id={`session-${session.id}`}
+                      className={`px-3 py-2 flex items-center justify-between ${
+                        isEnrolled
+                          ? "opacity-50 cursor-not-allowed bg-gray-50 dark:bg-zinc-900/50"
+                          : "hover:bg-gray-200 dark:hover:bg-zinc-900 cursor-pointer"
+                      } ${
+                        activeIndex === index && !isEnrolled ? "bg-gray-100 dark:bg-zinc-800" : ""
+                      } ${selectedId === session.id ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                      variants={ANIMATION_VARIANTS.item}
+                      layout
+                      onClick={() => handleSessionClick(session.id, session.formation.formation, isEnrolled)}
+                      role="option"
+                      aria-selected={activeIndex === index}
+                      aria-disabled={isEnrolled}
+                    >
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className="text-gray-500" aria-hidden="true">
+                          <GraduationCap className={`h-4 w-4 ${isEnrolled ? "text-gray-400" : "text-blue-500"}`} />
                         </span>
-                        <span className={`text-xs text-gray-400 ${notoNaskhArabic.className}`}>
-                          {session.formation.typeFormation}
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-medium ${isEnrolled ? "text-gray-500 dark:text-gray-500" : "text-gray-900 dark:text-gray-100"} truncate ${notoNaskhArabic.className}`}>
+                              {session.formation.formation}
+                            </span>
+                            {isEnrolled && (
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 whitespace-nowrap ${notoNaskhArabic.className}`}>
+                                متربص مسجل
+                              </span>
+                            )}
+                          </div>
+                          <span className={`text-xs ${isEnrolled ? "text-gray-400 dark:text-gray-600" : "text-gray-400"} ${notoNaskhArabic.className}`}>
+                            {session.formation.typeFormation}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mr-2">
+                        <Calendar className="h-3 w-3 text-gray-400" />
+                        <span className="text-xs text-gray-400 whitespace-nowrap">
+                          {formatDateForSelect(session.dateDebut)} - {formatDateForSelect(session.dateFin)}
                         </span>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 mr-2">
-                      <Calendar className="h-3 w-3 text-gray-400" />
-                      <span className="text-xs text-gray-400 whitespace-nowrap">
-                        {formatDateForSelect(session.dateDebut)} - {formatDateForSelect(session.dateFin)}
-                      </span>
-                    </div>
-                  </motion.li>
-                ))}
+                    </motion.li>
+                  )
+                })}
               </motion.ul>
               <div className="px-3 py-2 border-t border-gray-100 dark:border-gray-800">
                 <div className={`flex items-center justify-between text-xs text-gray-500 ${notoNaskhArabic.className}`}>

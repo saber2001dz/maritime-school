@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { verifySession } from '@/lib/dal'
+import { requirePermission } from '@/lib/check-permission'
 import { computeSessionStatus } from '@/lib/session-utils'
 
 // GET /api/session-formations/[id] - Récupérer une session par ID
@@ -8,10 +8,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
+  const auth = await requirePermission("sessionFormation", "view")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const { id } = await params
@@ -70,10 +68,8 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
+  const auth = await requirePermission("sessionFormation", "edit")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const { id } = await params
@@ -162,10 +158,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
+  const auth = await requirePermission("sessionFormation", "delete")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const { id } = await params

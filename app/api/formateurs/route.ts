@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { verifySession } from '@/lib/dal'
+import { requirePermission } from '@/lib/check-permission'
 import { Prisma } from '@prisma/client'
 
 // GET /api/formateurs - Get all formateurs
 export async function GET(request: NextRequest) {
+  const auth = await requirePermission("formateur", "view")
+  if (!auth.authorized) return auth.errorResponse!
+
   try {
-    // Verify authentication
-    const session = await verifySession()
-    if (!session.isAuth) {
-      return NextResponse.json(
-        { error: 'غير مصرح' },
-        { status: 401 }
-      )
-    }
 
     const formateurs = await prisma.formateur.findMany({
       orderBy: {
@@ -33,16 +28,10 @@ export async function GET(request: NextRequest) {
 
 // POST /api/formateurs - Create a new formateur
 export async function POST(request: NextRequest) {
-  try {
-    // Verify authentication
-    const session = await verifySession()
-    if (!session.isAuth) {
-      return NextResponse.json(
-        { error: 'غير مصرح' },
-        { status: 401 }
-      )
-    }
+  const auth = await requirePermission("formateur", "create")
+  if (!auth.authorized) return auth.errorResponse!
 
+  try {
     const body = await request.json()
     const { nomPrenom, grade, unite, responsabilite, telephone, RIB } = body
 

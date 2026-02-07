@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { Project } from "@/components/ui/project-data-table";
 import FormationAgentClient from "@/components/formation-agent-client";
 import localFont from "next/font/local";
+import { getStatusVariant, getResultatLabel } from "@/lib/resultat-utils";
 
 const notoNaskhArabic = localFont({
   src: "../../fonts/NotoNaskhArabic.woff2",
@@ -29,19 +30,6 @@ interface AgentFormationData {
   };
 }
 
-// Fonction pour mapper les résultats vers les variantes de status
-function getStatusVariant(resultat: string | null): "success" | "inProgress" | "interrupted" | "notJoined" {
-  if (!resultat) return "notJoined";
-
-  const resultLower = resultat.toLowerCase();
-  if (resultLower.includes("نجاح") || resultLower.includes("success")) return "success";
-  if (resultLower.includes("قيد التكوين") || resultLower.includes("progress")) return "inProgress";
-  if (resultLower.includes("انقطع") || resultLower.includes("interrupted")) return "interrupted";
-  if (resultLower.includes("لم يلتحق") || resultLower.includes("not joined")) return "notJoined";
-
-  return "notJoined";
-}
-
 // Fonction pour transformer les données de Prisma vers le format Project
 function transformAgentFormations(data: AgentFormationData[]): Project[] {
   const transformedData: Project[] = data.map((item) => ({
@@ -53,8 +41,9 @@ function transformAgentFormations(data: AgentFormationData[]): Project[] {
     createdAt: item.reference || "-", // المرجع - Référence
     contributors: item.moyenne.toString(), // المعدل - Moyenne
     status: {
-      text: item.resultat || "لم يلتحق", // النتيجة - Résultat
+      text: getResultatLabel(item.resultat), // النتيجة - Résultat (avec label formaté pour l'affichage)
       variant: getStatusVariant(item.resultat),
+      value: item.resultat || "", // Valeur brute de la base de données pour l'édition
     },
     formationId: item.formationId, // ID de la formation pour l'édition
     sessionFormationId: item.sessionFormationId || undefined, // ID de la session de formation pour l'édition
@@ -111,6 +100,7 @@ export default async function FormationAgentPage({ searchParams }: PageProps) {
     <FormationAgentClient
       data={transformedData}
       agentInfo={agentInfo}
+      agentId={agentId}
       notoNaskhArabicClassName={notoNaskhArabic.className}
       returnUrl={returnUrl}
     />

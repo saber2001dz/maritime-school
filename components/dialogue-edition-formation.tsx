@@ -5,6 +5,7 @@ import { XIcon, Trash2, Search, GraduationCap, Calendar } from "lucide-react"
 import localFont from "next/font/local"
 import { AnimatePresence, motion } from "framer-motion"
 import useDebounce from "@/hooks/use-debounce"
+import { getSelectableResultatOptions } from "@/lib/resultat-utils"
 
 import { useFileUpload } from "@/hooks/use-file-upload"
 import { Button } from "@/components/ui/button"
@@ -63,6 +64,7 @@ export interface SessionFormationOption {
   dateDebut: string
   dateFin: string
   reference?: string | null
+  isAlreadyEnrolled?: boolean
   formation: {
     id: string
     formation: string
@@ -99,7 +101,6 @@ interface DialogueEditionFormationProps {
   isUpdating?: boolean
   isDeleting?: boolean
   isLoadingFormations?: boolean
-  error?: string
 }
 
 // Animation variants for the search results
@@ -151,7 +152,6 @@ export default function DialogueEditionFormation({
   isUpdating = false,
   isDeleting = false,
   isLoadingFormations = false,
-  error,
 }: DialogueEditionFormationProps = {}) {
   const id = useId()
 
@@ -176,14 +176,27 @@ export default function DialogueEditionFormation({
   const resultat = formationData?.resultat ?? internalResultat
   const moyenne = formationData?.moyenne ?? internalMoyenne
 
-  // Vérifier si la session de formation est terminée (date de fin atteinte)
+  // Vérifier si la session de formation est terminée (date de fin dépassée)
+  // La session est considérée comme terminée APRÈS la date de fin (le lendemain)
   const isSessionTerminee = (() => {
     if (!dateFin) return false
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const endDate = new Date(dateFin)
+    endDate.setHours(23, 59, 59, 999) // Fin de journée de la date de fin
+    return today > endDate
+  })()
+
+  // Vérifier si la session est en cours (entre dateDebut et dateFin)
+  const isSessionEnCours = (() => {
+    if (!dateDebut || !dateFin) return false
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const startDate = new Date(dateDebut)
+    startDate.setHours(0, 0, 0, 0)
+    const endDate = new Date(dateFin)
     endDate.setHours(0, 0, 0, 0)
-    return today >= endDate
+    return today >= startDate && today < endDate
   })()
 
   // Initialiser les champs avec les données existantes quand le dialogue s'ouvre
@@ -312,6 +325,7 @@ export default function DialogueEditionFormation({
                 isLoadingFormations={isLoadingFormations}
                 onSelect={(selectedSessionId) => handleChange("sessionFormationId", selectedSessionId)}
                 selectedId={sessionFormationId}
+                currentSessionFormationId={sessionFormationId}
               />
 
               <div className="flex flex-col gap-4 sm:flex-row">
@@ -363,23 +377,34 @@ export default function DialogueEditionFormation({
                 </Label>
                 <Select
                   dir="rtl"
-                  value={resultat}
+                  value={resultat || undefined}
                   onValueChange={(value) => handleChange("resultat", value)}
                 >
                   <SelectTrigger className={`w-full rounded ${notoNaskhArabic.className}`}>
                     <SelectValue placeholder="اختر النتيجة" />
                   </SelectTrigger>
                   <SelectContent className={notoNaskhArabic.className}>
-                    <SelectItem
-                      value="نجاح"
-                      className="text-[15px]"
-                      disabled={!isSessionTerminee}
-                    >
-                      نجاح {!isSessionTerminee && sessionFormationId && "(التكوين لم ينتهِ بعد)"}
-                    </SelectItem>
-                    <SelectItem value="قيد التكوين" className="text-[15px]">قيد التكوين</SelectItem>
-                    <SelectItem value="انقطع" className="text-[15px]">انقطع</SelectItem>
-                    <SelectItem value="لم يلتحق" className="text-[15px]">لم يلتحق</SelectItem>
+                    {getSelectableResultatOptions().map((option) => {
+                      const isDisabled =
+                        ((option.variant === "success" || option.variant === "interrupted") && !isSessionTerminee) ||
+                        (option.variant === "inProgress" && !isSessionEnCours)
+
+                      const showMessage = sessionFormationId && (
+                        ((option.variant === "success" || option.variant === "interrupted") && !isSessionTerminee) ||
+                        (option.variant === "inProgress" && !isSessionEnCours)
+                      )
+
+                      return (
+                        <SelectItem
+                          key={option.value}
+                          value={option.value}
+                          className="text-[15px]"
+                          disabled={isDisabled}
+                        >
+                          {option.label} {showMessage && "(التكوين لم ينتهِ بعد)"}
+                        </SelectItem>
+                      )
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -400,20 +425,13 @@ export default function DialogueEditionFormation({
                   placeholder="0.00"
                   value={moyenne}
                   onChange={(e) => handleChange("moyenne", parseFloat(e.target.value) || 0)}
+                  onFocus={(e) => e.target.select()}
                   disabled={!isSessionTerminee && !!sessionFormationId}
                   className={`text-right placeholder:text-muted-foreground/50 ${
                     !isSessionTerminee && sessionFormationId ? "bg-muted cursor-not-allowed" : ""
                   }`}
                 />
               </div>
-
-              {error && (
-                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                  <p className={`text-sm text-red-600 dark:text-red-400 text-center ${notoNaskhArabic.className}`}>
-                    {error}
-                  </p>
-                </div>
-              )}
             </form>
           </div>
         </div>
@@ -528,6 +546,7 @@ interface SessionFormationSearchBarProps {
   onSelect: (sessionId: string) => void
   selectedId: string
   hasError?: boolean
+  currentSessionFormationId?: string
 }
 
 function SessionFormationSearchBar({
@@ -536,6 +555,7 @@ function SessionFormationSearchBar({
   onSelect,
   selectedId,
   hasError = false,
+  currentSessionFormationId,
 }: SessionFormationSearchBarProps) {
   const [query, setQuery] = useState("")
   const [isFocused, setIsFocused] = useState(false)
@@ -598,7 +618,11 @@ function SessionFormationSearchBar({
   )
 
   const handleSessionClick = useCallback(
-    (sessionId: string, formationName: string) => {
+    (sessionId: string, formationName: string, isEnrolled?: boolean) => {
+      // Empêcher la sélection si déjà inscrit
+      if (isEnrolled) {
+        return
+      }
       onSelect(sessionId)
       setQuery(formationName)
       setIsFocused(false)
@@ -668,40 +692,61 @@ function SessionFormationSearchBar({
               exit="exit"
             >
               <motion.ul role="none">
-                {filteredSessions.map((session, index) => (
-                  <motion.li
-                    key={session.id}
-                    id={`session-${session.id}`}
-                    className={`px-3 py-2 flex items-center justify-between hover:bg-gray-200 dark:hover:bg-zinc-900 cursor-pointer ${
-                      activeIndex === index ? "bg-gray-100 dark:bg-zinc-800" : ""
-                    } ${selectedId === session.id ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
-                    variants={ANIMATION_VARIANTS.item}
-                    layout
-                    onClick={() => handleSessionClick(session.id, session.formation.formation)}
-                    role="option"
-                    aria-selected={activeIndex === index}
-                  >
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className="text-gray-500" aria-hidden="true">
-                        <GraduationCap className="h-4 w-4 text-blue-500" />
-                      </span>
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <span className={`text-sm font-medium text-gray-900 dark:text-gray-100 truncate ${notoNaskhArabic.className}`}>
-                          {session.formation.formation}
+                {filteredSessions.map((session, index) => {
+                  const isCurrentSession = session.id === currentSessionFormationId
+                  const isEnrolled = session.isAlreadyEnrolled && !isCurrentSession
+                  return (
+                    <motion.li
+                      key={session.id}
+                      id={`session-${session.id}`}
+                      className={`px-3 py-2 flex items-center justify-between ${
+                        isEnrolled
+                          ? "opacity-50 cursor-not-allowed bg-gray-50 dark:bg-zinc-900/50"
+                          : "hover:bg-gray-200 dark:hover:bg-zinc-900 cursor-pointer"
+                      } ${
+                        activeIndex === index && !isEnrolled ? "bg-gray-100 dark:bg-zinc-800" : ""
+                      } ${selectedId === session.id ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                      variants={ANIMATION_VARIANTS.item}
+                      layout
+                      onClick={() => handleSessionClick(session.id, session.formation.formation, isEnrolled)}
+                      role="option"
+                      aria-selected={activeIndex === index}
+                      aria-disabled={isEnrolled}
+                    >
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className="text-gray-500" aria-hidden="true">
+                          <GraduationCap className={`h-4 w-4 ${isEnrolled ? "text-gray-400" : "text-blue-500"}`} />
                         </span>
-                        <span className={`text-xs text-gray-400 ${notoNaskhArabic.className}`}>
-                          {session.formation.typeFormation}
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-medium ${isEnrolled ? "text-gray-500 dark:text-gray-500" : "text-gray-900 dark:text-gray-100"} truncate ${notoNaskhArabic.className}`}>
+                              {session.formation.formation}
+                            </span>
+                            {isCurrentSession && (
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 whitespace-nowrap ${notoNaskhArabic.className}`}>
+                                الدورة الحالية
+                              </span>
+                            )}
+                            {isEnrolled && (
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 whitespace-nowrap ${notoNaskhArabic.className}`}>
+                                متربص مسجل
+                              </span>
+                            )}
+                          </div>
+                          <span className={`text-xs ${isEnrolled ? "text-gray-400 dark:text-gray-600" : "text-gray-400"} ${notoNaskhArabic.className}`}>
+                            {session.formation.typeFormation}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mr-2">
+                        <Calendar className="h-3 w-3 text-gray-400" />
+                        <span className="text-xs text-gray-400 whitespace-nowrap">
+                          {formatDateForSelect(session.dateDebut)} - {formatDateForSelect(session.dateFin)}
                         </span>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 mr-2">
-                      <Calendar className="h-3 w-3 text-gray-400" />
-                      <span className="text-xs text-gray-400 whitespace-nowrap">
-                        {formatDateForSelect(session.dateDebut)} - {formatDateForSelect(session.dateFin)}
-                      </span>
-                    </div>
-                  </motion.li>
-                ))}
+                    </motion.li>
+                  )
+                })}
               </motion.ul>
               <div className="px-3 py-2 border-t border-gray-100 dark:border-gray-800">
                 <div className={`flex items-center justify-between text-xs text-gray-500 ${notoNaskhArabic.className}`}>

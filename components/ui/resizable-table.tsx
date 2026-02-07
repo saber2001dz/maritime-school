@@ -204,6 +204,7 @@ export function ResizableTable({
   const [selectedAgents, setSelectedAgents] = useState<string[]>(selectedFromUrl)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null)
+  const [showAllSessions, setShowAllSessions] = useState(false)
 
   // Column width state with default values
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
@@ -545,30 +546,45 @@ export function ResizableTable({
     setEditingAgent(null)
   }
 
-  const handleAddFormationClick = async (agent: Agent) => {
-    setAddingFormationAgent(agent)
-    setFormationFormData({
-      sessionFormationId: "",
-      dateDebut: "",
-      dateFin: "",
-      reference: "",
-      resultat: "",
-      moyenne: 0,
-    })
-
-    // Charger les sessions de formation disponibles
+  const loadSessionFormations = async (showAll: boolean, agentId?: string) => {
     setIsLoadingFormations(true)
     try {
-      const response = await fetch("/api/session-formations")
-      if (response.ok) {
-        const data = await response.json()
-        const allSessions = data.sessions || []
+      // Charger les sessions de formation
+      const sessionsResponse = await fetch("/api/session-formations")
+      if (!sessionsResponse.ok) {
+        throw new Error("Failed to load sessions")
+      }
+      const sessionsData = await sessionsResponse.json()
+      const allSessions = sessionsData.sessions || []
 
+      // Charger les inscriptions existantes de l'agent
+      let enrolledSessionIds: string[] = []
+      if (agentId) {
+        const enrollmentsResponse = await fetch(`/api/agent-formations?agentId=${agentId}`)
+        if (enrollmentsResponse.ok) {
+          const enrollmentsData = await enrollmentsResponse.json()
+          enrolledSessionIds = enrollmentsData.agentFormations
+            .filter((af: any) => af.sessionFormationId)
+            .map((af: any) => af.sessionFormationId)
+        }
+      }
+
+      // Marquer les sessions déjà utilisées
+      const sessionsWithEnrollmentStatus = allSessions.map((session: SessionFormationOption) => ({
+        ...session,
+        isAlreadyEnrolled: enrolledSessionIds.includes(session.id)
+      }))
+
+      // Filtrer les sessions selon l'option showAll
+      if (showAll) {
+        // Afficher toutes les sessions (pas de filtrage)
+        setAvailableSessionFormations(sessionsWithEnrollmentStatus)
+      } else {
         // Filtrer les sessions dont la date de fin n'est pas dépassée
         const today = new Date()
         today.setHours(0, 0, 0, 0)
 
-        const activeSessions = allSessions.filter((session: SessionFormationOption) => {
+        const activeSessions = sessionsWithEnrollmentStatus.filter((session: SessionFormationOption) => {
           const endDate = new Date(session.dateFin)
           endDate.setHours(0, 0, 0, 0)
           return endDate >= today
@@ -580,6 +596,32 @@ export function ResizableTable({
       console.error("Error loading session formations:", error)
     } finally {
       setIsLoadingFormations(false)
+    }
+  }
+
+  const handleAddFormationClick = async (agent: Agent) => {
+    setAddingFormationAgent(agent)
+    setFormationFormData({
+      sessionFormationId: "",
+      dateDebut: "",
+      dateFin: "",
+      reference: "",
+      resultat: "",
+      moyenne: 0,
+    })
+
+    // Réinitialiser l'état du checkbox
+    setShowAllSessions(false)
+
+    // Charger les sessions de formation disponibles (filtrées par défaut)
+    await loadSessionFormations(false, agent.id)
+  }
+
+  const handleShowAllSessionsChange = async (showAll: boolean) => {
+    setShowAllSessions(showAll)
+    // Recharger avec l'agentId actuel
+    if (addingFormationAgent) {
+      await loadSessionFormations(showAll, addingFormationAgent.id)
     }
   }
 
@@ -1401,7 +1443,7 @@ export function ResizableTable({
                                   >
                                     <Trash2 size={14} />
                                     <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
-                                      حــــــــــــــــذف
+                                      حـــــــــــــــــــــــذف
                                     </span>
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -1492,6 +1534,7 @@ export function ResizableTable({
                                     isUpdating={isSavingFormation}
                                     isLoadingFormations={isLoadingFormations}
                                     error={formationError || undefined}
+                                    onShowAllSessionsChange={handleShowAllSessionsChange}
                                   />
                                 )}
                               </AnimatePresence>

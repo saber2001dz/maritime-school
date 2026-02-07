@@ -392,7 +392,7 @@ export function EventDialog({ event, isOpen, onClose, onSave, onDelete, formatio
               onClick={handleConfirmDelete}
               className="bg-red-600 hover:bg-red-700 text-white cursor-pointer"
             >
-              حــــذف
+              حـــــذف
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

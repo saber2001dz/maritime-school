@@ -10,16 +10,17 @@ export const verifySession = cache(async () => {
     })
 
     if (!session) {
-      return { isAuth: false, userId: null, session: null }
+      return { isAuth: false, userId: null, session: null, role: null }
     }
 
     return {
       isAuth: true,
       userId: session.user.id,
       session: session,
+      role: (session.user as { role?: string }).role || null,
     }
   } catch (error) {
-    return { isAuth: false, userId: null, session: null }
+    return { isAuth: false, userId: null, session: null, role: null }
   }
 })
 

@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { getSelectableResultatOptions } from "@/lib/resultat-utils"
 
 const notoNaskhArabic = localFont({
   src: "../../../fonts/NotoNaskhArabic.woff2",
@@ -196,18 +197,11 @@ export function DialogueEditAgentFormation({
                   <SelectValue placeholder="اختر النتيجة" />
                 </SelectTrigger>
                 <SelectContent className={notoNaskhArabic.className}>
-                  <SelectItem value="نجاح" className="text-sm">
-                    نجاح
-                  </SelectItem>
-                  <SelectItem value="قيد التكوين" className="text-sm">
-                    قيد التكوين
-                  </SelectItem>
-                  <SelectItem value="انقطع" className="text-sm">
-                    انقطع
-                  </SelectItem>
-                  <SelectItem value="لم يلتحق" className="text-sm">
-                    لم يلتحق
-                  </SelectItem>
+                  {getSelectableResultatOptions().map((option) => (
+                    <SelectItem key={option.value} value={option.value} className="text-sm">
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { verifySession } from '@/lib/dal'
+import { requirePermission } from '@/lib/check-permission'
 
 // GET /api/agents - Récupérer tous les agents
 export async function GET() {
-  // Vérifier l'authentification
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json(
-      { error: 'Non authentifié' },
-      { status: 401 }
-    )
-  }
+  const auth = await requirePermission("agent", "view")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const agents = await prisma.agent.findMany({
@@ -59,14 +53,8 @@ function getCategorieFromGrade(grade: string): string {
 
 // POST /api/agents - Créer un nouvel agent
 export async function POST(request: NextRequest) {
-  // Vérifier l'authentification
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json(
-      { error: 'Non authentifié' },
-      { status: 401 }
-    )
-  }
+  const auth = await requirePermission("agent", "create")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const body = await request.json()

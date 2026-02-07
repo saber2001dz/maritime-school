@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifySession } from "@/lib/dal";
+import { requirePermission } from "@/lib/check-permission";
 
 // GET - Récupérer un CoursFormateur par son ID
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
+  const auth = await requirePermission("coursFormateur", "view")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const { id } = await params;
@@ -45,10 +43,8 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
+  const auth = await requirePermission("coursFormateur", "edit")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const { id } = await params;
@@ -125,10 +121,8 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
+  const auth = await requirePermission("coursFormateur", "delete")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const { id } = await params;

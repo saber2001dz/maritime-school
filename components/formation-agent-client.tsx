@@ -6,10 +6,12 @@ import { ChevronRight } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { ProjectDataTable, Project } from "@/components/ui/project-data-table";
 import DialogueEditionFormation, { AgentFormationData, SessionFormationOption } from "@/components/dialogue-edition-formation";
+import { useToast } from "@/components/ui/ultra-quality-toast";
 
 interface FormationAgentClientProps {
   data: Project[];
   agentInfo: { grade: string; nomPrenom: string } | null;
+  agentId?: string;
   notoNaskhArabicClassName: string;
   returnUrl: string;
 }
@@ -19,17 +21,18 @@ const allColumns: (keyof Project)[] = ["name", "repository", "team", "tech", "cr
 export default function FormationAgentClient({
   data,
   agentInfo,
+  agentId,
   notoNaskhArabicClassName,
   returnUrl,
 }: FormationAgentClientProps) {
   const router = useRouter();
+  const { addToast } = useToast();
   const [visibleColumns, setVisibleColumns] = useState<Set<keyof Project>>(new Set(allColumns));
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [sessionFormations, setSessionFormations] = useState<SessionFormationOption[]>([]);
   const [isLoadingFormations, setIsLoadingFormations] = useState(false);
   const [editFormationData, setEditFormationData] = useState<AgentFormationData | null>(null);
-  const [error, setError] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -37,18 +40,8 @@ export default function FormationAgentClient({
     setSelectedProject(project);
     setIsLoadingFormations(true);
 
-    // Charger les sessions de formation via l'API
-    try {
-      const response = await fetch("/api/session-formations");
-      if (response.ok) {
-        const data = await response.json();
-        setSessionFormations(data.sessions || []);
-      }
-    } catch (err) {
-      console.error("Erreur lors du chargement des sessions de formation:", err);
-    }
-
-    setIsLoadingFormations(false);
+    // Charger les sessions de formation via l'API avec marquage des inscriptions
+    await loadSessionFormations(project.sessionFormationId);
 
     // Définir les données du formulaire avec le sessionFormationId du project
     setEditFormationData({
@@ -56,24 +49,59 @@ export default function FormationAgentClient({
       dateDebut: project.team || "",
       dateFin: project.tech || "",
       reference: project.createdAt || "",
-      resultat: typeof project.status === "string" ? project.status : project.status.text,
+      resultat: typeof project.status === "string" ? project.status : (project.status.value || ""),
       moyenne: parseFloat(project.contributors) || 0,
     });
 
     setIsEditDialogOpen(true);
   };
 
+  const loadSessionFormations = async (currentSessionFormationId?: string) => {
+    setIsLoadingFormations(true);
+    try {
+      // Charger les sessions de formation
+      const sessionsResponse = await fetch("/api/session-formations");
+      if (!sessionsResponse.ok) {
+        throw new Error("Failed to load sessions");
+      }
+      const sessionsData = await sessionsResponse.json();
+      const allSessions = sessionsData.sessions || [];
+
+      // Charger les inscriptions existantes de l'agent
+      let enrolledSessionIds: string[] = [];
+      if (agentId) {
+        const enrollmentsResponse = await fetch(`/api/agent-formations?agentId=${agentId}`);
+        if (enrollmentsResponse.ok) {
+          const enrollmentsData = await enrollmentsResponse.json();
+          enrolledSessionIds = enrollmentsData.agentFormations
+            .filter((af: any) => af.sessionFormationId)
+            .map((af: any) => af.sessionFormationId);
+        }
+      }
+
+      // Marquer les sessions déjà utilisées (sauf la session en cours de modification)
+      const sessionsWithEnrollmentStatus = allSessions.map((session: SessionFormationOption) => ({
+        ...session,
+        isAlreadyEnrolled: enrolledSessionIds.includes(session.id) && session.id !== currentSessionFormationId
+      }));
+
+      setSessionFormations(sessionsWithEnrollmentStatus);
+    } catch (err) {
+      console.error("Erreur lors du chargement des sessions de formation:", err);
+    } finally {
+      setIsLoadingFormations(false);
+    }
+  };
+
   const handleCloseDialog = () => {
     setIsEditDialogOpen(false);
     setSelectedProject(null);
     setEditFormationData(null);
-    setError("");
   };
 
   const handleSaveEdit = async (data: AgentFormationData) => {
     if (!selectedProject) return;
 
-    setError("");
     setIsUpdating(true);
 
     try {
@@ -98,11 +126,24 @@ export default function FormationAgentClient({
         throw new Error(result.error || "Erreur lors de la mise à jour de la formation");
       }
 
+      // Afficher un message de succès
+      addToast({
+        title: "تم الحفظ بنجاح",
+        description: "تم تحديث بيانات التكوين بنجاح",
+        variant: "success",
+      });
+
       // Rafraîchir les données de la page
       router.refresh();
       handleCloseDialog();
     } catch (err: any) {
-      setError(err.message || "Une erreur est survenue lors de la sauvegarde");
+      // Afficher le message d'erreur via toast
+      addToast({
+        title: "خطأ في الحفظ",
+        description: err.message || "حدث خطأ أثناء حفظ البيانات",
+        variant: "error",
+        duration: 6000,
+      });
     } finally {
       setIsUpdating(false);
     }
@@ -118,7 +159,6 @@ export default function FormationAgentClient({
   };
 
   const handleDelete = async (id: string) => {
-    setError("");
     setIsDeleting(true);
 
     try {
@@ -131,11 +171,24 @@ export default function FormationAgentClient({
         throw new Error(result.error || "Erreur lors de la suppression de la formation");
       }
 
+      // Afficher un message de succès
+      addToast({
+        title: "تم الحذف بنجاح",
+        description: "تم حذف الدورة التكوينية بنجاح",
+        variant: "success",
+      });
+
       // Rafraîchir les données de la page
       router.refresh();
       handleCloseDialog();
     } catch (err: any) {
-      setError(err.message || "Une erreur est survenue lors de la suppression");
+      // Afficher le message d'erreur via toast
+      addToast({
+        title: "خطأ في الحذف",
+        description: err.message || "حدث خطأ أثناء حذف البيانات",
+        variant: "error",
+        duration: 6000,
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -197,7 +250,6 @@ export default function FormationAgentClient({
             isUpdating={isUpdating}
             isDeleting={isDeleting}
             isLoadingFormations={isLoadingFormations}
-            error={error}
           />
         )}
       </AnimatePresence>

@@ -1,14 +1,12 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifySession } from "@/lib/dal";
+import { requirePermission } from "@/lib/check-permission";
 
 // GET - Récupérer tous les CoursFormateur avec leurs cours et formateurs associés
 // Supporte le filtrage par formateurId ou coursId via query params: ?formateurId=xxx ou ?coursId=xxx
 export async function GET(request: NextRequest) {
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
+  const auth = await requirePermission("coursFormateur", "view")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -41,10 +39,8 @@ export async function GET(request: NextRequest) {
 
 // POST - Créer un nouveau CoursFormateur
 export async function POST(request: Request) {
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
+  const auth = await requirePermission("coursFormateur", "create")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const body = await request.json();

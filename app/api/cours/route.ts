@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { verifySession } from '@/lib/dal'
+import { requirePermission } from '@/lib/check-permission'
 
 // GET /api/cours - Récupérer tous les cours
 export async function GET() {
-  // Vérifier l'authentification
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json(
-      { error: 'Non authentifié' },
-      { status: 401 }
-    )
-  }
+  const auth = await requirePermission("cours", "view")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const cours = await prisma.cours.findMany({
@@ -31,14 +25,8 @@ export async function GET() {
 
 // POST /api/cours - Créer un nouveau cours
 export async function POST(request: NextRequest) {
-  // Vérifier l'authentification
-  const session = await verifySession()
-  if (!session.isAuth) {
-    return NextResponse.json(
-      { error: 'Non authentifié' },
-      { status: 401 }
-    )
-  }
+  const auth = await requirePermission("cours", "create")
+  if (!auth.authorized) return auth.errorResponse!
 
   try {
     const body = await request.json()

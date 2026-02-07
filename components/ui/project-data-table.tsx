@@ -15,7 +15,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { useTheme } from "next-themes";
 
 // --- TYPE DEFINITIONS ---
-type StatusVariant = "success" | "inProgress" | "interrupted" | "notJoined";
+type StatusVariant = "success" | "inProgress" | "interrupted" | "abandoned" | "notJoined" | "pending";
 
 export interface Project {
   id: string;
@@ -26,8 +26,9 @@ export interface Project {
   createdAt: string;     // المرجع - Référence (reference)
   contributors: string;  // المعدل - Moyenne (moyenne)
   status: {
-    text: string;        // النتيجة - Résultat (resultat)
+    text: string;        // النتيجة - Résultat (label pour l'affichage)
     variant: StatusVariant;
+    value?: string;      // Valeur brute de la base de données pour l'édition
   };
   formationId?: string;  // ID de la formation pour l'édition
   sessionFormationId?: string;  // ID de la session de formation pour l'édition
@@ -39,16 +40,19 @@ interface ProjectDataTableProps {
   visibleColumns: Set<keyof Project>;
   onEditClick?: (project: Project) => void;
   customHeaders?: { key: keyof Project | 'actions'; label: string; width?: string }[];
+  notoNaskhArabicClassName?: string;
 }
 
 // --- STATUS BADGE VARIANTS ---
-const badgeVariants = cva("capitalize", {
+const badgeVariants = cva("capitalize border", {
   variants: {
     variant: {
-      success: "bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400",
-      inProgress: "bg-yellow-50 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-400",
-      interrupted: "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400",
-      notJoined: "bg-gray-50 text-gray-600 dark:bg-gray-500/10 dark:text-gray-400",
+      success: "bg-green-50 text-green-600 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-700",
+      inProgress: "bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-700",
+      interrupted: "bg-red-50 text-red-600 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-700",
+      abandoned: "bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-700",
+      notJoined: "bg-cyan-50 text-cyan-600 border-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-700",
+      pending: "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-700",
     },
   },
   defaultVariants: {
@@ -62,7 +66,9 @@ const dotVariants = cva("w-1.5 h-1.5 rounded-full", {
       success: "bg-green-600 dark:bg-green-400",
       inProgress: "bg-yellow-600 dark:bg-yellow-400",
       interrupted: "bg-red-600 dark:bg-red-400",
-      notJoined: "bg-gray-600 dark:bg-gray-400",
+      abandoned: "bg-orange-600 dark:bg-orange-400",
+      notJoined: "bg-cyan-600 dark:bg-cyan-400",
+      pending: "bg-blue-600 dark:bg-blue-400",
     },
   },
   defaultVariants: {
@@ -71,7 +77,7 @@ const dotVariants = cva("w-1.5 h-1.5 rounded-full", {
 });
 
 // --- MAIN COMPONENT ---
-export const ProjectDataTable = ({ projects, visibleColumns, onEditClick, customHeaders }: ProjectDataTableProps) => {
+export const ProjectDataTable = ({ projects, visibleColumns, onEditClick, customHeaders, notoNaskhArabicClassName }: ProjectDataTableProps) => {
   const [mounted, setMounted] = React.useState(false);
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -144,7 +150,11 @@ export const ProjectDataTable = ({ projects, visibleColumns, onEditClick, custom
                     </TableCell>
                   )}
 
-                  {visibleColumns.has("team") && <TableCell className="text-start h-14 w-32">{project.team}</TableCell>}
+                  {visibleColumns.has("team") && (
+                    <TableCell className="text-start h-14 w-32">
+                      <span className={notoNaskhArabicClassName}>{project.team}</span>
+                    </TableCell>
+                  )}
                   {visibleColumns.has("tech") && <TableCell className="text-start h-14 w-32">{project.tech}</TableCell>}
                   {visibleColumns.has("createdAt") && (
                     <TableCell className="text-start h-14 w-40">
@@ -159,7 +169,7 @@ export const ProjectDataTable = ({ projects, visibleColumns, onEditClick, custom
 
                   {visibleColumns.has("status") && (
                     <TableCell className="text-start h-14 w-32">
-                      <div className={cn(badgeVariants({ variant: project.status.variant }), "inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md")} style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}>
+                      <div className={cn(badgeVariants({ variant: project.status.variant }), "inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-xl")} style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}>
                         <div className={cn(dotVariants({ variant: project.status.variant }))}></div>
                         {project.status.text}
                       </div>
