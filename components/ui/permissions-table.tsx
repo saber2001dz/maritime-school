@@ -41,6 +41,7 @@ interface PermissionsTableProps {
   resources?: Resources
   className?: string
   enableAnimations?: boolean
+  onTogglePermission?: (roleName: string, resourceKey: string, action: string) => void
 }
 
 export function PermissionsTable({
@@ -48,6 +49,7 @@ export function PermissionsTable({
   resources = {},
   className = "",
   enableAnimations = true,
+  onTogglePermission,
 }: PermissionsTableProps) {
   const [mounted, setMounted] = useState(false)
   const [showExportMenu, setShowExportMenu] = useState(false)
@@ -112,6 +114,21 @@ export function PermissionsTable({
         bg: "bg-blue-500/10",
         text: "text-blue-600 dark:text-blue-400",
         border: "border-blue-500/20",
+      },
+      indigo: {
+        bg: "bg-teal-500/10",
+        text: "text-teal-600 dark:text-teal-400",
+        border: "border-teal-500/30",
+      },
+      teal: {
+        bg: "bg-teal-500/10",
+        text: "text-teal-600 dark:text-teal-400",
+        border: "border-teal-500/30",
+      },
+      orange: {
+        bg: "bg-orange-500/10",
+        text: "text-orange-600 dark:text-orange-400",
+        border: "border-orange-500/30",
       },
       green: {
         bg: "bg-green-500/10",
@@ -256,7 +273,7 @@ export function PermissionsTable({
                 {Object.entries(resources).map(([resourceKey, resource]) => {
                   const rolePerms = role.permissions[resourceKey] || []
 
-                  if (rolePerms.length === 0) return null
+                  if (!onTogglePermission && rolePerms.length === 0) return null
 
                   return (
                     <div key={resourceKey} className="border-t border-border/30 pt-3">
@@ -269,20 +286,23 @@ export function PermissionsTable({
                         {resource.actions.map((action) => {
                           const hasAccess = rolePerms.includes(action)
 
-                          if (!hasAccess) return null
+                          if (!onTogglePermission && !hasAccess) return null
 
                           return (
-                            <span
+                            <button
                               key={action}
-                              className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
+                              type="button"
+                              disabled={!onTogglePermission}
+                              onClick={() => onTogglePermission?.(role.name, resourceKey, action)}
+                              className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
                                 hasAccess
                                   ? `${colorClasses.bg} ${colorClasses.text} border ${colorClasses.border}`
-                                  : "bg-muted/30 text-muted-foreground"
-                              }`}
+                                  : "bg-muted/30 text-muted-foreground border border-border/20"
+                              } ${onTogglePermission ? "cursor-pointer hover:opacity-80" : ""}`}
                             >
                               {hasAccess && <Check className="w-3 h-3" />}
-                              {resource.actionLabels[action]}
-                            </span>
+                              {resource.actionLabels[action] || action}
+                            </button>
                           )
                         })}
                       </div>
@@ -310,9 +330,9 @@ export function PermissionsTable({
           <div className="flex-1">
             <p className="text-sm font-medium mb-1">À propos des permissions</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Les permissions sont définies au niveau du code et contrôlent l'accès aux différentes fonctionnalités
-              de la plateforme. Elles sont organisées par ressources (utilisateurs, agents, formations, sessions)
-              et par actions (créer, consulter, modifier, supprimer).
+              Les permissions contrôlent l'accès aux différentes fonctionnalités
+              de la plateforme. Elles sont organisées par ressources et par actions.
+              {onTogglePermission && " Cliquez sur une action pour activer ou désactiver la permission."}
             </p>
           </div>
         </div>

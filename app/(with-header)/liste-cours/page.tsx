@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/db"
 import CoursTableWrapper from "./cours-table-wrapper"
+import { verifySession } from "@/lib/dal"
 
 export default async function ListeCoursPage() {
+  const { role } = await verifySession()
   // Fetch all cours from database, ordered by creation date (newest first)
   const cours = await prisma.cours.findMany({
     orderBy: {
@@ -20,7 +22,7 @@ export default async function ListeCoursPage() {
         </div>
 
         <div className="mb-8 md:mb-12 px-8">
-          <CoursTableWrapper cours={cours} />
+          <CoursTableWrapper cours={cours} userRole={role} />
         </div>
       </div>
     </div>

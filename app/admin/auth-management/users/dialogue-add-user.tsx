@@ -80,8 +80,8 @@ export function DialogueAddUser({ roles, isOpen, onClose, onSave }: DialogueAddU
       })
       onClose()
     } catch (error) {
+      // Ne pas afficher l'erreur ici car elle est déjà affichée dans le Toast
       console.error("Erreur lors de la sauvegarde:", error)
-      setError("Une erreur s'est produite lors de la création de l'utilisateur")
     } finally {
       setIsSubmitting(false)
     }

@@ -1,7 +1,9 @@
 import { ResizableTableWrapper } from "./resizable-table-wrapper"
 import { prisma } from "@/lib/db"
+import { verifySession } from "@/lib/dal"
 
 export default async function ListeFormateurPage() {
+  const { role } = await verifySession()
   // Récupérer les formateurs depuis la base de données
   const formateurs = await prisma.formateur.findMany({
     orderBy: {
@@ -31,7 +33,7 @@ export default async function ListeFormateurPage() {
         </div>
 
         <div className="mb-8 md:mb-12 px-8">
-          <ResizableTableWrapper formateurs={formateursData} />
+          <ResizableTableWrapper formateurs={formateursData} userRole={role} />
         </div>
       </div>
     </div>

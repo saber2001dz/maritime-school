@@ -17,6 +17,9 @@ export default function AdminLayout({
     if (!isPending && !session) {
       router.push("/login")
     }
+    if (!isPending && session && (session.user as any).role !== "administrateur") {
+      router.push("/principal")
+    }
   }, [session, isPending, router])
 
   if (isPending) {
@@ -27,7 +30,7 @@ export default function AdminLayout({
     )
   }
 
-  if (!session) {
+  if (!session || (session.user as any).role !== "administrateur") {
     return null
   }
 

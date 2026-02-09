@@ -35,6 +35,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { ToastProvider, useToast } from "@/components/ui/ultra-quality-toast"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
+import { can } from "@/lib/permissions"
+import { usePermissions } from "@/lib/permissions-context"
 
 export interface SessionFormation {
   id: string
@@ -62,6 +64,7 @@ interface ResizableSessionTableProps {
   onEditSession?: (session: SessionFormation) => void
   className?: string
   enableAnimations?: boolean
+  userRole?: string | null
 }
 
 type SortField = "formation" | "dateDebut" | "dateFin" | "nombreParticipants" | "createdAt"
@@ -112,7 +115,9 @@ export function ResizableSessionTable({
   onEditSession,
   className = "",
   enableAnimations = true,
+  userRole,
 }: ResizableSessionTableProps) {
+  const permissionsMap = usePermissions()
   const [mounted, setMounted] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [sortField, setSortField] = useState<SortField | null>("createdAt")
@@ -844,7 +849,7 @@ export function ResizableSessionTable({
           </div>
 
           {/* Bouton ajouter nouvelle session */}
-          {onAddNewSession && (
+          {onAddNewSession && can(userRole, "sessionFormation", "create", permissionsMap) && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -1169,6 +1174,7 @@ export function ResizableSessionTable({
                                 </button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="start" side="bottom">
+                                {can(userRole, "sessionFormation", "edit", permissionsMap) && (
                                 <DropdownMenuItem
                                   dir="rtl"
                                   className="gap-2 cursor-pointer"
@@ -1180,6 +1186,7 @@ export function ResizableSessionTable({
                                     تعـديـل بيــانـــات
                                   </span>
                                 </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem
                                   dir="rtl"
                                   className="gap-2 cursor-pointer"
@@ -1191,6 +1198,7 @@ export function ResizableSessionTable({
                                     قائمـة المشاركيــن
                                   </span>
                                 </DropdownMenuItem>
+                                {can(userRole, "sessionFormation", "delete", permissionsMap) && (
                                 <DropdownMenuItem
                                   dir="rtl"
                                   className="gap-2 cursor-pointer text-red-600 focus:text-red-600"
@@ -1202,6 +1210,7 @@ export function ResizableSessionTable({
                                     حـــــــــــــــــــــذف
                                   </span>
                                 </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>

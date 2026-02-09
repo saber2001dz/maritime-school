@@ -1,7 +1,9 @@
 import { ResizableTableWrapper } from "./resizable-table-wrapper"
 import { prisma } from "@/lib/db"
+import { verifySession } from "@/lib/dal"
 
 export default async function PrincipalPage() {
+  const { role } = await verifySession()
   // Récupérer les agents depuis la base de données avec leur formation la plus récente
   const agents = await prisma.agent.findMany({
     include: {
@@ -40,7 +42,7 @@ export default async function PrincipalPage() {
         </div>
 
         <div className="mb-8 md:mb-12 px-8">
-          <ResizableTableWrapper agents={agentsData} />
+          <ResizableTableWrapper agents={agentsData} userRole={role} />
         </div>
       </div>
     </div>

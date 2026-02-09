@@ -7,6 +7,8 @@ import { transformSessionsToEvents } from "@/lib/calendar-utils"
 import { type SessionFormation } from "@/components/ui/resizable-session-table"
 import { toUTCPreservingTime, convertUTCToLocalDate } from "@/lib/timezone-utils"
 import { useToast } from "@/components/ui/ultra-quality-toast"
+import { can } from "@/lib/permissions"
+import { usePermissions } from "@/lib/permissions-context"
 
 const notoNaskhArabic = localFont({
   src: "../../../fonts/NotoNaskhArabic.woff2",
@@ -24,6 +26,7 @@ interface SessionPlanningProps {
   onSessionCreated?: (session: SessionFormation) => void
   onSessionUpdated?: (session: SessionFormation) => void
   onSessionDeleted?: (sessionId: string) => void
+  userRole?: string | null
 }
 
 /**
@@ -53,7 +56,9 @@ export function SessionPlanning({
   onSessionCreated,
   onSessionUpdated,
   onSessionDeleted,
+  userRole,
 }: SessionPlanningProps) {
+  const permissionsMap = usePermissions()
   const { addToast } = useToast()
 
   // Transform sessions to calendar events
@@ -273,9 +278,9 @@ export function SessionPlanning({
     <div className={`w-full ${notoNaskhArabic.variable}`} dir="rtl" style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}>
       <EventCalendar
         events={calendarEvents}
-        onEventAdd={handleEventAdd}
-        onEventUpdate={handleEventUpdate}
-        onEventDelete={handleEventDelete}
+        onEventAdd={can(userRole, "sessionFormation", "create", permissionsMap) ? handleEventAdd : undefined}
+        onEventUpdate={can(userRole, "sessionFormation", "edit", permissionsMap) ? handleEventUpdate : undefined}
+        onEventDelete={can(userRole, "sessionFormation", "delete", permissionsMap) ? handleEventDelete : undefined}
         initialView="month"
         className="bg-background"
         formations={formations}

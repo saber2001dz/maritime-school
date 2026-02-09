@@ -3,12 +3,15 @@
 import { useState } from "react"
 import { ResizableSessionTableWithToast, type SessionFormation } from "@/components/ui/resizable-session-table"
 import { SessionEventDialogAdapter } from "@/components/session-event-dialog-adapter"
+import { can } from "@/lib/permissions"
+import { usePermissions } from "@/lib/permissions-context"
 
 interface ResizableSessionWrapperProps {
   sessions: SessionFormation[]
   onSessionCreated?: (session: SessionFormation) => void
   onSessionUpdated?: (session: SessionFormation) => void
   onSessionDeleted?: (sessionId: string) => void
+  userRole?: string | null
 }
 
 export function ResizableSessionWrapper({
@@ -16,7 +19,9 @@ export function ResizableSessionWrapper({
   onSessionCreated,
   onSessionUpdated,
   onSessionDeleted,
+  userRole,
 }: ResizableSessionWrapperProps) {
+  const permissionsMap = usePermissions()
   const [selectedSession, setSelectedSession] = useState<SessionFormation | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
@@ -65,8 +70,9 @@ export function ResizableSessionWrapper({
         title="Session"
         sessions={sessions}
         onSessionSelect={handleSessionSelect}
-        onAddNewSession={handleAddNewSession}
-        onEditSession={handleEditSession}
+        onAddNewSession={can(userRole, "sessionFormation", "create", permissionsMap) ? handleAddNewSession : undefined}
+        onEditSession={can(userRole, "sessionFormation", "edit", permissionsMap) ? handleEditSession : undefined}
+        userRole={userRole}
       />
 
       <SessionEventDialogAdapter

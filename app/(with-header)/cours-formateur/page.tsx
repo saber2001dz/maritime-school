@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db"
 import { Project } from "@/components/ui/project-data-table"
 import CoursFormateurClient from "@/components/cours-formateur-client"
 import localFont from "next/font/local"
+import { verifySession } from "@/lib/dal"
 
 const notoNaskhArabic = localFont({
   src: "../../fonts/NotoNaskhArabic.woff2",
@@ -40,6 +41,7 @@ interface PageProps {
 }
 
 export default async function CoursFormateurPage({ searchParams }: PageProps) {
+  const { role } = await verifySession()
   // Attendre les searchParams (Next.js 15+)
   const params = await searchParams
   const formateurId = params.formateurId as string | undefined
@@ -78,6 +80,7 @@ export default async function CoursFormateurPage({ searchParams }: PageProps) {
       formateurInfo={formateurInfo}
       notoNaskhArabicClassName={notoNaskhArabic.className}
       returnUrl={returnUrl}
+      userRole={role}
     />
   )
 }

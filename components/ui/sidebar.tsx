@@ -108,6 +108,8 @@ const Sidebar = () => {
     if (path.includes("/admin/auth-management/users")) return "Users"
     if (path.includes("/admin/auth-management/roles")) return "Roles"
     if (path.includes("/admin/auth-management/permissions")) return "Permissions"
+    if (path.includes("/admin/auth-management/ui-components")) return "UI Components"
+    if (path.includes("/admin/auth-management/gestion-users")) return "Gestion des users"
     if (path.includes("/admin/import-data")) return "Import data"
     if (path.includes("/admin/export-data")) return "Export data"
     if (path.includes("/admin/logs")) return "Logs"
@@ -260,6 +262,26 @@ const Sidebar = () => {
                   }`}
                 >
                   Permissions
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => router.push("/admin/auth-management/ui-components")}
+                  className={`w-full font-medium text-[13px] text-left p-2 rounded-sm cursor-pointer ${
+                    selectedItem === "UI Components" ? "bg-[#EFF6FF] text-[#06407F]" : "hover:bg-gray-100"
+                  }`}
+                >
+                  Composants UI
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => router.push("/admin/auth-management/gestion-users")}
+                  className={`w-full font-medium text-[13px] text-left p-2 rounded-sm cursor-pointer ${
+                    selectedItem === "Gestion des users" ? "bg-[#EFF6FF] text-[#06407F]" : "hover:bg-gray-100"
+                  }`}
+                >
+                  Gestion des users
                 </button>
               </li>
             </ul>

@@ -77,7 +77,7 @@ This is a Next.js 16.0.10 application (using the App Router) built with React 19
 - **Formateur (Trainer) Management** - Track trainers and their course assignments
 - **Cours (Courses) Management** - Manage individual courses taught by trainers
 - **Session Planning** - Calendar-based session scheduling with drag-and-drop support
-- **Authentication & RBAC** - Role-based access control with Better-Auth
+- **Authentication & Dynamic RBAC** - Role-based access control with Better-Auth + DB-driven permissions (roles, resources, and permissions matrix stored in database)
 
 ## Development Commands
 
@@ -142,10 +142,11 @@ npm run lint
     - [liste-formateur/page.tsx](app/admin/database/liste-formateur/page.tsx) - Manage trainers (formateurs)
     - [liste-cours/page.tsx](app/admin/database/liste-cours/page.tsx) - Manage courses
     - [cours-formateur/page.tsx](app/admin/database/cours-formateur/page.tsx) - Manage course-trainer relationships
-  - **auth-management/** - User and role management
+  - **auth-management/** - User, role, and permission management
     - [users/page.tsx](app/admin/auth-management/users/page.tsx) - User management (CRUD, role assignment, session control)
-    - [roles/page.tsx](app/admin/auth-management/roles/page.tsx) - Role management and permissions overview
-    - [permissions/page.tsx](app/admin/auth-management/permissions/page.tsx) - Permissions management
+    - [roles/page.tsx](app/admin/auth-management/roles/page.tsx) - Role CRUD (create, edit, delete roles), view/assign users per role
+    - [permissions/page.tsx](app/admin/auth-management/permissions/page.tsx) - Interactive permissions matrix (click checkboxes to toggle actions per role/resource)
+    - [ui-components/page.tsx](app/admin/auth-management/ui-components/page.tsx) - UI Components permissions matrix (manage access to specific UI elements like buttons, filters, export features per role)
   - [import-data/page.tsx](app/admin/import-data/page.tsx) - Data import functionality
   - [export-data/page.tsx](app/admin/export-data/page.tsx) - Data export functionality
   - [logs/page.tsx](app/admin/logs/page.tsx) - System logs viewer
@@ -540,6 +541,71 @@ Junction table linking courses to trainers:
 - formateur (Formateur relation, cascade delete)
 - Indexes on coursId and formateurId for query optimization
 
+#### Role Model (Dynamic Permissions System)
+Roles stored in DB (replaces hardcoded `ROLES` array):
+- id (String, cuid, primary key)
+- name (String, unique) - Technical name (e.g. "administrateur")
+- displayName (String) - Display name (e.g. "Administrateur")
+- description (String, default: "") - Role description
+- color (String, default: "gray") - Badge color
+- isSystem (Boolean, default: false) - Protects system roles from deletion
+- createdAt (DateTime, default: now())
+- updatedAt (DateTime, auto-updated)
+- permissions (RolePermission[]) - Related permissions
+
+`User.role` remains a `String` (no FK) for Better-Auth compatibility — references `Role.name`.
+
+#### Resource Model (Dynamic Permissions System)
+Permission resources stored in DB:
+- id (String, cuid, primary key)
+- name (String, unique) - Technical name (e.g. "agent")
+- displayName (String) - Display name (e.g. "Agents")
+- description (String, default: "") - Resource description
+- actions (String[]) - Available actions (e.g. ["create", "edit", "delete", "view"])
+- actionLabels (Json, default: "{}") - Localized action labels (e.g. {"create": "Créer"})
+- createdAt (DateTime, default: now())
+- updatedAt (DateTime, auto-updated)
+- permissions (RolePermission[]) - Related permissions
+
+#### RolePermission Model (Dynamic Permissions System)
+Junction table linking roles to resources with specific actions:
+- id (String, cuid, primary key)
+- roleId (String, FK to Role)
+- resourceId (String, FK to Resource)
+- actions (String[]) - Allowed actions for this role on this resource
+- createdAt (DateTime, default: now())
+- updatedAt (DateTime, auto-updated)
+- role (Role relation, cascade delete)
+- resource (Resource relation, cascade delete)
+- @@unique([roleId, resourceId]) - Unique constraint on role+resource pair
+- Indexes on roleId and resourceId
+
+#### UIComponent Model (UI Permissions System)
+UI components that can be conditionally shown/hidden per role:
+- id (String, cuid, primary key)
+- name (String, unique) - Technical name (e.g. "export_button_agents")
+- displayName (String) - Display name (e.g. "Bouton Exporter")
+- category (String) - Page category (e.g. "Agents", "Formations", "Sessions")
+- description (String, default: "") - Component description
+- icon (String, default: "Square") - Lucide icon name
+- createdAt (DateTime, default: now())
+- updatedAt (DateTime, auto-updated)
+- permissions (UIComponentPermission[]) - Related permissions
+- @@index([category]) - Index on category for grouping
+
+#### UIComponentPermission Model (UI Permissions System)
+Junction table linking roles to UI components:
+- id (String, cuid, primary key)
+- roleId (String, FK to Role)
+- componentId (String, FK to UIComponent)
+- enabled (Boolean, default: false) - Whether the component is accessible for this role
+- createdAt (DateTime, default: now())
+- updatedAt (DateTime, auto-updated)
+- role (Role relation, cascade delete)
+- component (UIComponent relation, cascade delete)
+- @@unique([roleId, componentId]) - Unique constraint on role+component pair
+- Indexes on roleId and componentId
+
 ### API Routes
 
 #### Agents API
@@ -632,11 +698,45 @@ Junction table linking courses to trainers:
 - [app/api/users/kill-session/route.ts](app/api/users/kill-session/route.ts)
   - POST - Terminate user session by session ID
 
-#### Roles API
+#### Roles API (Dynamic - DB-driven)
 - [app/api/roles/route.ts](app/api/roles/route.ts)
-  - GET - List all available roles with permissions
+  - GET - List all roles from DB with permissions and user counts
+  - POST - Create new role (requires `user:create` permission)
+    - Validates unique name, requires name + displayName
+- [app/api/roles/[id]/route.ts](app/api/roles/[id]/route.ts)
+  - GET - Get single role by ID with permissions
+  - PUT - Update role (displayName, description, color)
+  - DELETE - Delete role (blocked if `isSystem: true`, reassigns users to "agent" role)
 - [app/api/roles/users/route.ts](app/api/roles/users/route.ts)
   - GET - List users grouped by roles
+
+#### Resources API (Dynamic Permissions)
+- [app/api/resources/route.ts](app/api/resources/route.ts)
+  - GET - List all permission resources
+  - POST - Create new resource (name, displayName, description, actions, actionLabels)
+- [app/api/resources/[id]/route.ts](app/api/resources/[id]/route.ts)
+  - GET - Get single resource by ID
+  - PUT - Update resource (displayName, description, actions, actionLabels)
+  - DELETE - Delete resource (cascades RolePermissions)
+
+#### Role-Permissions API (Dynamic Permissions Matrix)
+- [app/api/role-permissions/route.ts](app/api/role-permissions/route.ts)
+  - GET - Get full permissions matrix (all RolePermission entries with role and resource)
+  - PUT - Update permissions (dual mode):
+    - **Mode 1 - Toggle by name**: `{ roleName, resourceName, action }` — toggles single action on/off
+    - **Mode 2 - Set by ID**: `{ roleId, resourceId, actions[] }` — sets full actions array
+    - Auto-deletes entry if resulting actions array is empty
+    - Validates actions against resource's allowed actions
+
+#### UI Components API (UI Permissions System)
+- [app/api/ui-components/route.ts](app/api/ui-components/route.ts)
+  - GET - List all UI components with their permissions
+  - POST - Create new UI component (name, displayName, category, description, icon)
+- [app/api/ui-components/permissions/route.ts](app/api/ui-components/permissions/route.ts)
+  - PUT - Toggle UI component permission for a role
+    - Request: `{ roleId, componentId, enabled }`
+    - Creates or updates UIComponentPermission entry
+    - Returns updated permission state
 
 ### Using Prisma in Code
 ```typescript
@@ -664,26 +764,207 @@ const agent = await prisma.agent.create({
 - [lib/auth.ts](lib/auth.ts) - Server-side Better-Auth configuration
   - Email/password authentication enabled
   - Prisma adapter for PostgreSQL
-  - Admin plugin with role-based access control (RBAC)
+  - Admin plugin with static role fallback (not the source of truth for runtime permissions)
   - Custom hooks for tracking last login
 - [lib/auth-client.ts](lib/auth-client.ts) - Client-side authentication hooks
   - `signIn`, `signUp`, `signOut`, `useSession` exports
-- [lib/check-permission.ts](lib/check-permission.ts) - Permission checking utilities
 
-### Role System
-- [lib/roles.ts](lib/roles.ts) - Centralized role definitions
-  - **administrateur** - Full system access (purple badge)
-  - **coordinateur** - Manage agents and formations (blue badge)
-  - **formateur** - View agents and formations (green badge)
-  - **agent** - Read-only access (gray badge)
-- Helper functions: `getRoleByName`, `getRoleDisplayName`, `isValidRole`, `getRoleColor`
+### Dynamic Permissions System (DB-driven)
 
-### Access Control
-Defined in [lib/auth.ts](lib/auth.ts) using Better-Auth access control:
-- **user**: create, list, update, delete, set-role
-- **agent**: create, edit, delete, view
-- **formation**: create, edit, delete, view
-- **session**: list, revoke
+Roles, resources, actions, and the permissions matrix are all stored in the database and manageable via the admin UI. This replaces the previous hardcoded approach.
+
+#### Architecture Overview
+
+```
+Server (layout.tsx)                    Client Components
+┌──────────────────┐                  ┌──────────────────────┐
+│ loadPermissions() │──permissionsMap──▶│ PermissionsProvider  │
+│ loadRoles()       │──roles──────────▶│   usePermissions()   │
+└──────────────────┘                  │   can(role, res,     │
+                                      │     action, map)     │
+                                      └──────────────────────┘
+
+API Routes
+┌──────────────────┐
+│ requirePermission │── auth + DB check ──▶ 401/403/OK
+│ (resource, action)│
+└──────────────────┘
+```
+
+#### Permission Files (Client/Server Split)
+
+| File | Side | Purpose |
+|------|------|---------|
+| [lib/permissions.ts](lib/permissions.ts) | Client + Server | `can()` function, `PermissionsMap` type |
+| [lib/permissions-server.ts](lib/permissions-server.ts) | Server only | `loadPermissions()` — loads matrix from DB (React `cache()`) |
+| [lib/permissions-context.tsx](lib/permissions-context.tsx) | Client | `PermissionsProvider`, `usePermissions()` hook |
+| [lib/roles.ts](lib/roles.ts) | Client + Server | `Role` interface, `getRoleDisplayName()`, `getRoleColor()`, `DEFAULT_ROLE` |
+| [lib/roles-server.ts](lib/roles-server.ts) | Server only | `loadRoles()`, `getRoleByName()`, `isValidRole()` |
+| [lib/check-permission.ts](lib/check-permission.ts) | Server only | `requirePermission()`, `checkPermission()`, `isAdmin()` |
+
+#### Key Functions
+
+**`can(role, resource, action, permissionsMap)`** — Synchronous, pure function. Works client + server.
+```typescript
+import { can } from "@/lib/permissions"
+can("administrateur", "agent", "edit", permissionsMap) // true/false
+```
+
+**`loadPermissions()`** — Async, server-only. Cached per request via React `cache()`.
+```typescript
+import { loadPermissions } from "@/lib/permissions-server"
+const permissionsMap = await loadPermissions()
+// Returns: Record<string, Record<string, string[]>>
+// Example: { "administrateur": { "agent": ["create", "edit", "delete", "view"] } }
+```
+
+**`usePermissions()`** — Client hook. Returns `permissionsMap` from context.
+```typescript
+import { usePermissions } from "@/lib/permissions-context"
+const permissionsMap = usePermissions()
+```
+
+**`requirePermission(resource, action)`** — API route helper. Combines auth + permission check.
+```typescript
+import { requirePermission } from "@/lib/check-permission"
+const auth = await requirePermission("agent", "create")
+if (!auth.authorized) return auth.errorResponse!
+```
+
+#### Layout Integration
+
+The `(with-header)/layout.tsx` wraps all authenticated pages with `PermissionsProvider`:
+```typescript
+const permissionsMap = await loadPermissions()
+<PermissionsProvider permissionsMap={permissionsMap}>
+  {children}
+</PermissionsProvider>
+```
+
+All client components use `usePermissions()` to access the map and pass it to `can()`.
+
+#### Default Roles (seeded via `prisma/seed-permissions.ts`)
+- **administrateur** — Full system access (purple, isSystem: true)
+- **direction** — Direction-level access (blue)
+- **coordinateur** — Manage agents and formations (blue)
+- **formateur** — View agents and formations (green)
+- **agent** — Read-only access (gray)
+
+#### Default Resources (10 resources seeded)
+user, agent, formation, session, formateur, cours, sessionFormation, agentFormation, coursFormateur, sessionAgent
+
+#### Admin UI for Managing Permissions
+- **Roles page** (`/admin/auth-management/roles`): Create, edit, delete roles. View/assign users per role.
+- **Permissions page** (`/admin/auth-management/permissions`): Interactive matrix with clickable checkboxes to toggle actions per role/resource. Optimistic updates.
+- **UI Components page** (`/admin/auth-management/ui-components`): Matrix interface to manage access to specific UI elements (buttons, filters, export features, etc.) per role. Grouped by page category with optimistic updates.
+
+### UI Permissions System (Component-Level Access Control)
+
+The project features a **separate UI permissions system** that controls access to specific UI components (buttons, filters, drag-and-drop, export features, etc.) independently from CRUD permissions.
+
+#### Architecture Overview
+
+```
+Server (page.tsx)                      Client Components
+┌───────────────────┐                 ┌────────────────────────────┐
+│ loadUIPermissions()│──uiPermissionsMap──▶│ UIPermissionsProvider     │
+│ loadRoles()        │──roles─────────▶│   useUIPermissions()      │
+└───────────────────┘                 │   canAccessUIComponent()  │
+                                      └────────────────────────────┘
+
+API Routes
+┌──────────────────┐
+│ PUT /api/ui-     │── toggle permission ──▶ DB update
+│ components/      │
+│ permissions      │
+└──────────────────┘
+```
+
+#### UI Permission Files (Client/Server Split)
+
+| File | Side | Purpose |
+|------|------|---------|
+| [lib/ui-permissions.ts](lib/ui-permissions.ts) | Client + Server | `canAccessUIComponent()` function, `UIPermissionsMap` type |
+| [lib/ui-permissions-server.ts](lib/ui-permissions-server.ts) | Server only | `loadUIPermissions()` — loads UI permissions from DB (React `cache()`) |
+| [lib/ui-permissions-context.tsx](lib/ui-permissions-context.tsx) | Client | `UIPermissionsProvider`, `useUIPermissions()` hook |
+
+#### Key Functions
+
+**`canAccessUIComponent(roleId, componentName, uiPermissionsMap)`** — Synchronous, pure function. Works client + server.
+```typescript
+import { canAccessUIComponent } from "@/lib/ui-permissions"
+canAccessUIComponent(roleId, "export_button_agents", uiPermissionsMap) // true/false
+```
+
+**`loadUIPermissions()`** — Async, server-only. Cached per request via React `cache()`.
+```typescript
+import { loadUIPermissions } from "@/lib/ui-permissions-server"
+const uiPermissionsMap = await loadUIPermissions()
+// Returns: Record<string, string[]>
+// Example: { "role-id-1": ["export_button_agents", "filter_advanced"] }
+```
+
+**`useUIPermissions()`** — Client hook. Returns `uiPermissionsMap` from context.
+```typescript
+import { useUIPermissions } from "@/lib/ui-permissions-context"
+const uiPermissionsMap = useUIPermissions()
+```
+
+#### Default UI Components (26 components seeded via `prisma/seed-ui-components.ts`)
+
+**Categories:**
+- **Agents** (5 components): Export button, import button, advanced filters, column resizing, bulk actions
+- **Formations** (5 components): Export button, import button, advanced filters, column resizing, bulk actions
+- **Sessions** (5 components): Export button, drag & drop, color picker, advanced filters, calendar views
+- **Formateurs** (4 components): Export button, import button, advanced filters, column resizing
+- **Cours** (4 components): Export button, import button, advanced filters, bulk actions
+- **Dashboard** (3 components): Export charts, print view, advanced analytics
+
+**Seed script:** Run `npx tsx prisma/seed-ui-components.ts` to populate UI components with default permissions.
+
+#### Usage in Client Components
+
+```typescript
+import { useUIPermissions } from "@/lib/ui-permissions-context"
+import { canAccessUIComponent } from "@/lib/ui-permissions"
+
+function AgentsList() {
+  const session = useSession()
+  const uiPermissionsMap = useUIPermissions()
+  const roleId = session?.user?.roleId
+
+  const canExport = canAccessUIComponent(roleId, "export_button_agents", uiPermissionsMap)
+  const canFilter = canAccessUIComponent(roleId, "filter_advanced_agents", uiPermissionsMap)
+
+  return (
+    <div>
+      {canExport && <ExportButton />}
+      {canFilter && <AdvancedFilters />}
+    </div>
+  )
+}
+```
+
+#### Matrix Interface Features
+
+The `/admin/auth-management/ui-components` page provides:
+- **Grouped by category**: Components organized by page (Agents, Formations, Sessions, etc.)
+- **Clickable checkboxes**: Toggle component access per role with a single click
+- **Optimistic updates**: Immediate UI feedback without waiting for server response
+- **Role ordering**: Custom order (Administrateur, Coordinateur, Formateur, Direction, Agent)
+- **Color-coded roles**: Each role has a distinct color (purple, blue, green, orange, gray)
+- **Export functionality**: Export permissions matrix to CSV
+- **Icon support**: Each component has an associated Lucide icon
+
+#### Key Differences from CRUD Permissions
+
+| Feature | CRUD Permissions | UI Permissions |
+|---------|-----------------|----------------|
+| **Granularity** | Resource-level (agents, formations) | Component-level (buttons, filters) |
+| **Actions** | Multiple actions per resource (create, edit, delete, view) | Binary access (enabled/disabled) |
+| **Use Case** | API routes, page-level access | Conditional UI rendering |
+| **Data Model** | RolePermission (actions[]) | UIComponentPermission (enabled boolean) |
+| **Admin Page** | `/admin/auth-management/permissions` | `/admin/auth-management/ui-components` |
 
 ### Environment Variables
 Required in `.env` (Neon cloud configuration):
@@ -708,7 +989,7 @@ Required in `.env` (Neon cloud configuration):
 - [components/ui/project-data-table.tsx](components/ui/project-data-table.tsx) - Table for displaying agent formations
 - [components/ui/resizable-table.tsx](components/ui/resizable-table.tsx) - Resizable table component
 - [components/ui/server-management-table.tsx](components/ui/server-management-table.tsx) - Server/agent management table
-- [components/ui/permissions-table.tsx](components/ui/permissions-table.tsx) - Permissions display table
+- [components/ui/permissions-table.tsx](components/ui/permissions-table.tsx) - Editable permissions matrix table (clickable action badges to toggle permissions)
 
 ### Form & Dialog Components
 - [components/login-form.tsx](components/login-form.tsx) - Login form with Better-Auth integration
@@ -793,8 +1074,15 @@ Complete drag-and-drop calendar for session planning:
 - [lib/db.ts](lib/db.ts) - Prisma Client singleton
 - [lib/auth.ts](lib/auth.ts) - Better-Auth server configuration
 - [lib/auth-client.ts](lib/auth-client.ts) - Better-Auth client hooks
-- [lib/roles.ts](lib/roles.ts) - Role definitions and helpers
-- [lib/check-permission.ts](lib/check-permission.ts) - Permission utilities
+- [lib/permissions.ts](lib/permissions.ts) - `can()` function and `PermissionsMap` type (client + server)
+- [lib/permissions-server.ts](lib/permissions-server.ts) - `loadPermissions()` from DB (server-only, React cached)
+- [lib/permissions-context.tsx](lib/permissions-context.tsx) - `PermissionsProvider` and `usePermissions()` hook (client)
+- [lib/ui-permissions.ts](lib/ui-permissions.ts) - `canAccessUIComponent()` function and `UIPermissionsMap` type (client + server)
+- [lib/ui-permissions-server.ts](lib/ui-permissions-server.ts) - `loadUIPermissions()` from DB (server-only, React cached)
+- [lib/ui-permissions-context.tsx](lib/ui-permissions-context.tsx) - `UIPermissionsProvider` and `useUIPermissions()` hook (client)
+- [lib/roles.ts](lib/roles.ts) - `Role` interface, `getRoleDisplayName()`, `getRoleColor()` (client-safe)
+- [lib/roles-server.ts](lib/roles-server.ts) - `loadRoles()`, `getRoleByName()`, `isValidRole()` (server-only)
+- [lib/check-permission.ts](lib/check-permission.ts) - `requirePermission()` for API routes, `checkPermission()`, `isAdmin()`
 - [lib/dal.ts](lib/dal.ts) - Data access layer
 - [lib/utils.ts](lib/utils.ts) - Utility functions (cn, etc.)
 - [lib/session-utils.ts](lib/session-utils.ts) - `computeSessionStatus()` function for calculating session status
@@ -811,15 +1099,25 @@ Complete drag-and-drop calendar for session planning:
 - Database management (Agents, Formations, Agent-Formations, Formateurs, Cours, Cours-Formateur)
 - User management with role assignment and ban functionality
 - Session management with ability to terminate sessions
-- Role and permission management
+- **Dynamic role management** — CRUD roles via UI (create, edit, delete, with isSystem protection)
+- **Dynamic CRUD permissions management** — Interactive matrix to toggle actions per role/resource with optimistic updates
+- **Dynamic UI permissions management** — Component-level access control matrix (buttons, filters, export, drag-and-drop, etc.) grouped by page
 - Data import/export capabilities
 - System logs viewer
 - Active connections monitoring
 
 ### Seeding
-- [prisma/seed.ts](prisma/seed.ts) - Database seeding script
-- Run with: `npm run db:seed`
-- Seeds default users, agents, formations, and relationships
+- [prisma/seed.ts](prisma/seed.ts) - Database seeding script (users, agents, formations, relationships)
+- [prisma/seed-permissions.ts](prisma/seed-permissions.ts) - CRUD permissions seeding script (roles, resources, permissions matrix)
+  - Seeds 5 roles (administrateur, direction, coordinateur, formateur, agent)
+  - Seeds 10 resources with actions and localized action labels
+  - Seeds the full permissions matrix (RolePermission entries)
+  - Run with: `npx tsx prisma/seed-permissions.ts`
+- [prisma/seed-ui-components.ts](prisma/seed-ui-components.ts) - UI components permissions seeding script
+  - Seeds 26 UI components across 6 categories (Agents, Formations, Sessions, Formateurs, Cours, Dashboard)
+  - Seeds default UI permissions (130 UIComponentPermission entries for 26 components × 5 roles)
+  - Run with: `npx tsx prisma/seed-ui-components.ts`
+- Run with: `npm run db:seed` (runs main seed script)
 
 ### Data Model Architecture
 
@@ -848,11 +1146,40 @@ The application manages several interconnected entities:
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        CRUD PERMISSIONS SYSTEM                           │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  Role ──────────────── RolePermission ──────────────── Resource         │
+│  (Roles with          (Junction: role ×              (Resources with     │
+│   displayName,         resource → actions[])          actions[],          │
+│   color, isSystem)                                    actionLabels{})     │
+│                                                                          │
+│  User.role (String) ──references──▶ Role.name                           │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        UI PERMISSIONS SYSTEM                             │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  Role ──────────── UIComponentPermission ──────────── UIComponent       │
+│  (Same roles)     (Junction: role ×                  (UI elements with   │
+│                    component → enabled)               name, category,     │
+│                                                       icon, description)  │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
 **Key Relationships:**
 - A `Formation` can have multiple `SessionFormation` instances (different dates)
 - An `Agent` enrolls in sessions via `AgentFormation` (linked to both Formation and optionally SessionFormation)
 - A `Formateur` teaches courses via `CoursFormateur` junction table
 - A `Cours` can be taught by multiple trainers
+- A `Role` has CRUD permissions on multiple `Resource` entries via `RolePermission` junction table
+- A `Role` has UI permissions on multiple `UIComponent` entries via `UIComponentPermission` junction table
+- `User.role` references `Role.name` (String, no FK — for Better-Auth compatibility)
 
 ## Important Notes
 
@@ -895,7 +1222,9 @@ This project uses Tailwind CSS v4 with breaking changes from v3:
 2. Session created with token, expiration, IP, and user agent tracking
 3. Last login timestamp updated via Better-Auth hook
 4. Admin routes protected by session check in layout
-5. Roles determine access to features (RBAC)
+5. `(with-header)/layout.tsx` loads `permissionsMap` from DB and wraps children with `PermissionsProvider`
+6. Client components use `usePermissions()` + `can()` to conditionally show/hide UI actions
+7. API routes use `requirePermission()` to enforce server-side permission checks (401/403)
 
 ### Session Calendar System
 The session formation page uses a comprehensive calendar system with:
@@ -925,10 +1254,15 @@ const events = transformSessionsToEvents(sessions)
 ### Best Practices
 - Always use `prisma` from `@/lib/db` (singleton pattern)
 - Use Better-Auth hooks from `@/lib/auth-client` for client-side auth
-- Check permissions using role definitions from `@/lib/roles`
+- **CRUD Permissions**: Use `can(role, resource, action, permissionsMap)` for permission checks — always pass the 4th argument
+- **UI Permissions**: Use `canAccessUIComponent(roleId, componentName, uiPermissionsMap)` for UI element visibility
+- **Client components**: Get permissions via `usePermissions()` and `useUIPermissions()` hooks from their respective contexts
+- **Server pages**: Load permissions via `loadPermissions()` and `loadUIPermissions()` from their respective server modules
+- **API routes**: Use `requirePermission(resource, action)` from `@/lib/check-permission`
+- **Roles**: Use `getRoleDisplayName(name, roles)` and `getRoleColor(name, roles)` — pass `roles` array as 2nd argument
 - Use `cn()` utility from `@/lib/utils` for conditional classes
 - Handle form submissions with proper validation and error handling
-- Display user feedback using Sonner toast notifications
+- Display user feedback using Sonner toast notifications (errors/warnings only, not success messages for toggling permissions)
 - Use `computeSessionStatus()` for consistent session status across the application
 - Store dates in UTC and convert to local time for display using `lib/timezone-utils.ts`
 

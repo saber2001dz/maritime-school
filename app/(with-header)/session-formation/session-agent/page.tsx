@@ -3,6 +3,7 @@ import { Project } from "@/components/ui/project-data-table"
 import SessionAgentClient from "@/components/session-agent-client"
 import localFont from "next/font/local"
 import { getStatusVariant, getResultatLabel } from "@/lib/resultat-utils"
+import { verifySession } from "@/lib/dal"
 
 const notoNaskhArabic = localFont({
   src: "../../../fonts/NotoNaskhArabic.woff2",
@@ -46,6 +47,7 @@ interface PageProps {
 }
 
 export default async function SessionAgentPage({ searchParams }: PageProps) {
+  const { role } = await verifySession()
   // Attendre les searchParams (Next.js 15+)
   const params = await searchParams
   const sessionFormationId = params.sessionFormationId as string | undefined
@@ -107,6 +109,7 @@ export default async function SessionAgentPage({ searchParams }: PageProps) {
       sessionFormationId={sessionFormationId}
       formationId={formationId}
       nombreParticipants={nombreParticipants}
+      userRole={role}
     />
   )
 }

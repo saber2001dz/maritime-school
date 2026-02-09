@@ -8,6 +8,8 @@ import DialogueFormation, { type FormationData } from "@/components/dialogue-for
 import { ToastProvider, useToast } from "@/components/ui/ultra-quality-toast"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { useTheme } from "next-themes"
+import { can } from "@/lib/permissions"
+import { usePermissions } from "@/lib/permissions-context"
 
 const notoNaskhArabic = localFont({
   src: "../../app/fonts/NotoNaskhArabic.woff2",
@@ -29,6 +31,7 @@ interface ServerManagementTableProps {
   servers?: Server[]
   className?: string
   onAddNewFormation?: () => void
+  userRole?: string | null
 }
 
 function ServerManagementTableContent({
@@ -36,7 +39,9 @@ function ServerManagementTableContent({
   servers: initialServers = [],
   className = "",
   onAddNewFormation,
+  userRole,
 }: ServerManagementTableProps = {}) {
+  const permissionsMap = usePermissions()
   const [servers, setServers] = useState<Server[]>(initialServers)
   const [editingFormation, setEditingFormation] = useState<FormationData | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
@@ -412,6 +417,7 @@ function ServerManagementTableContent({
 
                   {/* Options d'édition */}
                   <div className="flex items-center justify-center">
+                    {can(userRole, "formation", "edit", permissionsMap) && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
@@ -428,6 +434,7 @@ function ServerManagementTableContent({
                         <span className={notoNaskhArabic.className}>تعديل بيانات التكوين</span>
                       </TooltipContent>
                     </Tooltip>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -444,7 +451,7 @@ function ServerManagementTableContent({
             isOpen={true}
             onClose={handleCloseDialog}
             onSave={handleSaveFormation}
-            onDelete={handleDeleteFormation}
+            onDelete={can(userRole, "formation", "delete", permissionsMap) ? handleDeleteFormation : undefined}
             isUpdating={isUpdating}
             isDeleting={isDeleting}
           />

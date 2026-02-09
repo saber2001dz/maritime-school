@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/db"
 import { computeSessionStatus } from "@/lib/session-utils"
 import { SessionTabsClient } from "./session-tabs-client"
+import { verifySession } from "@/lib/dal"
 
 export default async function SessionFormationPage() {
+  const { role } = await verifySession()
   // Récupérer les sessions depuis la base de données avec les formations liées
   const sessions = await prisma.sessionFormation.findMany({
     include: {
@@ -37,5 +39,5 @@ export default async function SessionFormationPage() {
     statut: computeSessionStatus(session.dateDebut, session.dateFin)
   }))
 
-  return <SessionTabsClient sessions={sessionsWithStatus} formations={formations} />
+  return <SessionTabsClient sessions={sessionsWithStatus} formations={formations} userRole={role} />
 }

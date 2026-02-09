@@ -6,9 +6,10 @@ import { useState } from "react"
 
 interface ResizableTableWrapperProps {
   agents: Agent[]
+  userRole?: string | null
 }
 
-export function ResizableTableWrapper({ agents }: ResizableTableWrapperProps) {
+export function ResizableTableWrapper({ agents, userRole }: ResizableTableWrapperProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isUpdating, setIsUpdating] = useState(false)
@@ -66,6 +67,7 @@ export function ResizableTableWrapper({ agents }: ResizableTableWrapperProps) {
       isUpdating={isUpdating}
       onAddNewAgent={() => router.push('/nouveau-agent')}
       searchParams={searchParams}
+      userRole={userRole}
     />
   )
 }

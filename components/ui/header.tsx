@@ -12,7 +12,7 @@ import { useTheme } from "next-themes"
 import { useSession, signOut } from "@/lib/auth-client"
 import { toast } from "sonner"
 
-export function Header() {
+export function Header({ userRole }: { userRole?: string | null }) {
   const [open, setOpen] = React.useState(false)
   const scrolled = useScroll(10)
   const { theme, setTheme } = useTheme()

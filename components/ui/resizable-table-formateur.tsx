@@ -38,6 +38,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import DialogueFormateur from "@/components/dialogue-formateur"
 import DialogueAjouterCoursFormateur, { type Cours, type CoursFormateurData } from "@/components/dialogue-ajouter-cours-formateur"
+import { can } from "@/lib/permissions"
+import { usePermissions } from "@/lib/permissions-context"
 
 export interface Formateur {
   id: string
@@ -58,6 +60,7 @@ interface ResizableTableFormateurProps {
   enableAnimations?: boolean
   onAddNewFormateur?: () => void
   searchParams?: ReadonlyURLSearchParams | null
+  userRole?: string | null
 }
 
 type SortField = "nomPrenom" | "grade" | "unite" | "responsabilite"
@@ -107,7 +110,9 @@ export function ResizableTableFormateur({
   enableAnimations = true,
   onAddNewFormateur,
   searchParams,
+  userRole,
 }: ResizableTableFormateurProps) {
+  const permissionsMap = usePermissions()
   const router = useRouter()
   const pathname = usePathname()
   const shouldReduceMotion = useReducedMotion()
@@ -716,7 +721,7 @@ export function ResizableTableFormateur({
             )}
           </div>
 
-          {onAddNewFormateur && (
+          {onAddNewFormateur && can(userRole, "formateur", "create", permissionsMap) && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -1044,61 +1049,69 @@ export function ResizableTableFormateur({
                                   </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="start" side="bottom">
-                                  <DropdownMenuItem
-                                    dir="rtl"
-                                    className="gap-2 cursor-pointer"
-                                    onClick={() => handleEditClick(formateur)}
-                                    disabled={!selectedFormateurs.includes(formateur.id)}
-                                  >
-                                    <SquarePen size={14} />
-                                    <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
-                                      تعــديــل البيــانـــات
-                                    </span>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    dir="rtl"
-                                    className="gap-2 cursor-pointer"
-                                    onClick={() => {
-                                      if (selectedFormateurs.includes(formateur.id)) {
-                                        // Preserve current URL params
-                                        const params = new URLSearchParams(searchParams?.toString())
-                                        const returnUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname
-                                        router.push(`/cours-formateur?formateurId=${formateur.id}&returnUrl=${encodeURIComponent(returnUrl)}`)
-                                      }
-                                    }}
-                                    disabled={!selectedFormateurs.includes(formateur.id)}
-                                  >
-                                    <GraduationCap size={14} />
-                                    <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
-                                      قــائمـــة الـــــدروس
-                                    </span>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    dir="rtl"
-                                    className="gap-2 cursor-pointer"
-                                    onClick={() => {
-                                      if (selectedFormateurs.includes(formateur.id)) {
-                                        handleOpenAddCoursDialog(formateur)
-                                      }
-                                    }}
-                                    disabled={!selectedFormateurs.includes(formateur.id)}
-                                  >
-                                    <CirclePlus size={14} />
-                                    <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
-                                      إضــــــــافـــــة درس
-                                    </span>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    dir="rtl"
-                                    className="gap-2 cursor-pointer text-red-600 focus:text-red-600"
-                                    onClick={() => handleDeleteClick(formateur)}
-                                    disabled={!selectedFormateurs.includes(formateur.id)}
-                                  >
-                                    <Trash2 size={14} />
-                                    <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
-                                      حـــــــــــــــــــــــذف
-                                    </span>
-                                  </DropdownMenuItem>
+                                  {can(userRole, "formateur", "edit", permissionsMap) && (
+                                    <DropdownMenuItem
+                                      dir="rtl"
+                                      className="gap-2 cursor-pointer"
+                                      onClick={() => handleEditClick(formateur)}
+                                      disabled={!selectedFormateurs.includes(formateur.id)}
+                                    >
+                                      <SquarePen size={14} />
+                                      <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+                                        تعــديــل البيــانـــات
+                                      </span>
+                                    </DropdownMenuItem>
+                                  )}
+                                  {can(userRole, "coursFormateur", "view", permissionsMap) && (
+                                    <DropdownMenuItem
+                                      dir="rtl"
+                                      className="gap-2 cursor-pointer"
+                                      onClick={() => {
+                                        if (selectedFormateurs.includes(formateur.id)) {
+                                          // Preserve current URL params
+                                          const params = new URLSearchParams(searchParams?.toString())
+                                          const returnUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname
+                                          router.push(`/cours-formateur?formateurId=${formateur.id}&returnUrl=${encodeURIComponent(returnUrl)}`)
+                                        }
+                                      }}
+                                      disabled={!selectedFormateurs.includes(formateur.id)}
+                                    >
+                                      <GraduationCap size={14} />
+                                      <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+                                        قــائمـــة الـــــدروس
+                                      </span>
+                                    </DropdownMenuItem>
+                                  )}
+                                  {can(userRole, "coursFormateur", "create", permissionsMap) && (
+                                    <DropdownMenuItem
+                                      dir="rtl"
+                                      className="gap-2 cursor-pointer"
+                                      onClick={() => {
+                                        if (selectedFormateurs.includes(formateur.id)) {
+                                          handleOpenAddCoursDialog(formateur)
+                                        }
+                                      }}
+                                      disabled={!selectedFormateurs.includes(formateur.id)}
+                                    >
+                                      <CirclePlus size={14} />
+                                      <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+                                        إضــــــــافـــــة درس
+                                      </span>
+                                    </DropdownMenuItem>
+                                  )}
+                                  {can(userRole, "formateur", "delete", permissionsMap) && (
+                                    <DropdownMenuItem
+                                      dir="rtl"
+                                      className="gap-2 cursor-pointer text-red-600 focus:text-red-600"
+                                      onClick={() => handleDeleteClick(formateur)}
+                                      disabled={!selectedFormateurs.includes(formateur.id)}
+                                    >
+                                      <Trash2 size={14} />
+                                      <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+                                        حـــــــــــــــــــــــذف
+                                      </span>
+                                    </DropdownMenuItem>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </div>

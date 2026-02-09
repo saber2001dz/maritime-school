@@ -1,22 +1,58 @@
 import { prisma } from "@/lib/db"
-import { ROLES } from "@/lib/roles"
 import RolesTableWrapper from "./roles-table-wrapper"
 
 
 async function getRolesWithCounts() {
+  const roles = await prisma.role.findMany({
+    include: {
+      permissions: {
+        include: { resource: true },
+      },
+    },
+  })
+
   const rolesWithCounts = await Promise.all(
-    ROLES.map(async (role) => {
+    roles.map(async (role) => {
       const count = await prisma.user.count({
         where: { role: role.name },
       })
+      // Flatten permissions to string[] for display
+      const permissionsList: string[] = []
+      for (const rp of role.permissions) {
+        for (const action of rp.actions) {
+          permissionsList.push(`${rp.resource.displayName}: ${action}`)
+        }
+      }
       return {
-        ...role,
+        name: role.name,
+        displayName: role.displayName,
+        description: role.description,
+        color: role.color,
+        isSystem: role.isSystem,
+        permissions: permissionsList,
         userCount: count,
       }
     })
   )
 
-  return rolesWithCounts
+  // Custom role order: Administrateur → Service Programmation → Service Formation → Direction → Agent
+  const roleOrder = [
+    "administrateur",
+    "coordinateur",
+    "formateur",
+    "direction",
+    "agent",
+  ]
+
+  return rolesWithCounts.sort((a, b) => {
+    const indexA = roleOrder.indexOf(a.name)
+    const indexB = roleOrder.indexOf(b.name)
+    // If role not in custom order, push to end
+    if (indexA === -1 && indexB === -1) return 0
+    if (indexA === -1) return 1
+    if (indexB === -1) return -1
+    return indexA - indexB
+  })
 }
 
 async function getAllUsers() {

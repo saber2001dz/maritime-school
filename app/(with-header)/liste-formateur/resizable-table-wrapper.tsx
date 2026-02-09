@@ -6,9 +6,10 @@ import { useState } from "react"
 
 interface ResizableTableWrapperProps {
   formateurs: Formateur[]
+  userRole?: string | null
 }
 
-export function ResizableTableWrapper({ formateurs }: ResizableTableWrapperProps) {
+export function ResizableTableWrapper({ formateurs, userRole }: ResizableTableWrapperProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isUpdating, setIsUpdating] = useState(false)
@@ -60,6 +61,7 @@ export function ResizableTableWrapper({ formateurs }: ResizableTableWrapperProps
       isUpdating={isUpdating}
       onAddNewFormateur={() => router.push('/nouveau-formateur')}
       searchParams={searchParams}
+      userRole={userRole}
     />
   )
 }

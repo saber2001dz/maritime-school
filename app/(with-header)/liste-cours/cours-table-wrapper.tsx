@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation"
 import CoursSimpleTable, { SimpleCours } from "@/components/ui/cours-simple-table"
 import { ToastProvider, useToast } from "@/components/ui/ultra-quality-toast"
 import DialogueCours, { type CoursData } from "@/components/dialogue-cours"
+import { can } from "@/lib/permissions"
+import { usePermissions } from "@/lib/permissions-context"
 
 interface Cours {
   id: string
@@ -16,9 +18,11 @@ interface Cours {
 
 interface CoursTableWrapperProps {
   cours: Cours[]
+  userRole?: string | null
 }
 
-function CoursTableWrapperContent({ cours: initialCours }: CoursTableWrapperProps) {
+function CoursTableWrapperContent({ cours: initialCours, userRole }: CoursTableWrapperProps) {
+  const permissionsMap = usePermissions()
   const router = useRouter()
   const [cours, setCours] = useState<SimpleCours[]>(
     initialCours.map((item, index) => ({
@@ -150,8 +154,8 @@ function CoursTableWrapperContent({ cours: initialCours }: CoursTableWrapperProp
     <div className="w-full mt-4">
       <CoursSimpleTable
         cours={cours}
-        onEditClick={handleEditClick}
-        onAddNewCours={handleAddNewCours}
+        onEditClick={can(userRole, "cours", "edit", permissionsMap) ? handleEditClick : undefined}
+        onAddNewCours={can(userRole, "cours", "create", permissionsMap) ? handleAddNewCours : undefined}
         countText={`عدد الدروس: ${cours.length}`}
       />
 
@@ -163,7 +167,7 @@ function CoursTableWrapperContent({ cours: initialCours }: CoursTableWrapperProp
             isOpen={true}
             onClose={handleCloseDialog}
             onSave={handleSaveCours}
-            onDelete={handleDeleteCours}
+            onDelete={can(userRole, "cours", "delete", permissionsMap) ? handleDeleteCours : undefined}
             isUpdating={isUpdating}
             isDeleting={isDeleting}
           />

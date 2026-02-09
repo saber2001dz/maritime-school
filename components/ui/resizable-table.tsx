@@ -49,6 +49,8 @@ import DialogueStyle from "@/components/dialogue-agent"
 import DialogueAgentFormation, { type SessionFormationOption } from "@/components/dialogue-agent-formation"
 import { ToastProvider, useToast } from "@/components/ui/ultra-quality-toast"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
+import { can } from "@/lib/permissions"
+import { usePermissions } from "@/lib/permissions-context"
 
 export interface Agent {
   id: string
@@ -74,6 +76,7 @@ interface ResizableTableProps {
   enableAnimations?: boolean
   onAddNewAgent?: () => void
   searchParams?: ReadonlyURLSearchParams | null
+  userRole?: string | null
 }
 
 type SortField = "nomPrenom" | "categorie" | "derniereDateFormation" | "grade"
@@ -158,7 +161,9 @@ export function ResizableTable({
   enableAnimations = true,
   onAddNewAgent,
   searchParams,
+  userRole,
 }: ResizableTableProps) {
+  const permissionsMap = usePermissions()
   const router = useRouter()
   const pathname = usePathname()
   const shouldReduceMotion = useReducedMotion()
@@ -1013,7 +1018,7 @@ export function ResizableTable({
             )}
           </div>
 
-          {onAddNewAgent && (
+          {onAddNewAgent && can(userRole, "agent", "create", permissionsMap) && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -1395,17 +1400,19 @@ export function ResizableTable({
                                   </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="start" side="bottom">
-                                  <DropdownMenuItem
-                                    dir="rtl"
-                                    className="gap-2 cursor-pointer"
-                                    onClick={() => handleEditClick(agent)}
-                                    disabled={!selectedAgents.includes(agent.id)}
-                                  >
-                                    <SquarePen size={14} />
-                                    <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
-                                      تعـديــل بيــانــــات
-                                    </span>
-                                  </DropdownMenuItem>
+                                  {can(userRole, "agent", "edit", permissionsMap) && (
+                                    <DropdownMenuItem
+                                      dir="rtl"
+                                      className="gap-2 cursor-pointer"
+                                      onClick={() => handleEditClick(agent)}
+                                      disabled={!selectedAgents.includes(agent.id)}
+                                    >
+                                      <SquarePen size={14} />
+                                      <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+                                        تعـديــل بيــانــــات
+                                      </span>
+                                    </DropdownMenuItem>
+                                  )}
                                   <DropdownMenuItem
                                     dir="rtl"
                                     className="gap-2 cursor-pointer"
@@ -1424,28 +1431,32 @@ export function ResizableTable({
                                       قــائمــة التـربصـات
                                     </span>
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    dir="rtl"
-                                    className="gap-2 cursor-pointer"
-                                    onClick={() => handleAddFormationClick(agent)}
-                                    disabled={!selectedAgents.includes(agent.id)}
-                                  >
-                                    <CirclePlus size={14} />
-                                    <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
-                                      إضــافــة تكــويــــن
-                                    </span>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    dir="rtl"
-                                    className="gap-2 cursor-pointer text-red-600 focus:text-red-600"
-                                    onClick={() => handleDeleteClick(agent)}
-                                    disabled={!selectedAgents.includes(agent.id)}
-                                  >
-                                    <Trash2 size={14} />
-                                    <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
-                                      حـــــــــــــــــــــــذف
-                                    </span>
-                                  </DropdownMenuItem>
+                                  {can(userRole, "agentFormation", "create", permissionsMap) && (
+                                    <DropdownMenuItem
+                                      dir="rtl"
+                                      className="gap-2 cursor-pointer"
+                                      onClick={() => handleAddFormationClick(agent)}
+                                      disabled={!selectedAgents.includes(agent.id)}
+                                    >
+                                      <CirclePlus size={14} />
+                                      <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+                                        إضــافــة تكــويــــن
+                                      </span>
+                                    </DropdownMenuItem>
+                                  )}
+                                  {can(userRole, "agent", "delete", permissionsMap) && (
+                                    <DropdownMenuItem
+                                      dir="rtl"
+                                      className="gap-2 cursor-pointer text-red-600 focus:text-red-600"
+                                      onClick={() => handleDeleteClick(agent)}
+                                      disabled={!selectedAgents.includes(agent.id)}
+                                    >
+                                      <Trash2 size={14} />
+                                      <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+                                        حـــــــــــــــــــــــذف
+                                      </span>
+                                    </DropdownMenuItem>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
 

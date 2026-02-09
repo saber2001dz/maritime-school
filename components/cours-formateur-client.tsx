@@ -6,12 +6,15 @@ import { ChevronRight } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { ProjectDataTable, Project } from "@/components/ui/project-data-table";
 import DialogueEditionCoursFormateur, { CoursFormateurData, Cours } from "@/components/dialogue-edition-cours-formateur";
+import { can } from "@/lib/permissions";
+import { usePermissions } from "@/lib/permissions-context";
 
 interface CoursFormateurClientProps {
   initialData: Project[];
   formateurInfo: { grade: string; nomPrenom: string } | null;
   notoNaskhArabicClassName: string;
   returnUrl?: string;
+  userRole?: string | null;
 }
 
 const allColumns: (keyof Project)[] = ["name", "repository", "team", "tech", "createdAt", "contributors", "status"];
@@ -28,7 +31,8 @@ const coursFormateurHeaders = [
   { key: "actions" as const, label: "خيــــارات", width: "w-18" },
 ];
 
-export default function CoursFormateurClient({ initialData, formateurInfo, notoNaskhArabicClassName, returnUrl = '/liste-formateur' }: CoursFormateurClientProps) {
+export default function CoursFormateurClient({ initialData, formateurInfo, notoNaskhArabicClassName, returnUrl = '/liste-formateur', userRole }: CoursFormateurClientProps) {
+  const permissionsMap = usePermissions();
   const router = useRouter();
   const [visibleColumns, setVisibleColumns] = useState<Set<keyof Project>>(new Set(allColumns));
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -154,7 +158,7 @@ export default function CoursFormateurClient({ initialData, formateurInfo, notoN
             </div>
           </div>
 
-          <ProjectDataTable projects={initialData} visibleColumns={visibleColumns} onEditClick={handleEditClick} customHeaders={coursFormateurHeaders} />
+          <ProjectDataTable projects={initialData} visibleColumns={visibleColumns} onEditClick={can(userRole, "coursFormateur", "edit", permissionsMap) ? handleEditClick : undefined} customHeaders={coursFormateurHeaders} />
         </div>
       </div>
 

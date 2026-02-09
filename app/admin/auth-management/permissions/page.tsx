@@ -2,116 +2,42 @@ import { prisma } from '@/lib/db'
 import { PermissionsTableWrapper } from './permissions-table-wrapper'
 
 
-// Définir les ressources et actions depuis Better-Auth
-const resources = {
-  user: {
-    name: "Utilisateurs",
-    description: "Gestion des comptes utilisateurs",
-    actions: ["create", "list", "update", "delete", "set-role"],
-    actionLabels: {
-      create: "Créer",
-      list: "Lister",
-      update: "Modifier",
-      delete: "Supprimer",
-      "set-role": "Définir le rôle"
-    }
-  },
-  agent: {
-    name: "Agents",
-    description: "Gestion des agents maritimes",
-    actions: ["create", "edit", "delete", "view"],
-    actionLabels: {
-      create: "Créer",
-      edit: "Modifier",
-      delete: "Supprimer",
-      view: "Consulter"
-    }
-  },
-  formation: {
-    name: "Formations",
-    description: "Gestion des formations",
-    actions: ["create", "edit", "delete", "view"],
-    actionLabels: {
-      create: "Créer",
-      edit: "Modifier",
-      delete: "Supprimer",
-      view: "Consulter"
-    }
-  },
-  session: {
-    name: "Sessions",
-    description: "Gestion des sessions utilisateur",
-    actions: ["list", "revoke"],
-    actionLabels: {
-      list: "Lister",
-      revoke: "Révoquer"
-    }
-  }
-}
-
-// Définir les rôles et leurs permissions (depuis lib/auth.ts)
-const roles = [
-  {
-    name: "administrateur",
-    displayName: "Administrateur",
-    description: "Accès complet à toutes les fonctionnalités du système",
-    color: "purple",
-    permissions: {
-      user: ["create", "list", "update", "delete", "set-role"],
-      agent: ["create", "edit", "delete", "view"],
-      formation: ["create", "edit", "delete", "view"],
-      session: ["list", "revoke"],
-    }
-  },
-  {
-    name: "coordinateur",
-    displayName: "Coordinateur",
-    description: "Gestion des agents et des formations",
-    color: "blue",
-    permissions: {
-      user: [],
-      agent: ["edit", "view"],
-      formation: ["edit", "view"],
-      session: ["list"],
-    }
-  },
-  {
-    name: "formateur",
-    displayName: "Formateur",
-    description: "Consultation des agents et des formations",
-    color: "green",
-    permissions: {
-      user: [],
-      agent: ["view"],
-      formation: ["view"],
-      session: [],
-    }
-  },
-  {
-    name: "agent",
-    displayName: "Agent",
-    description: "Accès de base en lecture seule",
-    color: "gray",
-    permissions: {
-      user: [],
-      agent: ["view"],
-      formation: ["view"],
-      session: [],
-    }
-  },
-]
-
 async function getPermissionsData() {
+  // Charger les ressources depuis la DB
+  const dbResources = await prisma.resource.findMany({
+    orderBy: { name: "asc" },
+  })
+
+  // Charger les rôles avec leurs permissions
+  const dbRoles = await prisma.role.findMany({
+    include: {
+      permissions: {
+        include: { resource: true },
+      },
+    },
+  })
+
+  // Ordre personnalisé des rôles
+  const roleOrder = [
+    'administrateur',
+    'coordinateur',
+    'formateur',
+    'direction',
+    'agent',
+  ]
+
+  // Trier les rôles selon l'ordre personnalisé
+  const sortedDbRoles = roleOrder
+    .map(roleName => dbRoles.find(r => r.name === roleName))
+    .filter(Boolean) as typeof dbRoles
+
   // Récupérer le nombre d'utilisateurs par rôle
   const userCounts = await Promise.all(
-    roles.map(async (role) => {
+    sortedDbRoles.map(async (role) => {
       const count = await prisma.user.count({
         where: { role: role.name },
       })
-      return {
-        role: role.name,
-        count
-      }
+      return { role: role.name, count }
     })
   )
 
@@ -119,16 +45,40 @@ async function getPermissionsData() {
     userCounts.map(({ role, count }) => [role, count])
   )
 
-  // Enrichir les rôles avec le nombre d'utilisateurs
-  const rolesWithCounts = roles.map(role => ({
-    ...role,
-    userCount: userCountMap[role.name] || 0
-  }))
+  // Transformer les ressources au format attendu par le composant
+  const resources: Record<string, {
+    name: string
+    description: string
+    actions: string[]
+    actionLabels: Record<string, string>
+  }> = {}
 
-  return {
-    roles: rolesWithCounts,
-    resources
+  for (const res of dbResources) {
+    resources[res.name] = {
+      name: res.displayName,
+      description: res.description,
+      actions: res.actions,
+      actionLabels: (res.actionLabels as Record<string, string>) || {},
+    }
   }
+
+  // Transformer les rôles au format attendu par le composant
+  const roles = sortedDbRoles.map((role) => {
+    const permissions: Record<string, string[]> = {}
+    for (const rp of role.permissions) {
+      permissions[rp.resource.name] = rp.actions
+    }
+    return {
+      name: role.name,
+      displayName: role.displayName,
+      description: role.description,
+      color: role.color,
+      permissions,
+      userCount: userCountMap[role.name] || 0,
+    }
+  })
+
+  return { roles, resources }
 }
 
 export default async function PermissionsPage() {

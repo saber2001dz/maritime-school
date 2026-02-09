@@ -1,5 +1,4 @@
 import { prisma } from '@/lib/db'
-import { ROLES } from '@/lib/roles'
 import { UsersTableWrapper } from './users-table-wrapper'
 
 
@@ -34,13 +33,24 @@ async function getUsers() {
 }
 
 async function getRolesWithCounts() {
+  const roles = await prisma.role.findMany({
+    orderBy: { name: "asc" },
+  })
+
   const rolesWithCounts = await Promise.all(
-    ROLES.map(async (role) => {
+    roles.map(async (role) => {
       const count = await prisma.user.count({
         where: { role: role.name },
       })
       return {
-        ...role,
+        id: role.id,
+        name: role.name,
+        displayName: role.displayName,
+        description: role.description,
+        color: role.color,
+        isSystem: role.isSystem,
+        createdAt: role.createdAt,
+        updatedAt: role.updatedAt,
         userCount: count,
       }
     })

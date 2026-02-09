@@ -7,6 +7,8 @@ import { AnimatePresence } from "framer-motion";
 import { ProjectDataTable, Project } from "@/components/ui/project-data-table";
 import DialogueEditionFormation, { AgentFormationData, SessionFormationOption } from "@/components/dialogue-edition-formation";
 import { useToast } from "@/components/ui/ultra-quality-toast";
+import { can } from "@/lib/permissions";
+import { usePermissions } from "@/lib/permissions-context";
 
 interface FormationAgentClientProps {
   data: Project[];
@@ -14,6 +16,7 @@ interface FormationAgentClientProps {
   agentId?: string;
   notoNaskhArabicClassName: string;
   returnUrl: string;
+  userRole?: string | null;
 }
 
 const allColumns: (keyof Project)[] = ["name", "repository", "team", "tech", "createdAt", "contributors", "status"];
@@ -24,7 +27,9 @@ export default function FormationAgentClient({
   agentId,
   notoNaskhArabicClassName,
   returnUrl,
+  userRole,
 }: FormationAgentClientProps) {
+  const permissionsMap = usePermissions();
   const router = useRouter();
   const { addToast } = useToast();
   const [visibleColumns, setVisibleColumns] = useState<Set<keyof Project>>(new Set(allColumns));
@@ -225,7 +230,7 @@ export default function FormationAgentClient({
             </div>
           </div>
 
-          <ProjectDataTable projects={data} visibleColumns={visibleColumns} onEditClick={handleEditClick} />
+          <ProjectDataTable projects={data} visibleColumns={visibleColumns} onEditClick={can(userRole, "agentFormation", "edit", permissionsMap) ? handleEditClick : undefined} />
         </div>
       </div>
 
@@ -245,7 +250,7 @@ export default function FormationAgentClient({
             isOpen={isEditDialogOpen}
             onClose={handleCloseDialog}
             onSave={handleSaveEdit}
-            onDelete={handleDelete}
+            onDelete={can(userRole, "agentFormation", "delete", permissionsMap) ? handleDelete : undefined}
             onChange={handleFormationChange}
             isUpdating={isUpdating}
             isDeleting={isDeleting}

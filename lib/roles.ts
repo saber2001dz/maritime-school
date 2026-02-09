@@ -1,101 +1,39 @@
 /**
- * Shared roles configuration
- * Single source of truth for all role definitions across the application
- * Used by Better-Auth access control and UI components
+ * Client-safe role types and helpers
+ * No server imports — safe for use in client components
  */
 
 export interface Role {
+  id: string
   name: string
   displayName: string
   description: string
-  permissions: string[]
   color: string
-}
-
-export const ROLES: readonly Role[] = [
-  {
-    name: "administrateur",
-    displayName: "Administrateur",
-    description: "Acces complet a toutes les fonctionnalites du systeme",
-    permissions: [
-      "Creer des utilisateurs",
-      "Gerer les agents",
-      "Gerer les formations",
-      "Modifier les roles",
-      "Revoquer des sessions",
-    ],
-    color: "purple",
-  },
-  {
-    name: "direction",
-    displayName: "Direction",
-    description: "Supervision et validation des operations",
-    permissions: [
-      "Consulter les agents",
-      "Consulter les formations",
-      "Consulter les sessions",
-      "Valider les operations",
-      "Consulter les rapports",
-    ],
-    color: "indigo",
-  },
-  {
-    name: "coordinateur",
-    displayName: "Service Programmation",
-    description: "Gestion des agents et des formations",
-    permissions: [
-      "Modifier les agents",
-      "Consulter les agents",
-      "Modifier les formations",
-      "Consulter les formations",
-      "Consulter les sessions",
-    ],
-    color: "blue",
-  },
-  {
-    name: "formateur",
-    displayName: "Service Formation",
-    description: "Consultation des agents et des formations",
-    permissions: [
-      "Consulter les agents",
-      "Consulter les formations",
-    ],
-    color: "green",
-  },
-  {
-    name: "agent",
-    displayName: "Agent",
-    description: "Acces de base en lecture seule",
-    permissions: [
-      "Consulter les agents",
-      "Consulter les formations",
-    ],
-    color: "gray",
-  },
-] as const
-
-// Helper function to get role by name
-export function getRoleByName(name: string): Role | undefined {
-  return ROLES.find((role) => role.name === name)
-}
-
-// Helper function to get role display name
-export function getRoleDisplayName(name: string): string {
-  return getRoleByName(name)?.displayName || name
-}
-
-// Helper function to validate role
-export function isValidRole(name: string): boolean {
-  return ROLES.some((role) => role.name === name)
-}
-
-// Helper function to get role color
-export function getRoleColor(name: string): string {
-  return getRoleByName(name)?.color || "gray"
+  isSystem: boolean
+  createdAt: Date
+  updatedAt: Date
+  userCount?: number
+  permissions?: string[]
 }
 
 // Type for role names
-export type RoleName = typeof ROLES[number]["name"]
+export type RoleName = string
 
 // Default role
-export const DEFAULT_ROLE: RoleName = "agent"
+export const DEFAULT_ROLE = "agent"
+
+/**
+ * Client-safe helper: retourne le displayName d'un rôle à partir d'une liste de rôles
+ */
+export function getRoleDisplayName(name: string, roles?: Role[]): string {
+  if (!roles) return name
+  return roles.find((r) => r.name === name)?.displayName || name
+}
+
+/**
+ * Client-safe helper: retourne la couleur d'un rôle à partir d'une liste de rôles
+ */
+export function getRoleColor(name: string, roles?: Role[]): string {
+  if (!roles) return "gray"
+  return roles.find((r) => r.name === name)?.color || "gray"
+}

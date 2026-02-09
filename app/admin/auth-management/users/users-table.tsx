@@ -17,7 +17,7 @@ import {
   UserPlus,
   Eye,
   EyeOff,
-  Filter,
+  Circle,
 } from "lucide-react"
 import {
   AlertDialog,
@@ -217,9 +217,9 @@ export function UsersTable({
   }
 
   const exportToCSV = () => {
-    const headers = ["ID", "Nom", "Email", "Rôle", "Date d'inscription", "Dernière connexion"]
+    const headers = ["Statut", "Nom", "Email", "Rôle", "Date d'inscription", "Dernière connexion"]
     const rows = sortedAndFilteredUsers.map((user: User) => [
-      user.id,
+      user.hasActiveSession ? "Online" : "Offline",
       user.name || "-",
       user.email,
       user.role,
@@ -608,7 +608,7 @@ export function UsersTable({
               className="px-3 py-3 text-xs font-semibold text-foreground border-b border-border text-left"
               style={{
                 display: "grid",
-                gridTemplateColumns: "40px 150px 260px 1fr 180px 150px 120px 180px 180px 80px",
+                gridTemplateColumns: "40px 120px 260px 1fr 180px 150px 120px 180px 180px 80px",
                 columnGap: "0px",
                 backgroundColor: "#F3F3F3",
               }}
@@ -629,7 +629,8 @@ export function UsersTable({
                 />
               </div>
               <div className="flex items-center gap-1.5 border-r border-border px-3">
-                <span>ID</span>
+                <Circle className="w-3.5 h-3.5 opacity-50" />
+                <span>Statut</span>
               </div>
               <div className="flex items-center gap-1.5 border-r border-border px-3">
                 <UserIcon className="w-3.5 h-3.5 opacity-50" />
@@ -688,7 +689,7 @@ export function UsersTable({
                       }`}
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "40px 150px 260px 1fr 180px 150px 120px 180px 180px 80px",
+                        gridTemplateColumns: "40px 120px 260px 1fr 180px 150px 120px 180px 180px 80px",
                         columnGap: "0px",
                         alignItems: "center",
                       }}
@@ -709,8 +710,21 @@ export function UsersTable({
                         />
                       </div>
 
-                      <div className="flex items-center border-r border-border px-3">
-                        <span className="text-xs text-foreground/60 font-mono truncate">{user.id.slice(0, 12)}</span>
+                      <div className="flex items-center justify-center border-r border-border px-3">
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 ${
+                            user.hasActiveSession
+                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                              : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300"
+                          }`}
+                        >
+                          <Circle
+                            className={`w-2 h-2 fill-current ${
+                              user.hasActiveSession ? "text-green-500" : "text-gray-400"
+                            }`}
+                          />
+                          {user.hasActiveSession ? "Online" : "Offline"}
+                        </span>
                       </div>
 
                       <div className="flex items-center border-r border-border px-3">
@@ -742,16 +756,16 @@ export function UsersTable({
                       <div className="flex items-center border-r border-border px-3">
                         <span
                           className={`px-2 py-1 rounded text-xs font-medium ${
-                            getRoleColor(user.role) === "purple"
+                            getRoleColor(user.role, roles) === "purple"
                               ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                              : getRoleColor(user.role) === "blue"
+                              : getRoleColor(user.role, roles) === "blue"
                               ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                              : getRoleColor(user.role) === "green"
+                              : getRoleColor(user.role, roles) === "green"
                               ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
                               : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300"
                           }`}
                         >
-                          {getRoleDisplayName(user.role)}
+                          {getRoleDisplayName(user.role, roles)}
                         </span>
                       </div>
 

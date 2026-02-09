@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { isValidRole } from '@/lib/roles'
+import { isValidRole } from '@/lib/roles-server'
 
 // GET - Récupérer un utilisateur par ID
 export async function GET(

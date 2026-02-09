@@ -20,6 +20,8 @@ import {
 import { useTheme } from "next-themes"
 import { useToast } from "@/components/ui/ultra-quality-toast"
 import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon"
+import { can } from "@/lib/permissions"
+import { usePermissions } from "@/lib/permissions-context"
 
 interface SessionAgentClientProps {
   initialData: Project[]
@@ -35,6 +37,7 @@ interface SessionAgentClientProps {
   sessionFormationId?: string
   formationId?: string
   nombreParticipants?: number
+  userRole?: string | null
 }
 
 const allColumns: (keyof Project)[] = ["name", "repository", "team", "tech", "status"]
@@ -627,7 +630,9 @@ export default function SessionAgentClient({
   sessionFormationId,
   formationId,
   nombreParticipants = 0,
+  userRole,
 }: SessionAgentClientProps) {
+  const permissionsMap = usePermissions()
   const router = useRouter()
   const { theme } = useTheme()
   const { addToast } = useToast()
@@ -1170,6 +1175,7 @@ export default function SessionAgentClient({
                 )}
 
                 {/* Bouton ajouter nouvel agent */}
+                {can(userRole, "sessionAgent", "create", permissionsMap) && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -1191,6 +1197,7 @@ export default function SessionAgentClient({
                     <p style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>إضافة عون جديد</p>
                   </TooltipContent>
                 </Tooltip>
+                )}
               </div>
             ) : (
               // Espacement de remplacement pour maintenir la distance avec la table
@@ -1202,9 +1209,9 @@ export default function SessionAgentClient({
           <SessionAgentTable
             projects={localData}
             visibleColumns={visibleColumns}
-            onEditClick={handleEditClick}
-            onDeleteClick={handleDeleteClick}
-            onConfirmParticipation={handleConfirmParticipation}
+            onEditClick={can(userRole, "sessionAgent", "edit", permissionsMap) ? handleEditClick : undefined}
+            onDeleteClick={can(userRole, "sessionAgent", "delete", permissionsMap) ? handleDeleteClick : undefined}
+            onConfirmParticipation={can(userRole, "sessionAgent", "edit", permissionsMap) ? handleConfirmParticipation : undefined}
             customHeaders={getSessionAgentHeaders(isSessionFinished)}
             notoNaskhArabicClassName={notoNaskhArabicClassName}
             isAddingNew={isAddingNew}

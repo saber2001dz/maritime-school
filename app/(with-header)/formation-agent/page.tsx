@@ -3,6 +3,7 @@ import { Project } from "@/components/ui/project-data-table";
 import FormationAgentClient from "@/components/formation-agent-client";
 import localFont from "next/font/local";
 import { getStatusVariant, getResultatLabel } from "@/lib/resultat-utils";
+import { verifySession } from "@/lib/dal";
 
 const notoNaskhArabic = localFont({
   src: "../../fonts/NotoNaskhArabic.woff2",
@@ -64,6 +65,7 @@ interface PageProps {
 }
 
 export default async function FormationAgentPage({ searchParams }: PageProps) {
+  const { role } = await verifySession()
   // Attendre les searchParams (Next.js 15+)
   const params = await searchParams;
   const agentId = params.agentId as string | undefined;
@@ -103,6 +105,7 @@ export default async function FormationAgentPage({ searchParams }: PageProps) {
       agentId={agentId}
       notoNaskhArabicClassName={notoNaskhArabic.className}
       returnUrl={returnUrl}
+      userRole={role}
     />
   );
 }
