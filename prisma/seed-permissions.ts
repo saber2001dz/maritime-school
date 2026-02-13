@@ -41,13 +41,7 @@ const roles = [
 ]
 
 const resources = [
-  {
-    name: "user",
-    displayName: "Utilisateurs",
-    description: "Gestion des comptes utilisateurs",
-    actions: ["create", "list", "update", "delete", "set-role"],
-    actionLabels: { create: "Créer", list: "Lister", update: "Modifier", delete: "Supprimer", "set-role": "Définir le rôle" },
-  },
+  // ============ TABLES APPLICATION ============
   {
     name: "agent",
     displayName: "Agents",
@@ -61,13 +55,6 @@ const resources = [
     description: "Gestion des formations",
     actions: ["create", "edit", "delete", "view"],
     actionLabels: { create: "Créer", edit: "Modifier", delete: "Supprimer", view: "Consulter" },
-  },
-  {
-    name: "session",
-    displayName: "Sessions",
-    description: "Gestion des sessions utilisateur",
-    actions: ["list", "revoke"],
-    actionLabels: { list: "Lister", revoke: "Révoquer" },
   },
   {
     name: "formateur",
@@ -111,26 +98,100 @@ const resources = [
     actions: ["create", "edit", "delete", "view"],
     actionLabels: { create: "Créer", edit: "Modifier", delete: "Supprimer", view: "Consulter" },
   },
+
+  // ============ TABLES ADMINISTRATION ============
+  {
+    name: "user",
+    displayName: "Utilisateurs",
+    description: "Gestion des comptes utilisateurs",
+    actions: ["create", "list", "update", "delete", "set-role"],
+    actionLabels: { create: "Créer", list: "Lister", update: "Modifier", delete: "Supprimer", "set-role": "Définir le rôle" },
+  },
+  {
+    name: "account",
+    displayName: "Comptes OAuth",
+    description: "Gestion des comptes OAuth et authentification",
+    actions: ["list", "view", "delete"],
+    actionLabels: { list: "Lister", view: "Consulter", delete: "Supprimer" },
+  },
+  {
+    name: "session",
+    displayName: "Sessions",
+    description: "Gestion des sessions utilisateur",
+    actions: ["list", "revoke"],
+    actionLabels: { list: "Lister", revoke: "Révoquer" },
+  },
+  {
+    name: "verification",
+    displayName: "Vérifications",
+    description: "Gestion des tokens de vérification email/mot de passe",
+    actions: ["list", "view", "delete"],
+    actionLabels: { list: "Lister", view: "Consulter", delete: "Supprimer" },
+  },
+  {
+    name: "role",
+    displayName: "Rôles",
+    description: "Gestion des rôles système",
+    actions: ["create", "edit", "delete", "view", "assign-users"],
+    actionLabels: { create: "Créer", edit: "Modifier", delete: "Supprimer", view: "Consulter", "assign-users": "Assigner utilisateurs" },
+  },
+  {
+    name: "resource",
+    displayName: "Ressources",
+    description: "Gestion des ressources de permissions",
+    actions: ["create", "edit", "delete", "view"],
+    actionLabels: { create: "Créer", edit: "Modifier", delete: "Supprimer", view: "Consulter" },
+  },
+  {
+    name: "rolePermission",
+    displayName: "Permissions Rôles",
+    description: "Gestion de la matrice des permissions",
+    actions: ["view", "update"],
+    actionLabels: { view: "Consulter", update: "Modifier" },
+  },
+  {
+    name: "uiComponent",
+    displayName: "Composants UI",
+    description: "Gestion des composants d'interface utilisateur",
+    actions: ["create", "edit", "delete", "view"],
+    actionLabels: { create: "Créer", edit: "Modifier", delete: "Supprimer", view: "Consulter" },
+  },
+  {
+    name: "uiComponentPermission",
+    displayName: "Permissions UI",
+    description: "Gestion des permissions d'accès aux composants UI",
+    actions: ["view", "update"],
+    actionLabels: { view: "Consulter", update: "Modifier" },
+  },
 ]
 
 // Matrice de permissions (identique à l'ancien lib/permissions.ts)
 const rolePermissions: Record<string, Record<string, string[]>> = {
   administrateur: {
-    user: ["create", "list", "update", "delete", "set-role"],
+    // Tables Application
     agent: ["create", "edit", "delete", "view"],
     formation: ["create", "edit", "delete", "view"],
-    session: ["list", "revoke"],
     formateur: ["create", "edit", "delete", "view"],
     cours: ["create", "edit", "delete", "view"],
     sessionFormation: ["create", "edit", "delete", "view"],
     agentFormation: ["create", "edit", "delete", "view"],
     coursFormateur: ["create", "edit", "delete", "view"],
     sessionAgent: ["create", "edit", "delete", "view"],
+    // Tables Administration
+    user: ["create", "list", "update", "delete", "set-role"],
+    account: ["list", "view", "delete"],
+    session: ["list", "revoke"],
+    verification: ["list", "view", "delete"],
+    role: ["create", "edit", "delete", "view", "assign-users"],
+    resource: ["create", "edit", "delete", "view"],
+    rolePermission: ["view", "update"],
+    uiComponent: ["create", "edit", "delete", "view"],
+    uiComponentPermission: ["view", "update"],
   },
   direction: {
+    // Tables Application
     agent: ["view"],
     formation: ["view"],
-    session: ["list"],
     formateur: ["view"],
     cours: ["view"],
     sessionFormation: ["view"],
@@ -139,9 +200,9 @@ const rolePermissions: Record<string, Record<string, string[]>> = {
     sessionAgent: ["view"],
   },
   coordinateur: {
+    // Tables Application
     agent: ["edit", "view"],
     formation: ["edit", "view"],
-    session: ["list"],
     formateur: ["edit", "view"],
     cours: ["edit", "view"],
     sessionFormation: ["edit", "view"],
@@ -150,6 +211,7 @@ const rolePermissions: Record<string, Record<string, string[]>> = {
     sessionAgent: ["edit", "view"],
   },
   formateur: {
+    // Tables Application
     agent: ["view"],
     formation: ["view"],
     formateur: ["view"],
@@ -160,6 +222,7 @@ const rolePermissions: Record<string, Record<string, string[]>> = {
     sessionAgent: ["view"],
   },
   agent: {
+    // Tables Application
     agent: ["view"],
     formation: ["view"],
   },

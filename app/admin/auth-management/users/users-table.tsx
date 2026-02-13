@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react"
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion"
 import { useTheme } from "next-themes"
+import * as XLSX from "xlsx"
 import {
   Download,
   ChevronDown,
@@ -246,6 +247,34 @@ export function UsersTable({
     link.href = URL.createObjectURL(blob)
     link.download = `users-${new Date().toISOString().split("T")[0]}.json`
     link.click()
+  }
+
+  const exportToExcel = () => {
+    const excelData = sortedAndFilteredUsers.map((user: User) => ({
+      "Statut": user.hasActiveSession ? "Online" : "Offline",
+      "Nom": user.name || "-",
+      "Email": user.email,
+      "Rôle": getRoleDisplayName(user.role, roles),
+      "Email vérifié": user.emailVerified ? "Oui" : "Non",
+      "Date d'inscription": formatDate(user.createdAt),
+      "Dernière connexion": user.lastLogin ? formatDate(user.lastLogin) : "Jamais",
+    }))
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Utilisateurs")
+
+    worksheet["!cols"] = [
+      { wch: 10 },
+      { wch: 25 },
+      { wch: 30 },
+      { wch: 18 },
+      { wch: 14 },
+      { wch: 20 },
+      { wch: 20 },
+    ]
+
+    XLSX.writeFile(workbook, `users-${new Date().toISOString().split("T")[0]}.xlsx`)
   }
 
   const handleDeleteClick = (user: User) => {
@@ -570,10 +599,19 @@ export function UsersTable({
                 <div className="absolute right-0 mt-1 w-32 bg-background border border-border/50 shadow-lg rounded-md z-20">
                   <button
                     onClick={() => {
-                      exportToCSV()
+                      exportToExcel()
                       setShowExportMenu(false)
                     }}
                     className="w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2"
+                  >
+                    Excel
+                  </button>
+                  <button
+                    onClick={() => {
+                      exportToCSV()
+                      setShowExportMenu(false)
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2 border-t border-border/30"
                   >
                     CSV
                   </button>

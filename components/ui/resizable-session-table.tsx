@@ -44,6 +44,7 @@ export interface SessionFormation {
   dateDebut: Date
   dateFin: Date
   nombreParticipants: number
+  nombreParticipantsReels?: number
   reference: string | null
   statut: string
   color?: string | null
@@ -53,6 +54,7 @@ export interface SessionFormation {
     formation: string
     typeFormation: string
     specialite: string | null
+    capaciteAbsorption?: number | null
   }
 }
 
@@ -131,7 +133,16 @@ export function ResizableSessionTable({
   const [showYearMenu, setShowYearMenu] = useState(false)
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [searchReference, setSearchReference] = useState<string>("")
-  const [selectedSessions, setSelectedSessions] = useState<string[]>([])
+  const [selectedSessions, setSelectedSessions] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem("session-table-selected")
+      if (saved) {
+        sessionStorage.removeItem("session-table-selected")
+        return JSON.parse(saved)
+      }
+    }
+    return []
+  })
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [sessionToDelete, setSessionToDelete] = useState<SessionFormation | null>(null)
 
@@ -454,6 +465,7 @@ export function ResizableSessionTable({
 
   // Gestion de la navigation vers la liste des participants
   const handleViewParticipants = (session: SessionFormation) => {
+    sessionStorage.setItem("session-table-selected", JSON.stringify([session.id]))
     router.push(`/session-formation/session-agent?sessionFormationId=${session.id}`)
   }
 
@@ -1120,7 +1132,11 @@ export function ResizableSessionTable({
                           >
                             <div className="flex items-center gap-1.5">
                               <Users size={14} className="text-muted-foreground" />
-                              {session.nombreParticipants}
+                              <span>
+                                <span style={{ color: "#1071C7" }}>{session.nombreParticipantsReels ?? 0}</span>
+                                {" / "}
+                                {session.formation.capaciteAbsorption ?? "—"}
+                              </span>
                             </div>
                           </div>
 

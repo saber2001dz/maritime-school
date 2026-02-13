@@ -35,6 +35,7 @@ function transformSessionAgents(data: AgentFormationWithAgent[]): Project[] {
     status: {
       text: getResultatLabel(item.resultat), // النتيجة - Résultat (avec label formaté)
       variant: getStatusVariant(item.resultat),
+      value: item.resultat ?? undefined, // Valeur brute pour le dropdown
     },
     formationId: item.sessionFormationId || "", // ID de la session pour l'édition
   }))
@@ -77,9 +78,17 @@ export default async function SessionAgentPage({ searchParams }: PageProps) {
     nombreParticipants = sessionInfo?.nombreParticipants || 0
   }
 
+  // Si la session est terminée, exclure les agents non confirmés (resultat IS NULL)
+  const isSessionFinished = sessionInfo ? new Date(sessionInfo.dateFin) < new Date() : false
+
   // Récupérer les données directement depuis la base de données (AgentFormation)
   const agentFormations = await prisma.agentFormation.findMany({
-    where: sessionFormationId ? { sessionFormationId } : undefined,
+    where: sessionFormationId
+      ? {
+          sessionFormationId,
+          ...(isSessionFinished ? { resultat: { not: null } } : {}),
+        }
+      : undefined,
     select: {
       id: true,
       sessionFormationId: true,

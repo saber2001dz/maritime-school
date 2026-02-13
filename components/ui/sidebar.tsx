@@ -18,16 +18,11 @@ import Image from "next/image"
 import { useSession, signOut } from "@/lib/auth-client"
 import { useRouter, usePathname } from "next/navigation"
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const CollapsibleSection = ({
   title,
@@ -334,28 +329,30 @@ const Sidebar = () => {
       </nav>
       {/* Footer / Action Button */}
       <div className="p-3.5 border-t border-gray-200">
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <button className="w-full flex items-center justify-left gap-2 text-[16px] p-2 text-red-600 font-semibold rounded-md hover:bg-red-100 cursor-pointer pl-4">
-              <LogOut className="h-4.5 w-4.5 mr-6" />
-              Logout
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="w-full flex items-center justify-left gap-2 text-[16px] p-2 text-gray-700 font-semibold rounded-md hover:bg-gray-100 cursor-pointer pl-4">
+              <ChevronDown className="h-4.5 w-4.5 mr-6" />
+              Options
             </button>
-          </AlertDialogTrigger>
-          <AlertDialogContent className="max-w-md">
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirmation de déconnexion</AlertDialogTitle>
-              <AlertDialogDescription className="py-3">
-                Êtes-vous sûr de vouloir vous déconnecter ? Vous devrez vous reconnecter pour accéder à votre compte.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter className="sm:justify-start cursor-pointer">
-              <AlertDialogAction onClick={handleLogout} className="bg-red-600 hover:bg-red-700 text-white">
-                Se déconnecter
-              </AlertDialogAction>
-              <AlertDialogCancel className="cursor-pointer">Annuler</AlertDialogCancel>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="start" className="w-52">
+            <DropdownMenuItem
+              onClick={() => router.push("/principal")}
+              className="cursor-pointer gap-2"
+            >
+              <Network className="h-4 w-4" />
+              Retour application
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="cursor-pointer gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   )

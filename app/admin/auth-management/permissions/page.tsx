@@ -45,20 +45,60 @@ async function getPermissionsData() {
     userCounts.map(({ role, count }) => [role, count])
   )
 
+  // Ordre des ressources : Application d'abord, puis Administration
+  const applicationTables = [
+    'agent',
+    'formation',
+    'formateur',
+    'cours',
+    'sessionFormation',
+    'agentFormation',
+    'coursFormateur',
+    'sessionAgent',
+  ]
+
+  const adminTables = [
+    'user',
+    'account',
+    'session',
+    'verification',
+    'role',
+    'resource',
+    'rolePermission',
+    'uiComponent',
+    'uiComponentPermission',
+  ]
+
+  // Trier les ressources par catégorie (Application puis Administration)
+  const sortedDbResources = [
+    ...dbResources.filter(r => applicationTables.includes(r.name)).sort((a, b) => a.displayName.localeCompare(b.displayName)),
+    ...dbResources.filter(r => adminTables.includes(r.name)).sort((a, b) => a.displayName.localeCompare(b.displayName)),
+    ...dbResources.filter(r => !applicationTables.includes(r.name) && !adminTables.includes(r.name)).sort((a, b) => a.displayName.localeCompare(b.displayName)),
+  ]
+
   // Transformer les ressources au format attendu par le composant
   const resources: Record<string, {
     name: string
     description: string
     actions: string[]
     actionLabels: Record<string, string>
+    category?: string
   }> = {}
 
-  for (const res of dbResources) {
+  for (const res of sortedDbResources) {
+    let category = 'application'
+    if (adminTables.includes(res.name)) {
+      category = 'administration'
+    } else if (!applicationTables.includes(res.name)) {
+      category = 'application'
+    }
+
     resources[res.name] = {
       name: res.displayName,
       description: res.description,
       actions: res.actions,
       actionLabels: (res.actionLabels as Record<string, string>) || {},
+      category,
     }
   }
 
@@ -88,7 +128,7 @@ export default async function PermissionsPage() {
     <div className="flex flex-col">
       <div className="py-6 px-8">
         <h1 className="text-2xl font-bold mb-2">Gestion des Permissions</h1>
-        <p className="text-sm text-muted-foreground mb-6">
+        <p className="text-sm text-muted-foreground mb-3">
           Consultez la matrice des permissions et les droits d'accès par rôle.
         </p>
       </div>

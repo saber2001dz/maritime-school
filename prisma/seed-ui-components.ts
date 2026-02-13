@@ -197,6 +197,15 @@ const uiComponents = [
     description: 'Visualiser les graphiques',
     icon: 'PieChart',
   },
+
+  // === Header ===
+  {
+    name: 'header_admin_settings',
+    displayName: 'Paramètres admin (إعدادات)',
+    category: 'Header',
+    description: 'Accéder au panneau d\'administration depuis le header',
+    icon: 'Settings',
+  },
 ]
 
 // Configuration des permissions par défaut pour chaque rôle

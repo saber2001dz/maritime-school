@@ -35,8 +35,8 @@ export const auth = betterAuth({
     enabled: true,
   },
   session: {
-    expiresIn: 60 * 60 * 24, // 1 jour (24 heures) - sessions fixes
-    updateAge: 60 * 60 * 24, // 1 jour - pas de rafraîchissement avant expiration
+    expiresIn: 60 * 60 * 12, // 12 heures
+    updateAge: 60 * 60 * 12, // 12 heures - pas de rafraîchissement avant expiration
     disableSessionRefresh: true, // Désactive le rafraîchissement automatique
   },
   secret: process.env.BETTER_AUTH_SECRET,

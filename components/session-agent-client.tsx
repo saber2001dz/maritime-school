@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
-import { ChevronRight, CirclePlus, SquarePen, Trash2, Check, X } from "lucide-react"
+import { ChevronRight, ChevronDown, CirclePlus, SquarePen, Trash2, Check, X, Loader2 } from "lucide-react"
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion"
 import { Project } from "@/components/ui/project-data-table"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
@@ -22,6 +22,7 @@ import { useToast } from "@/components/ui/ultra-quality-toast"
 import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon"
 import { can } from "@/lib/permissions"
 import { usePermissions } from "@/lib/permissions-context"
+import { RESULTAT_OPTIONS } from "@/lib/resultat-utils"
 
 interface SessionAgentClientProps {
   initialData: Project[]
@@ -55,7 +56,7 @@ const getSessionAgentHeaders = (isSessionFinished: boolean) => {
 
   // Ajouter la colonne de confirmation en dernière position si la session n'est pas terminée
   if (!isSessionFinished) {
-    headers.push({ key: "confirmation" as const, label: "تأكيد المشاركة", width: "w-20 min-w-20 max-w-20" })
+    headers.push({ key: "confirmation" as const, label: "تأكيد المشاركة", width: "w-28 min-w-28 max-w-28" })
   }
 
   return headers
@@ -160,6 +161,7 @@ interface SessionAgentTableProps {
   onEditClick?: (project: Project) => void
   onDeleteClick?: (project: Project) => void
   onConfirmParticipation?: (project: Project) => void
+  onChangeResultat?: (project: Project, resultat: string) => void
   customHeaders?: { key: keyof Project | "actions" | "confirmation"; label: string; width?: string }[]
   notoNaskhArabicClassName?: string
   isAddingNew: boolean
@@ -167,6 +169,8 @@ interface SessionAgentTableProps {
   onMatriculeChange: (value: string) => void
   onCancelAdd: () => void
   isUpdating: boolean
+  confirmingRowId: string | null
+  updatingResultatRowId: string | null
   inputRef: React.RefObject<HTMLInputElement | null>
   mounted: boolean
   isDark: boolean
@@ -186,6 +190,7 @@ const SessionAgentTable = ({
   onEditClick,
   onDeleteClick,
   onConfirmParticipation,
+  onChangeResultat,
   customHeaders,
   notoNaskhArabicClassName,
   isAddingNew,
@@ -193,6 +198,8 @@ const SessionAgentTable = ({
   onMatriculeChange,
   onCancelAdd,
   isUpdating,
+  confirmingRowId,
+  updatingResultatRowId,
   inputRef,
   mounted,
   isDark,
@@ -205,6 +212,23 @@ const SessionAgentTable = ({
   nombreParticipants = 0,
   isSessionFinished = false,
 }: SessionAgentTableProps) => {
+  const [openResultatDropdown, setOpenResultatDropdown] = useState<string | null>(null)
+  const [resultatDropdownPos, setResultatDropdownPos] = useState<{ top: number; left: number } | null>(null)
+  const resultatBtnRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
+
+  useEffect(() => {
+    if (!openResultatDropdown) {
+      setResultatDropdownPos(null)
+      return
+    }
+    const btn = resultatBtnRefs.current.get(openResultatDropdown)
+    if (!btn) return
+    const rect = btn.getBoundingClientRect()
+    setResultatDropdownPos({
+      top: rect.bottom + window.scrollY + 4,
+      left: rect.left + window.scrollX + rect.width / 2,
+    })
+  }, [openResultatDropdown])
   const defaultHeaders: { key: keyof Project | "actions" | "confirmation"; label: string; width?: string }[] = [
     { key: "name", label: "#", width: "w-10" },
     { key: "repository", label: "الإســم و اللـقــب", width: "w-60" },
@@ -276,7 +300,7 @@ const SessionAgentTable = ({
               projects.map((project, index) => {
                 const isEditing = editingRowId === project.id
                 const isOverCapacity = nombreParticipants > 0 && index >= nombreParticipants
-                const isConfirmed = project.status.variant === "notJoined"
+                const isConfirmed = project.status.variant !== "pending"
                 return (
                   <motion.tr
                     key={project.id}
@@ -284,38 +308,30 @@ const SessionAgentTable = ({
                     className={`border-b transition-colors ${
                       isEditing
                         ? "bg-blue-50/50 dark:bg-blue-950/20"
-                        : isConfirmed
-                          ? "bg-green-50/70 dark:bg-green-900/20 hover:bg-green-100/70 dark:hover:bg-green-900/30"
-                          : isOverCapacity
-                            ? "bg-red-100/70 dark:bg-red-800/30 hover:bg-red-200/70 dark:hover:bg-red-900/35"
-                            : "hover:bg-muted/50"
+                        : isOverCapacity
+                          ? "bg-red-100/70 dark:bg-red-800/30 hover:bg-red-200/70 dark:hover:bg-red-900/35"
+                          : "hover:bg-muted/50"
                     }`}
                   >
                     <td className={`font-medium text-center h-14 w-12 px-4 ${
-                      isConfirmed
-                        ? "text-green-700 dark:text-green-400"
-                        : isOverCapacity
-                          ? "text-red-700 dark:text-red-400"
-                          : ""
+                      isOverCapacity
+                        ? "text-red-700 dark:text-red-400"
+                        : ""
                     }`}>{index + 1}</td>
                     <td className="text-start h-14 w-48 px-4">
                       <span className={`${
-                        isConfirmed
-                          ? "text-green-700 dark:text-green-400"
-                          : isOverCapacity
-                            ? "text-red-700 dark:text-red-400"
-                            : "text-foreground"
+                        isOverCapacity
+                          ? "text-red-700 dark:text-red-400"
+                          : "text-foreground"
                       }`} style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}>
                         {project.repository}
                       </span>
                     </td>
                     <td className="text-start h-14 w-32 px-4">
                       <span className={`${notoNaskhArabicClassName} ${
-                        isConfirmed
-                          ? "text-green-700 dark:text-green-400"
-                          : isOverCapacity
-                            ? "text-red-700 dark:text-red-400"
-                            : ""
+                        isOverCapacity
+                          ? "text-red-700 dark:text-red-400"
+                          : ""
                       }`}>{project.team}</span>
                     </td>
                     <td className={`text-start h-14 w-32 relative ${isEditing ? "px-2" : "px-4"}`}>
@@ -339,11 +355,9 @@ const SessionAgentTable = ({
                         />
                       ) : (
                         <span className={`text-sm ${
-                          isConfirmed
-                            ? "text-green-700 dark:text-green-400"
-                            : isOverCapacity
-                              ? "text-red-700 dark:text-red-400"
-                              : ""
+                          isOverCapacity
+                            ? "text-red-700 dark:text-red-400"
+                            : ""
                         }`}>{project.tech}</span>
                       )}
                     </td>
@@ -431,8 +445,8 @@ const SessionAgentTable = ({
                         </div>
                       ) : (
                         <div className="flex justify-center items-center gap-1">
-                          {/* Bouton édition - masqué si session terminée */}
-                          {!isSessionFinished && (
+                          {/* Bouton édition - masqué si session terminée ou si confirmé */}
+                          {!isSessionFinished && !isConfirmed && (
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <button
@@ -490,50 +504,111 @@ const SessionAgentTable = ({
                     </td>
                     {/* Colonne de confirmation - seulement si session non terminée */}
                     {!isSessionFinished && (
-                      <td className="text-center h-14 w-20 min-w-20 max-w-20 px-1">
+                      <td className="text-center h-14 w-28 min-w-28 max-w-28 px-2">
                         <div className="flex items-center justify-center w-full h-full">
-                          <button
-                            onClick={() => !isConfirmed && onConfirmParticipation?.(project)}
-                            disabled={isConfirmed || isUpdating}
-                            className={`flex items-center justify-center gap-0.5 px-3 py-2 rounded-md border transition-all duration-200 ${
-                              isConfirmed
-                                ? mounted
-                                  ? isDark
-                                    ? "border-green-700 bg-green-900/30 text-green-400 cursor-default"
-                                    : "border-green-600 bg-green-50 text-green-700 cursor-default"
-                                  : "border-border bg-muted/30 text-foreground/80 cursor-default"
-                                : mounted
-                                  ? isDark
-                                    ? "border-border bg-blue-950/30 hover:bg-blue-950/50 text-foreground/80 hover:text-foreground cursor-pointer"
-                                    : "border-border bg-slate-50 hover:bg-slate-100 text-[#06407F]/80 hover:text-[#06407F] cursor-pointer"
-                                  : "border-border bg-muted/30 hover:bg-muted/50 text-foreground/80 cursor-pointer"
-                            } disabled:opacity-50 disabled:cursor-not-allowed`}
-                          >
-                            {isConfirmed ? (
-                              <>
-                                <Check className="h-3.5 w-3.5" />
+                          {isConfirmed ? (
+                            /* Dropdown pour changer le résultat */
+                            <div>
+                              <button
+                                ref={(el) => {
+                                  if (el) resultatBtnRefs.current.set(project.id, el)
+                                  else resultatBtnRefs.current.delete(project.id)
+                                }}
+                                onClick={() => updatingResultatRowId !== project.id && setOpenResultatDropdown(openResultatDropdown === project.id ? null : project.id)}
+                                disabled={updatingResultatRowId === project.id}
+                                className={`flex items-center justify-between gap-1 min-w-[118px] px-2 py-2 rounded-md border transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
+                                  mounted
+                                    ? isDark
+                                      ? project.status.variant === "success"
+                                        ? "border-green-700 bg-green-900/30 text-green-400 hover:bg-green-900/50"
+                                        : project.status.variant === "inProgress"
+                                          ? "border-yellow-700 bg-yellow-900/30 text-yellow-400 hover:bg-yellow-900/50"
+                                          : project.status.variant === "interrupted"
+                                            ? "border-red-700 bg-red-900/30 text-red-400 hover:bg-red-900/50"
+                                            : project.status.variant === "abandoned"
+                                              ? "border-orange-700 bg-orange-900/30 text-orange-400 hover:bg-orange-900/50"
+                                              : "border-cyan-700 bg-cyan-900/30 text-cyan-400 hover:bg-cyan-900/50"
+                                      : project.status.variant === "success"
+                                        ? "border-green-600 bg-green-50 text-green-700 hover:bg-green-100"
+                                        : project.status.variant === "inProgress"
+                                          ? "border-yellow-600 bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
+                                          : project.status.variant === "interrupted"
+                                            ? "border-red-600 bg-red-50 text-red-700 hover:bg-red-100"
+                                            : project.status.variant === "abandoned"
+                                              ? "border-orange-600 bg-orange-50 text-orange-700 hover:bg-orange-100"
+                                              : "border-cyan-600 bg-cyan-50 text-cyan-700 hover:bg-cyan-100"
+                                    : "border-border bg-muted/30 text-foreground/80"
+                                }`}
+                              >
+                                {updatingResultatRowId === project.id
+                                  ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                                  : <Check className="h-3.5 w-3.5 shrink-0" />
+                                }
                                 <span
                                   className="text-[11px] font-semibold whitespace-nowrap"
                                   style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}
                                 >
-                                  تمت الموافقة
+                                  {RESULTAT_OPTIONS.find(o => o.value === project.status.value)?.label ?? project.status.text}
                                 </span>
-                              </>
-                            ) : (
-                              <>
-                                <MenuToggleIcon
-                                  open={false}
-                                  className="h-3.5 w-3.5"
-                                />
-                                <span
-                                  className="text-[11px] font-semibold whitespace-nowrap"
-                                  style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}
-                                >
-                                  المـوافـقــــــة
-                                </span>
-                              </>
-                            )}
-                          </button>
+                                {updatingResultatRowId !== project.id && <ChevronDown className="h-3 w-3 opacity-60 shrink-0" />}
+                              </button>
+                              {openResultatDropdown === project.id && resultatDropdownPos && mounted && createPortal(
+                                <>
+                                  <div className="fixed inset-0 z-9998" onClick={() => setOpenResultatDropdown(null)} />
+                                  <div
+                                    style={{
+                                      position: "absolute",
+                                      top: `${resultatDropdownPos.top}px`,
+                                      left: `${resultatDropdownPos.left}px`,
+                                      transform: "translateX(-50%)",
+                                      width: "144px",
+                                      zIndex: 9999,
+                                    }}
+                                    className="bg-background border border-border/50 shadow-lg rounded-md"
+                                  >
+                                    {RESULTAT_OPTIONS.map((opt) => (
+                                      <button
+                                        key={opt.value}
+                                        onClick={() => {
+                                          onChangeResultat?.(project, opt.value)
+                                          setOpenResultatDropdown(null)
+                                        }}
+                                        className="w-full cursor-pointer px-3 py-2 text-right text-sm hover:bg-muted/50 transition-colors first:rounded-t-md last:rounded-b-md border-b border-border/30 last:border-b-0"
+                                        style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}
+                                      >
+                                        {opt.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </>,
+                                document.body
+                              )}
+                            </div>
+                          ) : (
+                            /* Bouton de confirmation initial */
+                            <button
+                              onClick={() => onConfirmParticipation?.(project)}
+                              disabled={confirmingRowId === project.id}
+                              className={`flex items-center justify-center gap-0.5 min-w-[118px] px-2 py-2 rounded-md border transition-all duration-200 cursor-pointer ${
+                                mounted
+                                  ? isDark
+                                    ? "border-border bg-blue-950/30 hover:bg-blue-950/50 text-foreground/80 hover:text-foreground"
+                                    : "border-border bg-slate-50 hover:bg-slate-100 text-[#06407F]/80 hover:text-[#06407F]"
+                                  : "border-border bg-muted/30 hover:bg-muted/50 text-foreground/80"
+                              } disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                              {confirmingRowId === project.id
+                                ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                                : <MenuToggleIcon open={false} className="h-3.5 w-3.5" />
+                              }
+                              <span
+                                className="text-[11px] font-semibold whitespace-nowrap"
+                                style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}
+                              >
+                                المـوافـقــــــة
+                              </span>
+                            </button>
+                          )}
                         </div>
                       </td>
                     )}
@@ -608,7 +683,7 @@ const SessionAgentTable = ({
                 </td>
                 {/* Colonne de confirmation - seulement si session non terminée */}
                 {!isSessionFinished && (
-                  <td className="text-center h-14 w-20 min-w-20 max-w-20 px-1">
+                  <td className="text-center h-14 w-28 min-w-28 max-w-28 px-2">
                     <span className="text-sm text-muted-foreground/50">-</span>
                   </td>
                 )}
@@ -640,6 +715,8 @@ export default function SessionAgentClient({
   const isDark = theme === "dark"
   const [visibleColumns, setVisibleColumns] = useState<Set<keyof Project>>(new Set(allColumns))
   const [isUpdating, setIsUpdating] = useState(false)
+  const [confirmingRowId, setConfirmingRowId] = useState<string | null>(null)
+  const [updatingResultatRowId, setUpdatingResultatRowId] = useState<string | null>(null)
 
   // Calculer si la session est terminée (date fin atteinte)
   const isSessionFinished = sessionInfo ? new Date(sessionInfo.dateFin) < new Date() : false
@@ -1061,7 +1138,7 @@ export default function SessionAgentClient({
       return
     }
 
-    setIsUpdating(true)
+    setConfirmingRowId(project.id)
 
     try {
       const response = await fetch(`/api/session-agents/${project.id}`, {
@@ -1107,7 +1184,43 @@ export default function SessionAgentClient({
         variant: "error",
       })
     } finally {
-      setIsUpdating(false)
+      setConfirmingRowId(null)
+    }
+  }
+
+  // Handler pour changer le résultat d'une ligne confirmée
+  const handleChangeResultat = async (project: Project, resultat: string) => {
+    setUpdatingResultatRowId(project.id)
+    try {
+      const response = await fetch(`/api/session-agents/${project.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resultat }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || "Erreur lors de la mise à jour")
+      }
+
+      const option = RESULTAT_OPTIONS.find(o => o.value === resultat)
+      setLocalData(localData.map((p) =>
+        p.id === project.id
+          ? { ...p, status: { text: option?.label ?? resultat, variant: option?.variant ?? "pending", value: resultat } }
+          : p
+      ))
+
+      router.refresh()
+    } catch (err: any) {
+      console.error(err)
+      addToast({
+        title: "خطأ في التحديث",
+        description: err.message || "حدث خطأ أثناء تحديث النتيجة",
+        variant: "error",
+      })
+    } finally {
+      setUpdatingResultatRowId(null)
     }
   }
 
@@ -1161,7 +1274,7 @@ export default function SessionAgentClient({
                     </span>
                     <span className="text-foreground/50">|</span>
                     <span className="font-medium">
-                      تمت الموافقة عليهم : {localData.filter(p => p.status.variant === "notJoined").length}
+                      تمت الموافقة عليهم : {localData.filter(p => p.status.variant !== "pending").length}
                     </span>
                     {localData.length > nombreParticipants && (
                       <>
@@ -1212,6 +1325,7 @@ export default function SessionAgentClient({
             onEditClick={can(userRole, "sessionAgent", "edit", permissionsMap) ? handleEditClick : undefined}
             onDeleteClick={can(userRole, "sessionAgent", "delete", permissionsMap) ? handleDeleteClick : undefined}
             onConfirmParticipation={can(userRole, "sessionAgent", "edit", permissionsMap) ? handleConfirmParticipation : undefined}
+            onChangeResultat={can(userRole, "sessionAgent", "edit", permissionsMap) ? handleChangeResultat : undefined}
             customHeaders={getSessionAgentHeaders(isSessionFinished)}
             notoNaskhArabicClassName={notoNaskhArabicClassName}
             isAddingNew={isAddingNew}
@@ -1219,6 +1333,8 @@ export default function SessionAgentClient({
             onMatriculeChange={setNewMatricule}
             onCancelAdd={handleCancelAdd}
             isUpdating={isUpdating}
+            confirmingRowId={confirmingRowId}
+            updatingResultatRowId={updatingResultatRowId}
             inputRef={inputRef}
             mounted={mounted}
             isDark={isDark}

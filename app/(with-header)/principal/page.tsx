@@ -1,10 +1,18 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Users, UserCheck, Award, BookText } from "lucide-react"
 import { prisma } from "@/lib/db"
-import { ChartBarDefault } from "./chart-bar"
+import { ChartBarStacked } from "./chart-bar-stacked"
 import { SessionsList } from "./sessions-list"
 
+const ARABIC_MONTHS = [
+  "جانفي", "فيفري", "مارس", "أفريل", "ماي", "جوان",
+  "جويلية", "أوت", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
+]
+
 export default async function PrincipalPage() {
+  const currentYear = new Date().getFullYear()
+  const previousYear = currentYear - 1
+
   // Récupérer les statistiques depuis la base de données
   const [agentsCount, formateursCount, formationsCount, coursCount] = await Promise.all([
     prisma.agent.count(),
@@ -12,6 +20,44 @@ export default async function PrincipalPage() {
     prisma.formation.count(),
     prisma.cours.count(),
   ])
+
+  // Récupérer les agentFormations pour l'année en cours et l'année dernière
+  const agentFormations = await prisma.agentFormation.findMany({
+    where: {
+      dateDebut: {
+        gte: `${previousYear}-01-01`,
+        lte: `${currentYear}-12-31`,
+      },
+    },
+    select: {
+      dateDebut: true,
+    },
+  })
+
+  // Agréger par mois pour chaque année
+  const countsByMonthYear: Record<number, Record<number, number>> = {
+    [previousYear]: {},
+    [currentYear]: {},
+  }
+  for (let m = 1; m <= 12; m++) {
+    countsByMonthYear[previousYear][m] = 0
+    countsByMonthYear[currentYear][m] = 0
+  }
+
+  for (const af of agentFormations) {
+    const date = new Date(af.dateDebut)
+    const year = date.getFullYear()
+    const month = date.getMonth() + 1
+    if (countsByMonthYear[year] !== undefined) {
+      countsByMonthYear[year][month] = (countsByMonthYear[year][month] ?? 0) + 1
+    }
+  }
+
+  const chartData = ARABIC_MONTHS.map((label, i) => ({
+    month: label,
+    currentYear: countsByMonthYear[currentYear][i + 1],
+    previousYear: countsByMonthYear[previousYear][i + 1],
+  }))
 
   // Récupérer les sessions de formation avec le même tri que la table principale
   const now = new Date()
@@ -158,7 +204,7 @@ export default async function PrincipalPage() {
 
         <div className="grid gap-4 md:grid-cols-7 mt-4 items-stretch">
           <div className="md:col-span-4 flex">
-            <ChartBarDefault />
+            <ChartBarStacked chartData={chartData} currentYear={currentYear} previousYear={previousYear} />
           </div>
           <Card className="md:col-span-3 flex flex-col">
             <CardHeader className="pb-3">

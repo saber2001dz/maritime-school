@@ -14,6 +14,12 @@ export default async function SessionFormationPage() {
           formation: true,
           typeFormation: true,
           specialite: true,
+          capaciteAbsorption: true,
+        }
+      },
+      agentFormations: {
+        select: {
+          resultat: true,
         }
       }
     },
@@ -36,7 +42,10 @@ export default async function SessionFormationPage() {
   // Calculer le statut pour chaque session côté serveur
   const sessionsWithStatus = sessions.map((session) => ({
     ...session,
-    statut: computeSessionStatus(session.dateDebut, session.dateFin)
+    statut: computeSessionStatus(session.dateDebut, session.dateFin),
+    nombreParticipantsReels: session.agentFormations.filter(
+      af => af.resultat !== null && af.resultat !== "لم يلتحق"
+    ).length,
   }))
 
   return <SessionTabsClient sessions={sessionsWithStatus} formations={formations} userRole={role} />

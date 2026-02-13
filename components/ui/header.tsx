@@ -7,18 +7,29 @@ import { cn } from "@/lib/utils"
 import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon"
 import { useScroll } from "@/components/ui/use-scroll"
 import { Toggle } from "@/components/ui/toggle"
-import { Sun, Moon } from "lucide-react"
+import { Sun, Moon, ChevronDown, Settings, LogOut } from "lucide-react"
 import { useTheme } from "next-themes"
-import { useSession, signOut } from "@/lib/auth-client"
+import { signOut } from "@/lib/auth-client"
 import { toast } from "sonner"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { useUIPermissions } from "@/lib/ui-permissions-context"
+import { canAccessUIComponent } from "@/lib/ui-permissions"
 
-export function Header({ userRole }: { userRole?: string | null }) {
+export function Header({ userRole, userRoleId }: { userRole?: string | null; userRoleId?: string | null }) {
   const [open, setOpen] = React.useState(false)
   const scrolled = useScroll(10)
   const { theme, setTheme } = useTheme()
   const pathname = usePathname()
   const router = useRouter()
-  const { data: session } = useSession()
+  const uiPermissionsMap = useUIPermissions()
+
+  const canAccessSettings = canAccessUIComponent(userRoleId ?? null, "header_admin_settings", uiPermissionsMap)
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark")
@@ -56,8 +67,7 @@ export function Header({ userRole }: { userRole?: string | null }) {
       label: "قــائمــة التــربـصـــات",
       href: "/liste-formation",
     },
-    
-     {
+    {
       label: "قــائمــة الـــدروس",
       href: "/liste-cours",
     },
@@ -65,14 +75,11 @@ export function Header({ userRole }: { userRole?: string | null }) {
 
   React.useEffect(() => {
     if (open) {
-      // Disable scroll
       document.body.style.overflow = "hidden"
     } else {
-      // Re-enable scroll
       document.body.style.overflow = ""
     }
 
-    // Cleanup when component unmounts (important for Next.js)
     return () => {
       document.body.style.overflow = ""
     }
@@ -99,7 +106,8 @@ export function Header({ userRole }: { userRole?: string | null }) {
           alt="École de Formation Maritime"
           width={48}
           height={48}
-          className="h-10 w-auto mr-1"
+          className="h-10 w-auto min-w-10 mr-1"
+          priority
         />
         <div className="hidden items-center gap-2 md:flex">
           {links.map((link, i) => {
@@ -124,9 +132,35 @@ export function Header({ userRole }: { userRole?: string | null }) {
             <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             <span className="sr-only">Toggle theme</span>
           </Toggle>
-          <Button onClick={handleLogout} className="bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors">
-            خـــروج
-          </Button>
+          <DropdownMenu dir="rtl">
+            <DropdownMenuTrigger asChild>
+              <Button className="bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors gap-1">
+                خيــارات
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}>
+              {canAccessSettings && (
+                <>
+                  <DropdownMenuItem
+                    className="cursor-pointer gap-2"
+                    onClick={() => router.push("/admin/dashboard")}
+                  >
+                    <Settings className="h-4 w-4" />
+                    الإعــــــدادات
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              <DropdownMenuItem
+                className="cursor-pointer gap-2 text-destructive focus:text-destructive"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4" />
+                خــــــــــــروج
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <Button size="icon" variant="outline" onClick={() => setOpen(!open)} className="md:hidden">
           <MenuToggleIcon open={open} className="size-5" duration={300} />
@@ -173,9 +207,21 @@ export function Header({ userRole }: { userRole?: string | null }) {
               <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
               <span className="sr-only">Toggle theme</span>
             </Toggle>
+            {canAccessSettings && (
+              <Button
+                variant="outline"
+                onClick={() => router.push("/admin/dashboard")}
+                className="w-full cursor-pointer transition-colors gap-2"
+                style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}
+              >
+                <Settings className="h-4 w-4" />
+                إعــدادات
+              </Button>
+            )}
             <Button
               onClick={handleLogout}
               className="w-full bg-[#1071C7] hover:bg-[#0D5A9F] cursor-pointer transition-colors mr-1"
+              style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}
             >
               خـــروج
             </Button>

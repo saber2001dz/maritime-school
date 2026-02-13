@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useTheme } from "next-themes"
+import * as XLSX from "xlsx"
 import {
   Download,
   ChevronDown,
@@ -136,6 +137,35 @@ export function UIComponentsMatrix({
     link.click()
   }
 
+  const exportToExcel = () => {
+    const allComponents = Object.entries(componentsByCategory).flatMap(([category, components]) =>
+      components.map(c => ({ ...c, category }))
+    )
+
+    const excelData = allComponents.map(component => {
+      const row: Record<string, string> = {
+        "Catégorie": component.category,
+        "Composant": component.displayName,
+      }
+      for (const role of roles) {
+        row[role.displayName] = component.permissions[role.id] ? "✓" : "✗"
+      }
+      return row
+    })
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Composants UI")
+
+    worksheet["!cols"] = [
+      { wch: 18 },
+      { wch: 30 },
+      ...roles.map(() => ({ wch: 16 })),
+    ]
+
+    XLSX.writeFile(workbook, `ui-components-permissions-${new Date().toISOString().split("T")[0]}.xlsx`)
+  }
+
   const categories = Object.keys(componentsByCategory).sort()
 
   return (
@@ -166,12 +196,21 @@ export function UIComponentsMatrix({
               >
                 <button
                   onClick={() => {
-                    exportToCSV()
+                    exportToExcel()
                     setShowExportMenu(false)
                   }}
                   className="w-full px-3 py-2 text-left text-sm hover:bg-muted/30 transition-colors"
                 >
-                  Exporter CSV
+                  Excel
+                </button>
+                <button
+                  onClick={() => {
+                    exportToCSV()
+                    setShowExportMenu(false)
+                  }}
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-muted/30 transition-colors border-t border-border/30"
+                >
+                  CSV
                 </button>
               </motion.div>
             )}

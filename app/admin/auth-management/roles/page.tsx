@@ -75,7 +75,7 @@ export default async function RolesPage() {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
+      <div className="mb-3">
         <h1 className="text-2xl font-bold mb-2">Gestion des roles</h1>
         <p className="text-gray-600 dark:text-gray-400">
           Gerez les roles et les permissions des utilisateurs
