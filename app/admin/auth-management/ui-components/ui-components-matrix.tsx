@@ -31,6 +31,7 @@ import {
   Trash2,
   Plus,
   Save,
+  Settings,
 } from "lucide-react"
 
 interface Role {
@@ -80,6 +81,9 @@ const iconMap: Record<string, any> = {
   Plus,
   Save,
   Square,
+  ChevronDown,
+  Check,
+  Settings,
 }
 
 export function UIComponentsMatrix({

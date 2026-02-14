@@ -301,6 +301,43 @@ const uiComponents = [
     icon: 'Save',
   },
 
+  // === Session Agent ===
+  {
+    name: 'session_agent_add_button',
+    displayName: 'Bouton Ajouter Agent',
+    category: 'Session Agent',
+    description: 'Bouton pour ajouter un nouvel agent à la session (sous-page liste des agents)',
+    icon: 'CirclePlus',
+  },
+  {
+    name: 'session_agent_delete_button',
+    displayName: 'Bouton Supprimer (Options)',
+    category: 'Session Agent',
+    description: 'Bouton de suppression d\'un agent dans la colonne Options de la liste des agents',
+    icon: 'Trash2',
+  },
+  {
+    name: 'session_agent_edit_button',
+    displayName: 'Bouton Éditer (Options)',
+    category: 'Session Agent',
+    description: 'Bouton d\'édition d\'un agent dans la colonne Options de la liste des agents',
+    icon: 'SquarePen',
+  },
+  {
+    name: 'session_agent_approve_button',
+    displayName: 'Bouton Approuver (Confirmation)',
+    category: 'Session Agent',
+    description: 'Bouton de confirmation de participation d\'un agent dans la colonne Confirmation de participation',
+    icon: 'Check',
+  },
+  {
+    name: 'session_agent_confirmation_dropdown',
+    displayName: 'Dropdown Résultat (Confirmation)',
+    category: 'Session Agent',
+    description: 'Dropdown de la colonne Confirmation de participation pour changer le statut/résultat d\'un agent confirmé',
+    icon: 'ChevronDown',
+  },
+
   // === Formateurs ===
   {
     name: 'formateur_search_name',
@@ -450,7 +487,7 @@ const uiComponents = [
   // === Header ===
   {
     name: 'header_admin_settings',
-    displayName: 'Paramètres admin (إعدادات)',
+    displayName: 'Paramètres admin',
     category: 'Header',
     description: 'Accéder au panneau d\'administration depuis le header',
     icon: 'Settings',
@@ -525,6 +562,11 @@ const defaultPermissions = {
     'session_dialog_edit_save_btn',
     'session_dialog_add_planning',
     'session_dialog_add_save_btn',
+    'session_agent_add_button',
+    'session_agent_delete_button',
+    'session_agent_edit_button',
+    'session_agent_approve_button',
+    'session_agent_confirmation_dropdown',
     'formateur_search_name',
     'formateur_sort_dropdown',
     'formateur_filter_dropdown',
@@ -562,6 +604,8 @@ const defaultPermissions = {
     'session_dialog_edit_save_btn',
     'session_dialog_add_planning',
     'session_dialog_add_save_btn',
+    'session_agent_approve_button',
+    'session_agent_confirmation_dropdown',
     'formateur_search_name',
     'formateur_filter_dropdown',
     'formateur_action_menu',
