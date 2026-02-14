@@ -1276,6 +1276,19 @@ export function ResizableTable({
                                   </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="start" side="bottom">
+                                  {can(userRole, "agentFormation", "create", permissionsMap) && (
+                                    <DropdownMenuItem
+                                      dir="rtl"
+                                      className="gap-2 cursor-pointer"
+                                      onClick={() => handleAddFormationClick(agent)}
+                                      disabled={!selectedAgents.includes(agent.id)}
+                                    >
+                                      <CirclePlus size={14} />
+                                      <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+                                        إضــافــة تكــويــــن
+                                      </span>
+                                    </DropdownMenuItem>
+                                  )}
                                   {can(userRole, "agent", "edit", permissionsMap) && (
                                     <DropdownMenuItem
                                       dir="rtl"
@@ -1307,19 +1320,6 @@ export function ResizableTable({
                                       قــائمــة التـربصـات
                                     </span>
                                   </DropdownMenuItem>
-                                  {can(userRole, "agentFormation", "create", permissionsMap) && (
-                                    <DropdownMenuItem
-                                      dir="rtl"
-                                      className="gap-2 cursor-pointer"
-                                      onClick={() => handleAddFormationClick(agent)}
-                                      disabled={!selectedAgents.includes(agent.id)}
-                                    >
-                                      <CirclePlus size={14} />
-                                      <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
-                                        إضــافــة تكــويــــن
-                                      </span>
-                                    </DropdownMenuItem>
-                                  )}
                                   {can(userRole, "agent", "delete", permissionsMap) && (
                                     <DropdownMenuItem
                                       dir="rtl"

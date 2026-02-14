@@ -17,8 +17,20 @@ import {
   BarChart,
   Move,
   Calendar,
+  CalendarDays,
   FileText,
   PieChart,
+  ToggleLeft,
+  Search,
+  ArrowUpDown,
+  UserPlus,
+  MoreVertical,
+  SquarePen,
+  GraduationCap,
+  CirclePlus,
+  Trash2,
+  Plus,
+  Save,
 } from "lucide-react"
 
 interface Role {
@@ -55,6 +67,18 @@ const iconMap: Record<string, any> = {
   Calendar,
   FileText,
   PieChart,
+  ToggleLeft,
+  Search,
+  ArrowUpDown,
+  UserPlus,
+  MoreVertical,
+  SquarePen,
+  GraduationCap,
+  CirclePlus,
+  Trash2,
+  CalendarDays,
+  Plus,
+  Save,
   Square,
 }
 
@@ -246,10 +270,10 @@ export function UIComponentsMatrix({
               {categories.map((category, categoryIdx) => (
                 <React.Fragment key={`category-${category}`}>
                   {/* Category header row */}
-                  <tr className="bg-muted/30">
+                  <tr className="bg-gray-200/60 dark:bg-blue-950/80">
                     <td
                       colSpan={roles.length + 1}
-                      className="px-4 py-2 font-semibold text-sm border-t border-border/50"
+                      className="px-4 py-2.5 font-semibold text-sm text-gray-800"
                     >
                       📁 {category}
                     </td>

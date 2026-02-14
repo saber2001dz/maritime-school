@@ -963,6 +963,23 @@ export function ResizableTableFormateur({
                                   </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="start" side="bottom">
+                                  {can(userRole, "coursFormateur", "create", permissionsMap) && (
+                                    <DropdownMenuItem
+                                      dir="rtl"
+                                      className="gap-2 cursor-pointer"
+                                      onClick={() => {
+                                        if (selectedFormateurs.includes(formateur.id)) {
+                                          handleOpenAddCoursDialog(formateur)
+                                        }
+                                      }}
+                                      disabled={!selectedFormateurs.includes(formateur.id)}
+                                    >
+                                      <CirclePlus size={14} />
+                                      <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
+                                        إضــــــــافـــــة درس
+                                      </span>
+                                    </DropdownMenuItem>
+                                  )}
                                   {can(userRole, "formateur", "edit", permissionsMap) && (
                                     <DropdownMenuItem
                                       dir="rtl"
@@ -993,23 +1010,6 @@ export function ResizableTableFormateur({
                                       <GraduationCap size={14} />
                                       <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
                                         قــائمـــة الـــــدروس
-                                      </span>
-                                    </DropdownMenuItem>
-                                  )}
-                                  {can(userRole, "coursFormateur", "create", permissionsMap) && (
-                                    <DropdownMenuItem
-                                      dir="rtl"
-                                      className="gap-2 cursor-pointer"
-                                      onClick={() => {
-                                        if (selectedFormateurs.includes(formateur.id)) {
-                                          handleOpenAddCoursDialog(formateur)
-                                        }
-                                      }}
-                                      disabled={!selectedFormateurs.includes(formateur.id)}
-                                    >
-                                      <CirclePlus size={14} />
-                                      <span style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}>
-                                        إضــــــــافـــــة درس
                                       </span>
                                     </DropdownMenuItem>
                                   )}
