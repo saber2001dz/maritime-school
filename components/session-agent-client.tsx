@@ -17,7 +17,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { useTheme } from "next-themes"
 import { useToast } from "@/components/ui/ultra-quality-toast"
 import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon"
 import { can } from "@/lib/permissions"
@@ -172,8 +171,6 @@ interface SessionAgentTableProps {
   confirmingRowId: string | null
   updatingResultatRowId: string | null
   inputRef: React.RefObject<HTMLInputElement | null>
-  mounted: boolean
-  isDark: boolean
   editingRowId: string | null
   editMatricule: string
   onEditMatriculeChange: (value: string) => void
@@ -201,8 +198,6 @@ const SessionAgentTable = ({
   confirmingRowId,
   updatingResultatRowId,
   inputRef,
-  mounted,
-  isDark,
   editingRowId,
   editMatricule,
   onEditMatriculeChange,
@@ -212,6 +207,7 @@ const SessionAgentTable = ({
   nombreParticipants = 0,
   isSessionFinished = false,
 }: SessionAgentTableProps) => {
+  const mounted = true
   const [openResultatDropdown, setOpenResultatDropdown] = useState<string | null>(null)
   const [resultatDropdownPos, setResultatDropdownPos] = useState<{ top: number; left: number } | null>(null)
   const resultatBtnRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
@@ -313,12 +309,12 @@ const SessionAgentTable = ({
                           : "hover:bg-muted/50"
                     }`}
                   >
-                    <td className={`font-medium text-center h-14 w-12 px-4 ${
+                    <td className={`font-medium text-center h-[52px] w-12 px-4 relative after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-200 dark:after:bg-zinc-700 ${
                       isOverCapacity
                         ? "text-red-700 dark:text-red-400"
                         : ""
                     }`}>{index + 1}</td>
-                    <td className="text-start h-14 w-48 px-4">
+                    <td className='text-start h-[52px] w-48 px-4 relative after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-200 dark:after:bg-zinc-700'>
                       <span className={`${
                         isOverCapacity
                           ? "text-red-700 dark:text-red-400"
@@ -327,14 +323,14 @@ const SessionAgentTable = ({
                         {project.repository}
                       </span>
                     </td>
-                    <td className="text-start h-14 w-32 px-4">
+                    <td className='text-start h-[52px] w-32 px-4 relative after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-200 dark:after:bg-zinc-700'>
                       <span className={`${notoNaskhArabicClassName} ${
                         isOverCapacity
                           ? "text-red-700 dark:text-red-400"
                           : ""
                       }`}>{project.team}</span>
                     </td>
-                    <td className={`text-start h-14 w-32 relative ${isEditing ? "px-2" : "px-4"}`}>
+                    <td className={`text-start h-[52px] w-32 relative after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-200 dark:after:bg-zinc-700 ${isEditing ? "px-2" : "px-4"}`}>
                       {isEditing ? (
                         <input
                           ref={editInputRef as any}
@@ -361,20 +357,20 @@ const SessionAgentTable = ({
                         }`}>{project.tech}</span>
                       )}
                     </td>
-                    <td className="text-start h-14 w-32 px-4">
+                    <td className='text-start h-[52px] w-32 px-4 relative after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-200 dark:after:bg-zinc-700'>
                       <div
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-xl border ${
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium whitespace-nowrap rounded-md ${
                           project.status.variant === "success"
-                            ? "bg-green-50 text-green-600 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-700"
+                            ? "bg-green-50 text-green-600 border border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-700"
                             : project.status.variant === "inProgress"
-                              ? "bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-700"
+                              ? "bg-yellow-50 text-yellow-600 border border-yellow-200 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-700"
                               : project.status.variant === "interrupted"
-                                ? "bg-red-50 text-red-600 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-700"
+                                ? "bg-red-50 text-red-600 border border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-700"
                                 : project.status.variant === "abandoned"
-                                  ? "bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-700"
+                                  ? "bg-orange-50 text-orange-600 border border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-700"
                                   : project.status.variant === "notJoined"
-                                    ? "bg-cyan-50 text-cyan-600 border-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-700"
-                                    : "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-700"
+                                    ? "bg-cyan-50 text-cyan-600 border border-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-700"
+                                    : "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-700"
                         }`}
                         style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}
                       >
@@ -396,7 +392,7 @@ const SessionAgentTable = ({
                         {project.status.text}
                       </div>
                     </td>
-                    <td className="text-center h-14 w-16 px-4">
+                    <td className={`text-center h-[52px] w-16 px-4 relative ${!isSessionFinished ? 'after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-200 dark:after:bg-zinc-700' : ""}`}>
                       {isEditing ? (
                         <div className="flex justify-center items-center gap-1">
                           <Tooltip>
@@ -404,13 +400,7 @@ const SessionAgentTable = ({
                               <button
                                 onClick={onSaveEdit}
                                 disabled={isUpdating}
-                                className={`p-1.5 rounded-md transition-all duration-150 cursor-pointer ${
-                                  mounted
-                                    ? isDark
-                                      ? "text-green-500 hover:bg-green-900/40 hover:text-green-400"
-                                      : "hover:bg-green-100 text-green-600/70 hover:text-green-600"
-                                    : "hover:bg-muted text-foreground/70"
-                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                className="p-1.5 rounded-md transition-all duration-150 cursor-pointer hover:bg-green-100 text-green-600/70 hover:text-green-600 dark:text-green-500 dark:hover:bg-green-900/40 dark:hover:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed"
                                 aria-label="Enregistrer"
                               >
                                 <Check size={16} />
@@ -426,13 +416,7 @@ const SessionAgentTable = ({
                               <button
                                 onClick={onCancelEdit}
                                 disabled={isUpdating}
-                                className={`p-1.5 rounded-md transition-all duration-150 cursor-pointer ${
-                                  mounted
-                                    ? isDark
-                                      ? "text-red-500 hover:bg-red-900/40 hover:text-red-400"
-                                      : "hover:bg-red-100 text-red-600/70 hover:text-red-600"
-                                    : "hover:bg-muted text-foreground/70"
-                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                className="p-1.5 rounded-md transition-all duration-150 cursor-pointer hover:bg-red-100 text-red-600/70 hover:text-red-600 dark:text-red-500 dark:hover:bg-red-900/40 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
                                 aria-label="Annuler"
                               >
                                 <X size={16} />
@@ -455,13 +439,7 @@ const SessionAgentTable = ({
                                   className={`p-1.5 rounded-md transition-all duration-150 ${
                                     isAddingNew
                                       ? "opacity-50 cursor-not-allowed text-foreground/70"
-                                      : `cursor-pointer ${
-                                          mounted
-                                            ? isDark
-                                              ? "text-blue-500 hover:bg-blue-900/40 hover:text-blue-400"
-                                              : "hover:bg-slate-200 text-[#06407F]/70 hover:text-[#06407F]"
-                                            : "hover:bg-muted text-foreground/70"
-                                        }`
+                                      : "cursor-pointer hover:bg-slate-200 text-[#06407F]/70 hover:text-[#06407F] dark:text-blue-500 dark:hover:bg-blue-900/40 dark:hover:text-blue-400"
                                   }`}
                                   aria-label="Modifier"
                                 >
@@ -482,13 +460,7 @@ const SessionAgentTable = ({
                                 className={`p-1.5 rounded-md transition-all duration-150 ${
                                   isAddingNew
                                     ? "opacity-50 cursor-not-allowed text-foreground/70"
-                                    : `cursor-pointer ${
-                                        mounted
-                                          ? isDark
-                                            ? "text-red-500 hover:bg-red-900/40 hover:text-red-400"
-                                            : "hover:bg-red-100 text-red-600/70 hover:text-red-600"
-                                          : "hover:bg-muted text-foreground/70"
-                                      }`
+                                    : "cursor-pointer hover:bg-red-100 text-red-600/70 hover:text-red-600 dark:text-red-500 dark:hover:bg-red-900/40 dark:hover:text-red-400"
                                 }`}
                                 aria-label="Supprimer"
                               >
@@ -504,7 +476,7 @@ const SessionAgentTable = ({
                     </td>
                     {/* Colonne de confirmation - seulement si session non terminée */}
                     {!isSessionFinished && (
-                      <td className="text-center h-14 w-28 min-w-28 max-w-28 px-2">
+                      <td className="text-center h-[52px] w-28 min-w-28 max-w-28 px-2">
                         <div className="flex items-center justify-center w-full h-full">
                           {isConfirmed ? (
                             /* Dropdown pour changer le résultat */
@@ -517,27 +489,15 @@ const SessionAgentTable = ({
                                 onClick={() => updatingResultatRowId !== project.id && setOpenResultatDropdown(openResultatDropdown === project.id ? null : project.id)}
                                 disabled={updatingResultatRowId === project.id}
                                 className={`flex items-center justify-between gap-1 min-w-[118px] px-2 py-2 rounded-md border transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
-                                  mounted
-                                    ? isDark
-                                      ? project.status.variant === "success"
-                                        ? "border-green-700 bg-green-900/30 text-green-400 hover:bg-green-900/50"
-                                        : project.status.variant === "inProgress"
-                                          ? "border-yellow-700 bg-yellow-900/30 text-yellow-400 hover:bg-yellow-900/50"
-                                          : project.status.variant === "interrupted"
-                                            ? "border-red-700 bg-red-900/30 text-red-400 hover:bg-red-900/50"
-                                            : project.status.variant === "abandoned"
-                                              ? "border-orange-700 bg-orange-900/30 text-orange-400 hover:bg-orange-900/50"
-                                              : "border-cyan-700 bg-cyan-900/30 text-cyan-400 hover:bg-cyan-900/50"
-                                      : project.status.variant === "success"
-                                        ? "border-green-600 bg-green-50 text-green-700 hover:bg-green-100"
-                                        : project.status.variant === "inProgress"
-                                          ? "border-yellow-600 bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
-                                          : project.status.variant === "interrupted"
-                                            ? "border-red-600 bg-red-50 text-red-700 hover:bg-red-100"
-                                            : project.status.variant === "abandoned"
-                                              ? "border-orange-600 bg-orange-50 text-orange-700 hover:bg-orange-100"
-                                              : "border-cyan-600 bg-cyan-50 text-cyan-700 hover:bg-cyan-100"
-                                    : "border-border bg-muted/30 text-foreground/80"
+                                  project.status.variant === "success"
+                                    ? "border-green-600 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-700 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
+                                    : project.status.variant === "inProgress"
+                                      ? "border-yellow-600 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/50"
+                                      : project.status.variant === "interrupted"
+                                        ? "border-red-600 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-700 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
+                                        : project.status.variant === "abandoned"
+                                          ? "border-orange-600 bg-orange-50 text-orange-700 hover:bg-orange-100 dark:border-orange-700 dark:bg-orange-900/30 dark:text-orange-400 dark:hover:bg-orange-900/50"
+                                          : "border-cyan-600 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 dark:border-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 dark:hover:bg-cyan-900/50"
                                 }`}
                               >
                                 {updatingResultatRowId === project.id
@@ -589,13 +549,7 @@ const SessionAgentTable = ({
                             <button
                               onClick={() => onConfirmParticipation?.(project)}
                               disabled={confirmingRowId === project.id}
-                              className={`flex items-center justify-center gap-0.5 min-w-[118px] px-2 py-2 rounded-md border transition-all duration-200 cursor-pointer ${
-                                mounted
-                                  ? isDark
-                                    ? "border-border bg-blue-950/30 hover:bg-blue-950/50 text-foreground/80 hover:text-foreground"
-                                    : "border-border bg-slate-50 hover:bg-slate-100 text-[#06407F]/80 hover:text-[#06407F]"
-                                  : "border-border bg-muted/30 hover:bg-muted/50 text-foreground/80"
-                              } disabled:opacity-50 disabled:cursor-not-allowed`}
+                              className="flex items-center justify-center gap-0.5 min-w-[118px] px-2 py-2 rounded-md border transition-all duration-200 cursor-pointer border-border bg-slate-50 hover:bg-slate-100 text-[#06407F]/80 hover:text-[#06407F] dark:bg-blue-950/30 dark:hover:bg-blue-950/50 dark:text-foreground/80 dark:hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {confirmingRowId === project.id
                                 ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
@@ -628,16 +582,16 @@ const SessionAgentTable = ({
             {/* Ligne en mode ajout - affichée en dernière position */}
             {isAddingNew && (
               <tr className="border-b transition-colors bg-blue-50/50 dark:bg-blue-950/20">
-                <td className="font-medium text-center h-14 w-12 px-4">{projects.length + 1}</td>
-                <td className="text-start h-14 w-48 px-4">
+                <td className='font-medium text-center h-[52px] w-12 px-4 relative after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-200 dark:after:bg-zinc-700'>{projects.length + 1}</td>
+                <td className='text-start h-[52px] w-48 px-4 relative after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-200 dark:after:bg-zinc-700'>
                   <span className="text-foreground/30" style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}>
                     -
                   </span>
                 </td>
-                <td className="text-start h-14 w-32 px-4">
+                <td className='text-start h-[52px] w-32 px-4 relative after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-200 dark:after:bg-zinc-700'>
                   <span className={`${notoNaskhArabicClassName} text-foreground/30`}>-</span>
                 </td>
-                <td className="text-start h-14 w-32 px-2 relative">
+                <td className='text-start h-[52px] w-32 px-2 relative after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-200 dark:after:bg-zinc-700'>
                   <input
                     ref={inputRef as any}
                     type="text"
@@ -653,23 +607,17 @@ const SessionAgentTable = ({
                     autoFocus
                   />
                 </td>
-                <td className="text-start h-14 w-32 px-4">
+                <td className='text-start h-[52px] w-32 px-4 relative after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-200 dark:after:bg-zinc-700'>
                   <span className="text-sm text-muted-foreground/50">-</span>
                 </td>
-                <td className="text-center h-14 w-16 px-4">
+                <td className={`text-center h-[52px] w-16 px-4 relative ${!isSessionFinished ? 'after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-200 dark:after:bg-zinc-700' : ""}`}>
                   <div className="flex justify-center items-center gap-1">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
                           onClick={onCancelAdd}
                           disabled={isUpdating}
-                          className={`p-1.5 rounded-md transition-all duration-150 cursor-pointer ${
-                            mounted
-                              ? isDark
-                                ? "hover:bg-red-950/50 text-foreground/70 hover:text-red-400"
-                                : "hover:bg-red-100 text-red-600/70 hover:text-red-600"
-                              : "hover:bg-muted text-foreground/70"
-                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          className="p-1.5 rounded-md transition-all duration-150 cursor-pointer hover:bg-red-100 text-red-600/70 hover:text-red-600 dark:hover:bg-red-950/50 dark:text-foreground/70 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
                           aria-label="إلغاء"
                         >
                           <X size={16} />
@@ -683,7 +631,7 @@ const SessionAgentTable = ({
                 </td>
                 {/* Colonne de confirmation - seulement si session non terminée */}
                 {!isSessionFinished && (
-                  <td className="text-center h-14 w-28 min-w-28 max-w-28 px-2">
+                  <td className="text-center h-[52px] w-28 min-w-28 max-w-28 px-2">
                     <span className="text-sm text-muted-foreground/50">-</span>
                   </td>
                 )}
@@ -709,10 +657,7 @@ export default function SessionAgentClient({
 }: SessionAgentClientProps) {
   const permissionsMap = usePermissions()
   const router = useRouter()
-  const { theme } = useTheme()
   const { addToast } = useToast()
-  const [mounted, setMounted] = useState(false)
-  const isDark = theme === "dark"
   const [visibleColumns, setVisibleColumns] = useState<Set<keyof Project>>(new Set(allColumns))
   const [isUpdating, setIsUpdating] = useState(false)
   const [confirmingRowId, setConfirmingRowId] = useState<string | null>(null)
@@ -744,10 +689,6 @@ export default function SessionAgentClient({
   const [filteredEditAgents, setFilteredEditAgents] = useState<Agent[]>([])
   const [showEditSuggestions, setShowEditSuggestions] = useState(false)
   const editInputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   // Synchroniser localData avec initialData quand il change
   useEffect(() => {
@@ -1294,13 +1235,7 @@ export default function SessionAgentClient({
                     <button
                       onClick={handleAddNewAgent}
                       disabled={isAddingNew || editingRowId !== null}
-                      className={`ml-1 p-2 border border-border text-sm transition-colors flex items-center justify-center rounded-md cursor-pointer ${
-                        mounted
-                          ? isDark
-                            ? "bg-blue-950/40 text-foreground/90 hover:bg-blue-950/60"
-                            : "bg-slate-100 text-[#06407F] hover:bg-slate-200"
-                          : "bg-muted/5 text-foreground hover:bg-muted/10"
-                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      className="ml-1 p-2 border border-border text-sm transition-colors flex items-center justify-center rounded-md cursor-pointer bg-slate-100 text-[#06407F] hover:bg-slate-200 dark:bg-blue-950/40 dark:text-foreground/90 dark:hover:bg-blue-950/60 disabled:opacity-50 disabled:cursor-not-allowed"
                       aria-label="إضافة عون جديد"
                     >
                       <CirclePlus size={16} />
@@ -1336,8 +1271,6 @@ export default function SessionAgentClient({
             confirmingRowId={confirmingRowId}
             updatingResultatRowId={updatingResultatRowId}
             inputRef={inputRef}
-            mounted={mounted}
-            isDark={isDark}
             editingRowId={editingRowId}
             editMatricule={editMatricule}
             onEditMatriculeChange={setEditMatricule}

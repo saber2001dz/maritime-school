@@ -7,7 +7,8 @@ type FormattedSession = {
   formationName: string
   dateDebut: string
   dateFin: string
-  nombreParticipants: number
+  nombreParticipantsReels: number
+  capaciteAbsorption: number | null
 }
 
 type SessionsListProps = {
@@ -37,7 +38,7 @@ export function SessionsList({ sessions }: SessionsListProps) {
             ease: "easeOut"
           }}
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-sm font-medium">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 text-sm font-medium">
             {String(index + 1).padStart(2, "0")}
           </div>
           <div className="mr-4 space-y-3 flex-1">
@@ -48,7 +49,11 @@ export function SessionsList({ sessions }: SessionsListProps) {
               <span dir="ltr">{session.dateDebut}</span> إلى <span dir="ltr">{session.dateFin}</span>
             </p>
           </div>
-          <div className="ml-auto">{session.nombreParticipants}</div>
+          <div className="ml-auto text-sm tabular-nums">
+            <span style={{ color: "#1071C7" }}>{session.nombreParticipantsReels}</span>
+            {" / "}
+            {session.capaciteAbsorption ?? "—"}
+          </div>
         </motion.div>
       ))}
     </div>

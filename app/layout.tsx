@@ -3,8 +3,6 @@ import { Cairo } from "next/font/google"
 import localFont from "next/font/local"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { TooltipProvider } from "@/components/ui/tooltip"
-import { ToastProvider } from "@/components/ui/ultra-quality-toast"
 
 const cairo = Cairo({
   variable: "--font-cairo",
@@ -31,11 +29,7 @@ export default function RootLayout({
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body className={`${cairo.variable} ${notoNaskhArabic.variable} antialiased font-sans`} style={{ fontFamily: "var(--font-cairo)" }} suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <ToastProvider>
-            <TooltipProvider>
-              {children}
-            </TooltipProvider>
-          </ToastProvider>
+          {children}
         </ThemeProvider>
       </body>
     </html>

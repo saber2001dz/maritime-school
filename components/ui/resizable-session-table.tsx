@@ -1,9 +1,8 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion"
-import { useTheme } from "next-themes"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname, ReadonlyURLSearchParams } from "next/navigation"
 import * as XLSX from "xlsx"
 import {
   Download,
@@ -67,6 +66,7 @@ interface ResizableSessionTableProps {
   className?: string
   enableAnimations?: boolean
   userRole?: string | null
+  searchParams?: ReadonlyURLSearchParams | null
 }
 
 type SortField = "formation" | "dateDebut" | "dateFin" | "nombreParticipants" | "createdAt"
@@ -79,32 +79,32 @@ const normalizeArabicText = (text: string): string => {
     .toLowerCase()
 }
 
-// Helper function to get status badge colors
-const getStatusColor = (statut: string, isDark: boolean) => {
+// Helper function to get status badge colors (using Tailwind dark: classes to avoid hydration mismatch)
+const getStatusColor = (statut: string) => {
   switch (statut) {
     case "مبرمجة": // Scheduled
       return {
-        bgColor: isDark ? "bg-blue-500/10" : "bg-blue-50",
-        textColor: isDark ? "text-blue-400" : "text-blue-600",
-        dotColor: isDark ? "bg-blue-400" : "bg-blue-600",
+        bgColor: "bg-blue-50 dark:bg-blue-500/10",
+        textColor: "text-blue-600 dark:text-blue-400",
+        dotColor: "bg-blue-600 dark:bg-blue-400",
       }
     case "قيد التنفيذ": // In Progress
       return {
-        bgColor: isDark ? "bg-green-500/10" : "bg-green-50",
-        textColor: isDark ? "text-green-400" : "text-green-600",
-        dotColor: isDark ? "bg-green-400" : "bg-green-600",
+        bgColor: "bg-green-50 dark:bg-green-500/10",
+        textColor: "text-green-600 dark:text-green-400",
+        dotColor: "bg-green-600 dark:bg-green-400",
       }
     case "انتهت": // Completed
       return {
-        bgColor: isDark ? "bg-orange-500/10" : "bg-orange-50",
-        textColor: isDark ? "text-orange-400" : "text-orange-600",
-        dotColor: isDark ? "bg-orange-400" : "bg-orange-600",
+        bgColor: "bg-orange-50 dark:bg-orange-500/10",
+        textColor: "text-orange-600 dark:text-orange-400",
+        dotColor: "bg-orange-600 dark:bg-orange-400",
       }
     default:
       return {
-        bgColor: isDark ? "bg-gray-500/10" : "bg-gray-50",
-        textColor: isDark ? "text-gray-400" : "text-gray-600",
-        dotColor: isDark ? "bg-gray-400" : "bg-gray-600",
+        bgColor: "bg-gray-50 dark:bg-gray-500/10",
+        textColor: "text-gray-600 dark:text-gray-400",
+        dotColor: "bg-gray-600 dark:bg-gray-400",
       }
   }
 }
@@ -118,9 +118,17 @@ export function ResizableSessionTable({
   className = "",
   enableAnimations = true,
   userRole,
+  searchParams,
 }: ResizableSessionTableProps) {
   const permissionsMap = usePermissions()
-  const [mounted, setMounted] = useState(false)
+  const router = useRouter()
+  const pathname = usePathname()
+
+  // Parse URL params for initial state
+  const selectedParam = searchParams?.get('selected')
+  const selectedFromUrl = selectedParam ? [selectedParam.split(',')[0]] : []
+
+  const mounted = useRef(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [sortField, setSortField] = useState<SortField | null>("createdAt")
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
@@ -133,24 +141,12 @@ export function ResizableSessionTable({
   const [showYearMenu, setShowYearMenu] = useState(false)
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [searchReference, setSearchReference] = useState<string>("")
-  const [selectedSessions, setSelectedSessions] = useState<string[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = sessionStorage.getItem("session-table-selected")
-      if (saved) {
-        sessionStorage.removeItem("session-table-selected")
-        return JSON.parse(saved)
-      }
-    }
-    return []
-  })
+  const [selectedSessions, setSelectedSessions] = useState<string[]>(selectedFromUrl)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [sessionToDelete, setSessionToDelete] = useState<SessionFormation | null>(null)
 
   const shouldReduceMotion = useReducedMotion()
-  const { theme } = useTheme()
-  const isDark = theme === "dark"
   const { addToast } = useToast()
-  const router = useRouter()
 
   // Column width state with default values
   const [columnWidths] = useState<Record<string, number>>({
@@ -166,9 +162,21 @@ export function ResizableSessionTable({
 
   const itemsPerPage = 10
 
+  // Sync selected session to URL
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    if (!mounted.current) {
+      mounted.current = true
+      return
+    }
+
+    const params = new URLSearchParams()
+    if (selectedSessions.length > 0) {
+      params.set('selected', selectedSessions[0])
+    }
+
+    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname
+    router.push(newUrl, { scroll: false })
+  }, [selectedSessions, pathname, router])
 
   // Filtrage et recherche
   const filteredSessions = useMemo(() => {
@@ -465,8 +473,10 @@ export function ResizableSessionTable({
 
   // Gestion de la navigation vers la liste des participants
   const handleViewParticipants = (session: SessionFormation) => {
-    sessionStorage.setItem("session-table-selected", JSON.stringify([session.id]))
-    router.push(`/session-formation/session-agent?sessionFormationId=${session.id}`)
+    const params = new URLSearchParams()
+    params.set('selected', session.id)
+    const returnUrl = `${pathname}?${params.toString()}`
+    router.push(`/session-formation/session-agent?sessionFormationId=${session.id}&returnUrl=${encodeURIComponent(returnUrl)}`)
   }
 
   const formatDateYYYYMMDD = (date: Date) => {
@@ -678,7 +688,7 @@ export function ResizableSessionTable({
                 <div className="absolute right-0 mt-1 w-56 bg-background border border-border/50 shadow-lg rounded-md z-20 py-1">
                   {/* Formation Type Filter */}
                   <div
-                    className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b border-border/50"
+                    className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b border-border/50 bg-slate-100 dark:bg-blue-950/40"
                     style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                   >
                     نـوع التـكـويـن
@@ -710,7 +720,7 @@ export function ResizableSessionTable({
 
                   {/* Status Filter */}
                   <div
-                    className="px-3 py-2 text-xs font-semibold text-muted-foreground border-t border-b border-border/50 mt-1"
+                    className="px-3 py-2 text-xs font-semibold text-muted-foreground border-t border-b border-border/50 mt-1 bg-slate-100 dark:bg-blue-950/40"
                     style={{ fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                   >
                     الوضعية
@@ -866,13 +876,7 @@ export function ResizableSessionTable({
               <TooltipTrigger asChild>
                 <button
                   onClick={onAddNewSession}
-                  className={`ml-1 p-2 border border-border text-sm transition-colors flex items-center justify-center rounded-md cursor-pointer ${
-                    mounted
-                      ? isDark
-                        ? "bg-blue-950/40 text-foreground/90 hover:bg-blue-950/60"
-                        : "bg-slate-100 text-[#06407F] hover:bg-slate-200"
-                      : "bg-muted/5 text-foreground hover:bg-muted/10"
-                  }`}
+                  className="ml-1 p-2 border border-border text-sm transition-colors flex items-center justify-center rounded-md cursor-pointer bg-slate-100 text-[#06407F] hover:bg-slate-200 dark:bg-blue-950/40 dark:text-foreground/90 dark:hover:bg-blue-950/60"
                   aria-label="إضافة دورة جديدة"
                 >
                   <CirclePlus size={16} />
@@ -889,28 +893,18 @@ export function ResizableSessionTable({
       {/* Table */}
       <div
         className={`bg-background overflow-hidden rounded-lg relative ${
-          mounted ? (isDark ? "border border-zinc-600" : "border border-zinc-300") : "border-2 border-border"
+          "border border-zinc-300 dark:border-zinc-600"
         }`}
       >
         <div className="overflow-x-auto">
           <div className="min-w-[1200px]">
             {/* En-tête du tableau */}
             <div
-              className={`flex py-3 text-xs font-semibold text-[#06407F] dark:text-foreground/90 ${
-                mounted
-                  ? isDark
-                    ? "bg-blue-950/40 border-b border-zinc-600"
-                    : "bg-slate-100 border-b border-zinc-300"
-                  : "bg-muted/5 border-b-2 border-border"
-              }`}
+              className="flex py-3 text-xs font-semibold text-[#06407F] dark:text-foreground/90 bg-slate-100 border-b border-zinc-300 dark:bg-blue-950/40 dark:border-zinc-600"
             >
               <div
                 className={`flex items-center justify-center ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.number }}
               >
@@ -919,11 +913,7 @@ export function ResizableSessionTable({
 
               <div
                 className={`flex items-center px-3 relative gap-1.5 ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.formation }}
               >
@@ -933,11 +923,7 @@ export function ResizableSessionTable({
 
               <div
                 className={`flex items-center px-3 relative ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.dateDebut }}
               >
@@ -947,11 +933,7 @@ export function ResizableSessionTable({
 
               <div
                 className={`flex items-center px-3 relative ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.dateFin }}
               >
@@ -960,11 +942,7 @@ export function ResizableSessionTable({
 
               <div
                 className={`flex items-center px-3 relative ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.nombreParticipants }}
               >
@@ -974,11 +952,7 @@ export function ResizableSessionTable({
 
               <div
                 className={`flex items-center px-3 relative ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.reference }}
               >
@@ -987,11 +961,7 @@ export function ResizableSessionTable({
 
               <div
                 className={`flex items-center px-3 relative ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.statut }}
               >
@@ -1030,26 +1000,14 @@ export function ResizableSessionTable({
                         <div
                           className={`flex items-center text-sm ${
                             selectedSessions.includes(session.id)
-                              ? isDark
-                                ? "bg-zinc-700/60"
-                                : "bg-gray-300/40"
-                              : "bg-muted/5 hover:bg-muted/20"
-                          } ${
-                            mounted
-                              ? isDark
-                                ? "border-b border-zinc-700"
-                                : "border-b border-zinc-200"
-                              : "border-b-2 border-border"
-                          } transition-colors`}
+                              ? "bg-gray-300/40 dark:bg-zinc-700/60"
+                              : "bg-muted/5 hover:bg-muted/20 dark:bg-card"
+                          } border-b border-zinc-200 dark:border-zinc-700 transition-colors`}
                         >
                           {/* Checkbox */}
                           <div
                             className={`flex items-center justify-center py-2 ${
-                              mounted
-                                ? isDark
-                                  ? "border-l border-zinc-700"
-                                  : "border-l border-zinc-200"
-                                : "border-l-2 border-border"
+                              "border-l border-zinc-200 dark:border-zinc-700"
                             }`}
                             style={{ width: columnWidths.number }}
                           >
@@ -1058,24 +1016,14 @@ export function ResizableSessionTable({
                               checked={selectedSessions.includes(session.id)}
                               onChange={() => handleCheckboxChange(session.id)}
                               className="w-4 h-4 rounded border-border/40 cursor-pointer"
-                              style={
-                                mounted
-                                  ? {
-                                      accentColor: isDark ? "rgb(113, 113, 122)" : "rgb(161, 161, 170)",
-                                    }
-                                  : {}
-                              }
+                              style={{ accentColor: "rgb(161, 161, 170)" }}
                             />
                           </div>
 
                           {/* Formation */}
                           <div
                             className={`px-3 py-2 ${
-                              mounted
-                                ? isDark
-                                  ? "border-l border-zinc-700"
-                                  : "border-l border-zinc-200"
-                                : "border-l-2 border-border"
+                              "border-l border-zinc-200 dark:border-zinc-700"
                             }`}
                             style={{ width: columnWidths.formation, fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                           >
@@ -1088,11 +1036,7 @@ export function ResizableSessionTable({
                           {/* Date début */}
                           <div
                             className={`px-3 py-2 ${
-                              mounted
-                                ? isDark
-                                  ? "border-l border-zinc-700"
-                                  : "border-l border-zinc-200"
-                                : "border-l-2 border-border"
+                              "border-l border-zinc-200 dark:border-zinc-700"
                             }`}
                             style={{ width: columnWidths.dateDebut }}
                           >
@@ -1105,11 +1049,7 @@ export function ResizableSessionTable({
                           {/* Date fin */}
                           <div
                             className={`px-3 py-2 ${
-                              mounted
-                                ? isDark
-                                  ? "border-l border-zinc-700"
-                                  : "border-l border-zinc-200"
-                                : "border-l-2 border-border"
+                              "border-l border-zinc-200 dark:border-zinc-700"
                             }`}
                             style={{ width: columnWidths.dateFin }}
                           >
@@ -1122,11 +1062,7 @@ export function ResizableSessionTable({
                           {/* Nombre participants */}
                           <div
                             className={`px-3 py-2 ${
-                              mounted
-                                ? isDark
-                                  ? "border-l border-zinc-700"
-                                  : "border-l border-zinc-200"
-                                : "border-l-2 border-border"
+                              "border-l border-zinc-200 dark:border-zinc-700"
                             }`}
                             style={{ width: columnWidths.nombreParticipants }}
                           >
@@ -1143,11 +1079,7 @@ export function ResizableSessionTable({
                           {/* Référence */}
                           <div
                             className={`px-3 py-2 ${
-                              mounted
-                                ? isDark
-                                  ? "border-l border-zinc-700"
-                                  : "border-l border-zinc-200"
-                                : "border-l-2 border-border"
+                              "border-l border-zinc-200 dark:border-zinc-700"
                             }`}
                             style={{ width: columnWidths.reference, fontFamily: "'Noto Naskh Arabic', sans-serif" }}
                           >
@@ -1157,16 +1089,12 @@ export function ResizableSessionTable({
                           {/* Statut */}
                           <div
                             className={`px-3 py-2 ${
-                              mounted
-                                ? isDark
-                                  ? "border-l border-zinc-700"
-                                  : "border-l border-zinc-200"
-                                : "border-l-2 border-border"
+                              "border-l border-zinc-200 dark:border-zinc-700"
                             }`}
                             style={{ width: columnWidths.statut }}
                           >
                             {(() => {
-                              const { bgColor, textColor, dotColor } = getStatusColor(session.statut, isDark)
+                              const { bgColor, textColor, dotColor } = getStatusColor(session.statut)
                               return (
                                 <div
                                   className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium whitespace-nowrap ${bgColor} ${textColor} rounded-md`}

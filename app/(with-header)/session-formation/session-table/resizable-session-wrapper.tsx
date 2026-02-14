@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { ResizableSessionTableWithToast, type SessionFormation } from "@/components/ui/resizable-session-table"
 import { SessionEventDialogAdapter } from "@/components/session-event-dialog-adapter"
 import { can } from "@/lib/permissions"
@@ -21,6 +22,7 @@ export function ResizableSessionWrapper({
   onSessionDeleted,
   userRole,
 }: ResizableSessionWrapperProps) {
+  const searchParams = useSearchParams()
   const permissionsMap = usePermissions()
   const [selectedSession, setSelectedSession] = useState<SessionFormation | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -73,6 +75,7 @@ export function ResizableSessionWrapper({
         onAddNewSession={can(userRole, "sessionFormation", "create", permissionsMap) ? handleAddNewSession : undefined}
         onEditSession={can(userRole, "sessionFormation", "edit", permissionsMap) ? handleEditSession : undefined}
         userRole={userRole}
+        searchParams={searchParams}
       />
 
       <SessionEventDialogAdapter

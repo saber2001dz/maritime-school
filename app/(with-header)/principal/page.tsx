@@ -63,15 +63,27 @@ export default async function PrincipalPage() {
   const now = new Date()
   now.setHours(0, 0, 0, 0) // Normaliser au début du jour
 
+  const sessionInclude = {
+    formation: {
+      select: {
+        formation: true,
+        capaciteAbsorption: true,
+      },
+    },
+    agentFormations: {
+      select: {
+        resultat: true,
+      },
+    },
+  }
+
   // Sessions en cours (dateDebut <= now <= dateFin) - tri croissant
   const sessionsEnCours = await prisma.sessionFormation.findMany({
     where: {
       dateDebut: { lte: now },
       dateFin: { gte: now },
     },
-    include: {
-      formation: true,
-    },
+    include: sessionInclude,
     orderBy: {
       dateDebut: 'asc',
     },
@@ -82,9 +94,7 @@ export default async function PrincipalPage() {
     where: {
       dateDebut: { gt: now },
     },
-    include: {
-      formation: true,
-    },
+    include: sessionInclude,
     orderBy: {
       dateDebut: 'asc',
     },
@@ -95,9 +105,7 @@ export default async function PrincipalPage() {
     where: {
       dateFin: { lt: now },
     },
-    include: {
-      formation: true,
-    },
+    include: sessionInclude,
     orderBy: {
       dateDebut: 'desc',
     },
@@ -121,7 +129,10 @@ export default async function PrincipalPage() {
     formationName: session.formation.formation,
     dateDebut: formatDate(session.dateDebut),
     dateFin: formatDate(session.dateFin),
-    nombreParticipants: session.nombreParticipants,
+    nombreParticipantsReels: session.agentFormations.filter(
+      af => af.resultat !== null && af.resultat !== "لم يلتحق"
+    ).length,
+    capaciteAbsorption: session.formation.capaciteAbsorption,
   }))
 
   return (

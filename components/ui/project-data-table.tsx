@@ -1,4 +1,3 @@
-import * as React from "react";
 import { motion, type Variants } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -12,7 +11,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { useTheme } from "next-themes";
 
 // --- TYPE DEFINITIONS ---
 type StatusVariant = "success" | "inProgress" | "interrupted" | "abandoned" | "notJoined" | "pending";
@@ -78,14 +76,6 @@ const dotVariants = cva("w-1.5 h-1.5 rounded-full", {
 
 // --- MAIN COMPONENT ---
 export const ProjectDataTable = ({ projects, visibleColumns, onEditClick, customHeaders, notoNaskhArabicClassName }: ProjectDataTableProps) => {
-  const [mounted, setMounted] = React.useState(false);
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
   // Animation variants for table rows
   const rowVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
@@ -142,34 +132,34 @@ export const ProjectDataTable = ({ projects, visibleColumns, onEditClick, custom
                   variants={rowVariants}
                   className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
                 >
-                  {visibleColumns.has("name") && <TableCell className="font-medium text-center h-14 w-12">{index + 1}</TableCell>}
+                  {visibleColumns.has("name") && <TableCell className='font-medium text-center h-14 w-12 relative after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-200 dark:after:bg-zinc-700'>{index + 1}</TableCell>}
 
                   {visibleColumns.has("repository") && (
-                    <TableCell className="text-start h-14 w-48">
+                    <TableCell className='text-start h-14 w-48 relative after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-200 dark:after:bg-zinc-700'>
                       <span className="text-foreground" style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}>{project.repository}</span>
                     </TableCell>
                   )}
 
                   {visibleColumns.has("team") && (
-                    <TableCell className="text-start h-14 w-32">
+                    <TableCell className='text-start h-14 w-32 relative after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-200 dark:after:bg-zinc-700'>
                       <span className={notoNaskhArabicClassName}>{project.team}</span>
                     </TableCell>
                   )}
-                  {visibleColumns.has("tech") && <TableCell className="text-start h-14 w-32">{project.tech}</TableCell>}
+                  {visibleColumns.has("tech") && <TableCell className='text-start h-14 w-32 relative after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-200 dark:after:bg-zinc-700'>{project.tech}</TableCell>}
                   {visibleColumns.has("createdAt") && (
-                    <TableCell className="text-start h-14 w-40">
+                    <TableCell className='text-start h-14 w-40 relative after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-200 dark:after:bg-zinc-700'>
                       <span style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}>{project.createdAt}</span>
                     </TableCell>
                   )}
                   {visibleColumns.has("contributors") && (
-                    <TableCell className="text-start h-14 w-20">
+                    <TableCell className='text-start h-14 w-20 relative after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-200 dark:after:bg-zinc-700'>
                       {project.contributors}
                     </TableCell>
                   )}
 
                   {visibleColumns.has("status") && (
-                    <TableCell className="text-start h-14 w-32">
-                      <div className={cn(badgeVariants({ variant: project.status.variant }), "inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-xl")} style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}>
+                    <TableCell className='text-start h-14 w-32 relative after:content-[""] after:absolute after:left-0 after:top-2 after:bottom-2 after:w-px after:bg-zinc-200 dark:after:bg-zinc-700'>
+                      <div className={cn(badgeVariants({ variant: project.status.variant }), "inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium whitespace-nowrap rounded-md")} style={{ fontFamily: "var(--font-noto-naskh-arabic)" }}>
                         <div className={cn(dotVariants({ variant: project.status.variant }))}></div>
                         {project.status.text}
                       </div>
@@ -182,13 +172,7 @@ export const ProjectDataTable = ({ projects, visibleColumns, onEditClick, custom
                         <TooltipTrigger asChild>
                           <button
                             onClick={() => onEditClick?.(project)}
-                            className={`p-1.5 rounded-md transition-all duration-150 cursor-pointer ${
-                              mounted
-                                ? isDark
-                                  ? "hover:bg-blue-950/50 text-foreground/70 hover:text-foreground"
-                                  : "hover:bg-slate-200 text-[#06407F]/70 hover:text-[#06407F]"
-                                : "hover:bg-muted text-foreground/70"
-                            }`}
+                            className="p-1.5 rounded-md transition-all duration-150 cursor-pointer hover:bg-slate-200 text-[#06407F]/70 hover:text-[#06407F] dark:hover:bg-blue-950/50 dark:text-foreground/70 dark:hover:text-foreground"
                             aria-label="Modifier"
                           >
                             <SquarePen size={16} />

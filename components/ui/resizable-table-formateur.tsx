@@ -1,9 +1,8 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { useRouter, usePathname, ReadonlyURLSearchParams } from "next/navigation"
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion"
-import { useTheme } from "next-themes"
 import * as XLSX from "xlsx"
 import {
   Download,
@@ -116,8 +115,6 @@ export function ResizableTableFormateur({
   const router = useRouter()
   const pathname = usePathname()
   const shouldReduceMotion = useReducedMotion()
-  const { theme } = useTheme()
-  const isDark = theme === "dark"
   const { addToast } = useToast()
 
   // Parse URL params for initial state
@@ -130,7 +127,7 @@ export function ResizableTableFormateur({
   const gradeFromUrl = searchParams?.get('grade') || null
   const searchFromUrl = searchParams?.get('search') || ''
 
-  const [mounted, setMounted] = useState(false)
+  const mounted = useRef(false)
   const [currentPage, setCurrentPage] = useState(pageFromUrl)
   const [sortField, setSortField] = useState<SortField | null>(sortFromUrl)
   const [sortOrder, setSortOrder] = useState<SortOrder>(orderFromUrl)
@@ -161,13 +158,12 @@ export function ResizableTableFormateur({
 
   const ITEMS_PER_PAGE = 10
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
   // Sync state changes to URL - runs after state updates, not during render
   useEffect(() => {
-    if (!mounted) return // Don't run on initial mount
+    if (!mounted.current) {
+      mounted.current = true
+      return
+    }
 
     const params = new URLSearchParams()
 
@@ -191,7 +187,7 @@ export function ResizableTableFormateur({
 
     const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname
     router.push(newUrl, { scroll: false })
-  }, [selectedFormateurs, currentPage, sortField, sortOrder, filterGrade, searchQuery, pathname, router, mounted])
+  }, [selectedFormateurs, currentPage, sortField, sortOrder, filterGrade, searchQuery, pathname, router])
 
   const handleSort = (field: SortField | null) => {
     if (field === null) {
@@ -726,13 +722,7 @@ export function ResizableTableFormateur({
               <TooltipTrigger asChild>
                 <button
                   onClick={onAddNewFormateur}
-                  className={`ml-1 p-2 border border-border text-sm transition-colors flex items-center justify-center rounded-md cursor-pointer ${
-                    mounted
-                      ? isDark
-                        ? "bg-blue-950/40 text-foreground/90 hover:bg-blue-950/60"
-                        : "bg-slate-100 text-[#06407F] hover:bg-slate-200"
-                      : "bg-muted/5 text-foreground hover:bg-muted/10"
-                  }`}
+                  className="ml-1 p-2 border border-border text-sm transition-colors flex items-center justify-center rounded-md cursor-pointer bg-slate-100 text-[#06407F] hover:bg-slate-200 dark:bg-blue-950/40 dark:text-foreground/90 dark:hover:bg-blue-950/60"
                   aria-label="إضافة مكون جديد"
                 >
                   <UserPlus size={16} />
@@ -748,27 +738,17 @@ export function ResizableTableFormateur({
 
       <div
         className={`bg-background overflow-hidden rounded-lg relative ${
-          mounted ? (isDark ? "border border-zinc-600" : "border border-zinc-300") : "border-2 border-border"
+          "border border-zinc-300 dark:border-zinc-600"
         }`}
       >
         <div className="overflow-x-auto">
           <div className="min-w-[1200px]">
             <div
-              className={`flex py-3 text-xs font-semibold text-[#06407F] dark:text-foreground/90 ${
-                mounted
-                  ? isDark
-                    ? "bg-blue-950/40 border-b border-zinc-600"
-                    : "bg-slate-100 border-b border-zinc-300"
-                  : "bg-muted/5 border-b-2 border-border"
-              }`}
+              className="flex py-3 text-xs font-semibold text-[#06407F] dark:text-foreground/90 bg-slate-100 border-b border-zinc-300 dark:bg-blue-950/40 dark:border-zinc-600"
             >
               <div
                 className={`flex items-center justify-center ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.number }}
               >
@@ -777,11 +757,7 @@ export function ResizableTableFormateur({
 
               <div
                 className={`flex items-center px-3 relative gap-1.5 ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.name }}
               >
@@ -791,11 +767,7 @@ export function ResizableTableFormateur({
 
               <div
                 className={`flex items-center px-3 relative ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.grade }}
               >
@@ -804,11 +776,7 @@ export function ResizableTableFormateur({
 
               <div
                 className={`flex items-center px-3 relative gap-1.5 ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.unite }}
               >
@@ -818,11 +786,7 @@ export function ResizableTableFormateur({
 
               <div
                 className={`flex items-center px-3 relative gap-1.5 ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.responsabilite }}
               >
@@ -832,11 +796,7 @@ export function ResizableTableFormateur({
 
               <div
                 className={`flex items-center px-3 relative ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.telephone }}
               >
@@ -845,11 +805,7 @@ export function ResizableTableFormateur({
 
               <div
                 className={`flex items-center px-3 relative ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.rib }}
               >
@@ -902,38 +858,20 @@ export function ResizableTableFormateur({
                           <div
                             className={`py-3.5 group relative transition-all duration-150 flex ${
                               isSelected
-                                ? isDark
-                                  ? "bg-zinc-700/60"
-                                  : "bg-gray-300/40"
-                                : "bg-muted/5 hover:bg-muted/20"
-                            } ${
-                              mounted
-                                ? isDark
-                                  ? "border-b border-zinc-600"
-                                  : "border-b border-zinc-200"
-                                : "border-b-2 border-border"
-                            }`}
+                                ? "bg-gray-300/40 dark:bg-zinc-700/60"
+                                : "bg-muted/5 hover:bg-muted/20 dark:bg-card"
+                            } border-b border-zinc-200 dark:border-zinc-600`}
                           >
                             <div
                               className={`flex items-center justify-center ${
-                                mounted
-                                  ? isDark
-                                    ? "border-l border-zinc-600"
-                                    : "border-l border-zinc-200"
-                                  : "border-l-2 border-border"
+                                "border-l border-zinc-200 dark:border-zinc-600"
                               }`}
                               style={{ width: columnWidths.number }}
                             >
                               <input
                                 type="checkbox"
                                 className="w-4 h-4 rounded border-border/40 cursor-pointer"
-                                style={
-                                  mounted
-                                    ? {
-                                        accentColor: isDark ? "rgb(113, 113, 122)" : "rgb(161, 161, 170)",
-                                      }
-                                    : {}
-                                }
+                                style={{ accentColor: "rgb(161, 161, 170)" }}
                                 checked={selectedFormateurs.includes(formateur.id)}
                                 onChange={() => handleFormateurSelect(formateur.id)}
                               />
@@ -941,11 +879,7 @@ export function ResizableTableFormateur({
 
                             <div
                               className={`flex items-center min-w-0 px-3 ${
-                                mounted
-                                  ? isDark
-                                    ? "border-l border-zinc-600"
-                                    : "border-l border-zinc-200"
-                                  : "border-l-2 border-border"
+                                "border-l border-zinc-200 dark:border-zinc-600"
                               }`}
                               style={{ width: columnWidths.name }}
                             >
@@ -959,11 +893,7 @@ export function ResizableTableFormateur({
 
                             <div
                               className={`flex items-center min-w-0 px-3 ${
-                                mounted
-                                  ? isDark
-                                    ? "border-l border-zinc-600"
-                                    : "border-l border-zinc-200"
-                                  : "border-l-2 border-border"
+                                "border-l border-zinc-200 dark:border-zinc-600"
                               }`}
                               style={{ width: columnWidths.grade }}
                             >
@@ -977,11 +907,7 @@ export function ResizableTableFormateur({
 
                             <div
                               className={`flex items-center px-3 ${
-                                mounted
-                                  ? isDark
-                                    ? "border-l border-zinc-600"
-                                    : "border-l border-zinc-200"
-                                  : "border-l-2 border-border"
+                                "border-l border-zinc-200 dark:border-zinc-600"
                               }`}
                               style={{ width: columnWidths.unite }}
                             >
@@ -995,11 +921,7 @@ export function ResizableTableFormateur({
 
                             <div
                               className={`flex items-center min-w-0 px-3 ${
-                                mounted
-                                  ? isDark
-                                    ? "border-l border-zinc-600"
-                                    : "border-l border-zinc-200"
-                                  : "border-l-2 border-border"
+                                "border-l border-zinc-200 dark:border-zinc-600"
                               }`}
                               style={{ width: columnWidths.responsabilite }}
                             >
@@ -1013,11 +935,7 @@ export function ResizableTableFormateur({
 
                             <div
                               className={`flex items-center px-3 ${
-                                mounted
-                                  ? isDark
-                                    ? "border-l border-zinc-600"
-                                    : "border-l border-zinc-200"
-                                  : "border-l-2 border-border"
+                                "border-l border-zinc-200 dark:border-zinc-600"
                               }`}
                               style={{ width: columnWidths.telephone }}
                             >
@@ -1028,11 +946,7 @@ export function ResizableTableFormateur({
 
                             <div
                               className={`flex items-center px-3 ${
-                                mounted
-                                  ? isDark
-                                    ? "border-l border-zinc-600"
-                                    : "border-l border-zinc-200"
-                                  : "border-l-2 border-border"
+                                "border-l border-zinc-200 dark:border-zinc-600"
                               }`}
                               style={{ width: columnWidths.rib }}
                             >

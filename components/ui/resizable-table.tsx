@@ -1,9 +1,8 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { useRouter, usePathname, ReadonlyURLSearchParams } from "next/navigation"
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion"
-import { useTheme } from "next-themes"
 import * as XLSX from "xlsx"
 import {
   Download,
@@ -167,8 +166,6 @@ export function ResizableTable({
   const router = useRouter()
   const pathname = usePathname()
   const shouldReduceMotion = useReducedMotion()
-  const { theme } = useTheme()
-  const isDark = theme === "dark"
   const { addToast } = useToast()
 
   // Parse URL params for initial state
@@ -182,7 +179,7 @@ export function ResizableTable({
   const searchFromUrl = searchParams?.get('search') || ''
   const matriculeFromUrl = searchParams?.get('matricule') || ''
 
-  const [mounted, setMounted] = useState(false)
+  const mounted = useRef(false)
   const [currentPage, setCurrentPage] = useState(pageFromUrl)
   const [sortField, setSortField] = useState<SortField | null>(sortFromUrl)
   const [sortOrder, setSortOrder] = useState<SortOrder>(orderFromUrl)
@@ -226,13 +223,12 @@ export function ResizableTable({
 
   const ITEMS_PER_PAGE = 10
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
   // Sync state changes to URL - runs after state updates, not during render
   useEffect(() => {
-    if (!mounted) return // Don't run on initial mount
+    if (!mounted.current) {
+      mounted.current = true
+      return
+    }
 
     const params = new URLSearchParams()
 
@@ -259,7 +255,7 @@ export function ResizableTable({
 
     const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname
     router.push(newUrl, { scroll: false })
-  }, [selectedAgents, currentPage, sortField, sortOrder, filterStatus, searchQuery, searchMatricule, pathname, router, mounted])
+  }, [selectedAgents, currentPage, sortField, sortOrder, filterStatus, searchQuery, searchMatricule, pathname, router])
 
   const handleSort = (field: SortField | null) => {
     if (field === null) {
@@ -402,60 +398,30 @@ export function ResizableTable({
   const totalPages = Math.ceil(sortedAndFilteredAgents.length / ITEMS_PER_PAGE)
 
   const getStatusColor = (status: string) => {
-    if (!mounted) {
-      const statusMap: Record<string, { bgColor: string; borderColor: string; textColor: string; dotColor: string }> = {
-        "ضابط سامي": {
-          bgColor: "bg-purple-500/10",
-          borderColor: "border-purple-500/30",
-          textColor: "text-purple-400",
-          dotColor: "bg-purple-400",
-        },
-        ضابط: {
-          bgColor: "bg-blue-500/10",
-          borderColor: "border-blue-500/30",
-          textColor: "text-blue-400",
-          dotColor: "bg-blue-400",
-        },
-        "ضابط صف": {
-          bgColor: "bg-green-500/10",
-          borderColor: "border-green-500/30",
-          textColor: "text-green-400",
-          dotColor: "bg-green-400",
-        },
-        "هيئة الرقباء": {
-          bgColor: "bg-orange-500/10",
-          borderColor: "border-orange-500/30",
-          textColor: "text-orange-400",
-          dotColor: "bg-orange-400",
-        },
-      }
-      return statusMap[status]
-    }
-
     const statusMap: Record<string, { bgColor: string; borderColor: string; textColor: string; dotColor: string }> = {
       "ضابط سامي": {
-        bgColor: isDark ? "bg-purple-500/10" : "bg-purple-50",
-        borderColor: isDark ? "border-purple-500/30" : "border-purple-200",
-        textColor: isDark ? "text-purple-400" : "text-purple-600",
-        dotColor: isDark ? "bg-purple-400" : "bg-purple-600",
+        bgColor: "bg-purple-50 dark:bg-purple-500/10",
+        borderColor: "border-purple-200 dark:border-purple-500/30",
+        textColor: "text-purple-600 dark:text-purple-400",
+        dotColor: "bg-purple-600 dark:bg-purple-400",
       },
       ضابط: {
-        bgColor: isDark ? "bg-blue-500/10" : "bg-blue-50",
-        borderColor: isDark ? "border-blue-500/30" : "border-blue-200",
-        textColor: isDark ? "text-blue-400" : "text-blue-600",
-        dotColor: isDark ? "bg-blue-400" : "bg-blue-600",
+        bgColor: "bg-blue-50 dark:bg-blue-500/10",
+        borderColor: "border-blue-200 dark:border-blue-500/30",
+        textColor: "text-blue-600 dark:text-blue-400",
+        dotColor: "bg-blue-600 dark:bg-blue-400",
       },
       "ضابط صف": {
-        bgColor: isDark ? "bg-green-500/10" : "bg-green-50",
-        borderColor: isDark ? "border-green-500/30" : "border-green-200",
-        textColor: isDark ? "text-green-400" : "text-green-600",
-        dotColor: isDark ? "bg-green-400" : "bg-green-600",
+        bgColor: "bg-green-50 dark:bg-green-500/10",
+        borderColor: "border-green-200 dark:border-green-500/30",
+        textColor: "text-green-600 dark:text-green-400",
+        dotColor: "bg-green-600 dark:bg-green-400",
       },
       "هيئة الرقباء": {
-        bgColor: isDark ? "bg-orange-500/10" : "bg-orange-50",
-        borderColor: isDark ? "border-orange-500/30" : "border-orange-200",
-        textColor: isDark ? "text-orange-400" : "text-orange-600",
-        dotColor: isDark ? "bg-orange-400" : "bg-orange-600",
+        bgColor: "bg-orange-50 dark:bg-orange-500/10",
+        borderColor: "border-orange-200 dark:border-orange-500/30",
+        textColor: "text-orange-600 dark:text-orange-400",
+        dotColor: "bg-orange-600 dark:bg-orange-400",
       },
     }
 
@@ -1023,13 +989,7 @@ export function ResizableTable({
               <TooltipTrigger asChild>
                 <button
                   onClick={onAddNewAgent}
-                  className={`ml-1 p-2 border border-border text-sm transition-colors flex items-center justify-center rounded-md cursor-pointer ${
-                    mounted
-                      ? isDark
-                        ? "bg-blue-950/40 text-foreground/90 hover:bg-blue-950/60"
-                        : "bg-slate-100 text-[#06407F] hover:bg-slate-200"
-                      : "bg-muted/5 text-foreground hover:bg-muted/10"
-                  }`}
+                  className="ml-1 p-2 border border-border text-sm transition-colors flex items-center justify-center rounded-md cursor-pointer bg-slate-100 text-[#06407F] hover:bg-slate-200 dark:bg-blue-950/40 dark:text-foreground/90 dark:hover:bg-blue-950/60"
                   aria-label="إضافة متربص جديد"
                 >
                   <UserPlus size={16} />
@@ -1045,27 +1005,17 @@ export function ResizableTable({
 
       <div
         className={`bg-background overflow-hidden rounded-lg relative ${
-          mounted ? (isDark ? "border border-zinc-600" : "border border-zinc-300") : "border-2 border-border"
+          "border border-zinc-300 dark:border-zinc-600"
         }`}
       >
         <div className="overflow-x-auto">
           <div className="min-w-[1200px]">
             <div
-              className={`flex py-3 text-xs font-semibold text-[#06407F] dark:text-foreground/90 ${
-                mounted
-                  ? isDark
-                    ? "bg-blue-950/40 border-b border-zinc-600"
-                    : "bg-slate-100 border-b border-zinc-300"
-                  : "bg-muted/5 border-b-2 border-border"
-              }`}
+              className="flex py-3 text-xs font-semibold text-[#06407F] dark:text-foreground/90 bg-slate-100 border-b border-zinc-300 dark:bg-blue-950/40 dark:border-zinc-600"
             >
               <div
                 className={`flex items-center justify-center ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.number }}
               >
@@ -1074,11 +1024,7 @@ export function ResizableTable({
 
               <div
                 className={`flex items-center px-3 relative gap-1.5 ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.name }}
               >
@@ -1088,11 +1034,7 @@ export function ResizableTable({
 
               <div
                 className={`flex items-center px-3 relative ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.email }}
               >
@@ -1101,11 +1043,7 @@ export function ResizableTable({
 
               <div
                 className={`flex items-center px-3 relative ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.department }}
               >
@@ -1114,11 +1052,7 @@ export function ResizableTable({
 
               <div
                 className={`flex items-center px-3 relative ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.position }}
               >
@@ -1127,11 +1061,7 @@ export function ResizableTable({
 
               <div
                 className={`flex items-center px-3 relative ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.salary }}
               >
@@ -1140,11 +1070,7 @@ export function ResizableTable({
 
               <div
                 className={`flex items-center px-3 relative gap-1.5 ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.hireDate }}
               >
@@ -1154,11 +1080,7 @@ export function ResizableTable({
 
               <div
                 className={`flex items-center px-3 relative gap-1.5 ${
-                  mounted
-                    ? isDark
-                      ? "border-l border-zinc-600"
-                      : "border-l border-zinc-300"
-                    : "border-l-2 border-border"
+                  "border-l border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ width: columnWidths.status }}
               >
@@ -1219,38 +1141,20 @@ export function ResizableTable({
                           <div
                             className={`py-3.5 group relative transition-all duration-150 flex ${
                               selectedAgents.includes(agent.id)
-                                ? isDark
-                                  ? "bg-zinc-700/60"
-                                  : "bg-gray-300/40"
-                                : "bg-muted/5 hover:bg-muted/20"
-                            } ${
-                              mounted
-                                ? isDark
-                                  ? "border-b border-zinc-600"
-                                  : "border-b border-zinc-200"
-                                : "border-b-2 border-border"
-                            }`}
+                                ? "bg-gray-300/40 dark:bg-zinc-700/60"
+                                : "bg-muted/5 hover:bg-muted/20 dark:bg-card"
+                            } border-b border-zinc-200 dark:border-zinc-600`}
                           >
                             <div
                               className={`flex items-center justify-center ${
-                                mounted
-                                  ? isDark
-                                    ? "border-l border-zinc-600"
-                                    : "border-l border-zinc-200"
-                                  : "border-l-2 border-border"
+                                "border-l border-zinc-200 dark:border-zinc-600"
                               }`}
                               style={{ width: columnWidths.number }}
                             >
                               <input
                                 type="checkbox"
                                 className="w-4 h-4 rounded border-border/40 cursor-pointer"
-                                style={
-                                  mounted
-                                    ? {
-                                        accentColor: isDark ? "rgb(113, 113, 122)" : "rgb(161, 161, 170)",
-                                      }
-                                    : {}
-                                }
+                                style={{ accentColor: "rgb(161, 161, 170)" }}
                                 checked={selectedAgents.includes(agent.id)}
                                 onChange={() => handleAgentSelect(agent.id)}
                               />
@@ -1258,11 +1162,7 @@ export function ResizableTable({
 
                             <div
                               className={`flex items-center min-w-0 px-3 ${
-                                mounted
-                                  ? isDark
-                                    ? "border-l border-zinc-600"
-                                    : "border-l border-zinc-200"
-                                  : "border-l-2 border-border"
+                                "border-l border-zinc-200 dark:border-zinc-600"
                               }`}
                               style={{ width: columnWidths.name }}
                             >
@@ -1276,11 +1176,7 @@ export function ResizableTable({
 
                             <div
                               className={`flex items-center min-w-0 px-3 ${
-                                mounted
-                                  ? isDark
-                                    ? "border-l border-zinc-600"
-                                    : "border-l border-zinc-200"
-                                  : "border-l-2 border-border"
+                                "border-l border-zinc-200 dark:border-zinc-600"
                               }`}
                               style={{ width: columnWidths.email }}
                             >
@@ -1294,11 +1190,7 @@ export function ResizableTable({
 
                             <div
                               className={`flex items-center px-3 ${
-                                mounted
-                                  ? isDark
-                                    ? "border-l border-zinc-600"
-                                    : "border-l border-zinc-200"
-                                  : "border-l-2 border-border"
+                                "border-l border-zinc-200 dark:border-zinc-600"
                               }`}
                               style={{ width: columnWidths.department }}
                             >
@@ -1312,11 +1204,7 @@ export function ResizableTable({
 
                             <div
                               className={`flex items-center min-w-0 px-3 ${
-                                mounted
-                                  ? isDark
-                                    ? "border-l border-zinc-600"
-                                    : "border-l border-zinc-200"
-                                  : "border-l-2 border-border"
+                                "border-l border-zinc-200 dark:border-zinc-600"
                               }`}
                               style={{ width: columnWidths.position }}
                             >
@@ -1330,11 +1218,7 @@ export function ResizableTable({
 
                             <div
                               className={`flex items-center px-3 ${
-                                mounted
-                                  ? isDark
-                                    ? "border-l border-zinc-600"
-                                    : "border-l border-zinc-200"
-                                  : "border-l-2 border-border"
+                                "border-l border-zinc-200 dark:border-zinc-600"
                               }`}
                               style={{ width: columnWidths.salary }}
                             >
@@ -1349,11 +1233,7 @@ export function ResizableTable({
 
                             <div
                               className={`flex items-center px-3 ${
-                                mounted
-                                  ? isDark
-                                    ? "border-l border-zinc-600"
-                                    : "border-l border-zinc-200"
-                                  : "border-l-2 border-border"
+                                "border-l border-zinc-200 dark:border-zinc-600"
                               }`}
                               style={{ width: columnWidths.hireDate }}
                             >
@@ -1367,11 +1247,7 @@ export function ResizableTable({
 
                             <div
                               className={`flex items-center px-3 ${
-                                mounted
-                                  ? isDark
-                                    ? "border-l border-zinc-600"
-                                    : "border-l border-zinc-200"
-                                  : "border-l-2 border-border"
+                                "border-l border-zinc-200 dark:border-zinc-600"
                               }`}
                               style={{ width: columnWidths.status }}
                             >
