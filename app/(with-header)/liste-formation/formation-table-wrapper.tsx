@@ -19,7 +19,7 @@ export function FormationTableWrapper({ formations, userRole, userRoleId }: Form
     <div className="pt-20">
       <ServerManagementTable
         servers={formations}
-        onAddNewFormation={can(userRole, "formation", "create", permissionsMap) ? () => router.push('/nouvelle-formarion') : undefined}
+        onAddNewFormation={can(userRole, "formation", "create", permissionsMap) ? () => router.push('/nouvelle-formation') : undefined}
         userRole={userRole}
         userRoleId={userRoleId}
       />

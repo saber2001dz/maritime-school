@@ -6,7 +6,6 @@ import { CalendarDays, Table } from "lucide-react"
 import { ResizableSessionWrapper } from "./session-table/resizable-session-wrapper"
 import { SessionPlanning } from "./session-planning/session-planning"
 import { type SessionFormation } from "@/components/ui/resizable-session-table"
-import { ToastProvider } from "@/components/ui/ultra-quality-toast"
 
 interface Formation {
   id: string
@@ -37,8 +36,7 @@ export function SessionTabsClient({ sessions: initialSessions, formations, userR
   }
 
   return (
-    <ToastProvider>
-      <div className="bg-background py-6 md:py-10">
+    <div className="bg-background py-6 md:py-10">
         <div className="max-w-7xl mx-auto">
           <Tabs defaultValue="list" className="w-full" dir="rtl">
             <div className="flex items-center justify-between pb-2 mb-4">
@@ -85,6 +83,5 @@ export function SessionTabsClient({ sessions: initialSessions, formations, userR
           </Tabs>
         </div>
       </div>
-    </ToastProvider>
   )
 }

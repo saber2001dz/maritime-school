@@ -84,9 +84,9 @@ const uiComponents = [
   },
   {
     name: 'agent_card_edit',
-    displayName: 'Card - Modifier les données agent',
+    displayName: 'Dialogue - Modifier les données agent',
     category: 'Agents',
-    description: 'Carte de modification des données d\'un agent',
+    description: 'Dialogue de modification des données d\'un agent',
     icon: 'SquarePen',
   },
   {
@@ -98,9 +98,9 @@ const uiComponents = [
   },
   {
     name: 'agent_card_add_formation',
-    displayName: 'Card - Ajouter une formation à l\'agent',
+    displayName: 'Dialogue - Ajouter une formation à l\'agent',
     category: 'Agents',
-    description: 'Carte d\'ajout d\'une formation à un agent',
+    description: 'Dialogue d\'ajout d\'une formation à un agent',
     icon: 'GraduationCap',
   },
   {
@@ -121,9 +121,9 @@ const uiComponents = [
   },
   {
     name: 'cours_formateur_card_edit',
-    displayName: 'Card - Modifier le cours du formateur',
+    displayName: 'Dialogue - Modifier le cours du formateur',
     category: 'Cours Formateur',
-    description: 'Carte de modification d\'un cours d\'un formateur',
+    description: 'Dialogue de modification d\'un cours d\'un formateur',
     icon: 'Edit',
   },
   {
@@ -151,9 +151,9 @@ const uiComponents = [
   },
   {
     name: 'formation_agent_card_edit',
-    displayName: 'Card - Modifier la formation de l\'agent',
+    displayName: 'Dialogue - Modifier la formation de l\'agent',
     category: 'Formation Agent',
-    description: 'Carte de modification d\'une formation d\'un agent',
+    description: 'Dialogue de modification d\'une formation d\'un agent',
     icon: 'Edit',
   },
   {
@@ -188,9 +188,9 @@ const uiComponents = [
   },
   {
     name: 'formation_card_edit',
-    displayName: 'Card - Modifier les données formation',
+    displayName: 'Dialogue - Modifier les données formation',
     category: 'Formations',
-    description: 'Carte de modification des données d\'une formation',
+    description: 'Dialogue de modification des données d\'une formation',
     icon: 'SquarePen',
   },
   {
@@ -439,9 +439,9 @@ const uiComponents = [
   },
   {
     name: 'formateur_card_edit',
-    displayName: 'Card - Modifier les données formateur',
+    displayName: 'Dialogue - Modifier les données formateur',
     category: 'Formateurs',
-    description: 'Carte de modification des données d\'un formateur',
+    description: 'Dialogue de modification des données d\'un formateur',
     icon: 'SquarePen',
   },
   {
@@ -453,9 +453,9 @@ const uiComponents = [
   },
   {
     name: 'formateur_card_add_cours',
-    displayName: 'Card - Ajouter un cours au formateur',
+    displayName: 'Dialogue - Ajouter un cours au formateur',
     category: 'Formateurs',
-    description: 'Carte d\'ajout d\'un cours à un formateur',
+    description: 'Dialogue d\'ajout d\'un cours à un formateur',
     icon: 'GraduationCap',
   },
   {
@@ -483,9 +483,9 @@ const uiComponents = [
   },
   {
     name: 'cours_card_edit',
-    displayName: 'Card - Modifier les données cours',
+    displayName: 'Dialogue - Modifier les données cours',
     category: 'Cours',
-    description: 'Carte de modification des données d\'un cours',
+    description: 'Dialogue de modification des données d\'un cours',
     icon: 'SquarePen',
   },
   {
@@ -497,10 +497,24 @@ const uiComponents = [
   },
   {
     name: 'cours_card_edit_delete',
-    displayName: 'Bouton Supprimer (Card modifier cours)',
+    displayName: 'Bouton Supprimer (Dialogue modifier cours)',
     category: 'Cours',
-    description: 'Bouton de suppression dans la carte de modification d\'un cours',
+    description: 'Bouton de suppression dans le dialogue de modification d\'un cours',
     icon: 'Trash2',
+  },
+  {
+    name: 'cours_dialog_add',
+    displayName: 'Dialogue - Ajouter un cours',
+    category: 'Cours',
+    description: 'Dialogue d\'ajout d\'un nouveau cours',
+    icon: 'CirclePlus',
+  },
+  {
+    name: 'cours_dialog_add_save_btn',
+    displayName: 'Bouton Enregistrer (Dialogue ajouter cours)',
+    category: 'Cours',
+    description: 'Bouton d\'enregistrement dans le dialogue d\'ajout d\'un cours',
+    icon: 'Save',
   },
 
   // === Dashboard ===
@@ -625,6 +639,8 @@ const defaultPermissions = {
     'cours_card_edit',
     'cours_card_edit_save',
     'cours_card_edit_delete',
+    'cours_dialog_add',
+    'cours_dialog_add_save_btn',
     'dashboard_chart_period_toggle',
   ],
   formateur: [

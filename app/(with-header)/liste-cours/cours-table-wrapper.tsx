@@ -2,10 +2,10 @@
 
 import { useState } from "react"
 import { AnimatePresence } from "framer-motion"
-import { useRouter } from "next/navigation"
 import CoursSimpleTable, { SimpleCours } from "@/components/ui/cours-simple-table"
 import { ToastProvider, useToast } from "@/components/ui/ultra-quality-toast"
 import DialogueCours, { type CoursData } from "@/components/dialogue-cours"
+import DialogueAjouterCours, { type NewCoursData } from "@/components/dialogue-ajouter-cours"
 import { can } from "@/lib/permissions"
 import { usePermissions } from "@/lib/permissions-context"
 import { useUIPermissions } from "@/lib/ui-permissions-context"
@@ -28,7 +28,6 @@ function CoursTableWrapperContent({ cours: initialCours, userRole, userRoleId }:
   const permissionsMap = usePermissions()
   const uiPermissionsMap = useUIPermissions()
   const canEditButton = canAccessUIComponent(userRoleId ?? null, "cours_edit_button", uiPermissionsMap)
-  const router = useRouter()
   const [cours, setCours] = useState<SimpleCours[]>(
     initialCours.map((item, index) => ({
       id: item.id,
@@ -37,8 +36,10 @@ function CoursTableWrapperContent({ cours: initialCours, userRole, userRoleId }:
     }))
   )
   const [editingCours, setEditingCours] = useState<CoursData | null>(null)
+  const [isAddingOpen, setIsAddingOpen] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const { addToast } = useToast()
 
   const handleEditClick = (coursItem: SimpleCours) => {
@@ -152,7 +153,60 @@ function CoursTableWrapperContent({ cours: initialCours, userRole, userRoleId }:
   }
 
   const handleAddNewCours = () => {
-    router.push("/nouveau-cours")
+    setIsAddingOpen(true)
+  }
+
+  const handleSaveNewCours = async (data: NewCoursData) => {
+    setIsSaving(true)
+
+    try {
+      const response = await fetch("/api/cours", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ titre: data.titre }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Erreur lors de la création")
+      }
+
+      const newCours = await response.json()
+
+      setCours((prevCours) => {
+        const updated = [
+          {
+            id: newCours.id,
+            number: "01",
+            titre: newCours.titre,
+          },
+          ...prevCours.map((c, index) => ({
+            ...c,
+            number: String(index + 2).padStart(2, "0"),
+          })),
+        ]
+        return updated
+      })
+
+      addToast({
+        variant: "success",
+        title: "نجـاح العمليـة",
+        description: "تم إضافة الدرس بنجاح",
+      })
+
+      setIsAddingOpen(false)
+    } catch (error) {
+      console.error("Erreur lors de la création:", error)
+
+      addToast({
+        variant: "error",
+        title: "خطأ في العملية",
+        description: "حدث خطأ أثناء إضافة الدرس",
+      })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -179,6 +233,14 @@ function CoursTableWrapperContent({ cours: initialCours, userRole, userRoleId }:
           />
         )}
       </AnimatePresence>
+
+      {/* Dialogue d'ajout de cours */}
+      <DialogueAjouterCours
+        isOpen={isAddingOpen}
+        onClose={() => setIsAddingOpen(false)}
+        onSave={handleSaveNewCours}
+        isSaving={isSaving}
+      />
     </div>
   )
 }

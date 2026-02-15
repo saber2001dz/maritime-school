@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useUIPermissions } from "@/lib/ui-permissions-context"
 import { canAccessUIComponent } from "@/lib/ui-permissions"
+import Link from "next/link"
 
 export function Header({ userRole, userRoleId }: { userRole?: string | null; userRoleId?: string | null }) {
   const [open, setOpen] = React.useState(false)
@@ -113,7 +114,7 @@ export function Header({ userRole, userRoleId }: { userRole?: string | null; use
           {links.map((link, i) => {
             const isActive = pathname === link.href
             return (
-              <a
+              <Link
                 key={i}
                 className={cn(
                   buttonVariants({ variant: "ghost" }),
@@ -123,7 +124,7 @@ export function Header({ userRole, userRoleId }: { userRole?: string | null; use
                 href={link.href}
               >
                 {link.label}
-              </a>
+              </Link>
             )
           })}
           <div className="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-2" />
@@ -184,7 +185,7 @@ export function Header({ userRole, userRoleId }: { userRole?: string | null; use
             {links.map((link) => {
               const isActive = pathname === link.href
               return (
-                <a
+                <Link
                   key={link.label}
                   className={cn(
                     buttonVariants({
@@ -197,7 +198,7 @@ export function Header({ userRole, userRoleId }: { userRole?: string | null; use
                   href={link.href}
                 >
                   {link.label}
-                </a>
+                </Link>
               )
             })}
           </div>

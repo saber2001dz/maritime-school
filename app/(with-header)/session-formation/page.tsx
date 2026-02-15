@@ -9,39 +9,40 @@ interface PageProps {
 
 export default async function SessionFormationPage({ searchParams }: PageProps) {
   const [{ role }] = await Promise.all([verifySession(), searchParams])
-  // Récupérer les sessions depuis la base de données avec les formations liées
-  const sessions = await prisma.sessionFormation.findMany({
-    include: {
-      formation: {
-        select: {
-          id: true,
-          formation: true,
-          typeFormation: true,
-          specialite: true,
-          capaciteAbsorption: true,
+
+  const [sessions, formations, roleRecord] = await Promise.all([
+    prisma.sessionFormation.findMany({
+      include: {
+        formation: {
+          select: {
+            id: true,
+            formation: true,
+            typeFormation: true,
+            specialite: true,
+            capaciteAbsorption: true,
+          }
+        },
+        agentFormations: {
+          select: {
+            resultat: true,
+          }
         }
       },
-      agentFormations: {
-        select: {
-          resultat: true,
-        }
-      }
-    },
-    orderBy: {
-      dateDebut: 'desc',
-    },
-  })
-
-  // Récupérer la liste des formations pour le select
-  const formations = await prisma.formation.findMany({
-    select: {
-      id: true,
-      formation: true,
-    },
-    orderBy: {
-      formation: 'asc',
-    },
-  })
+      orderBy: {
+        dateDebut: 'desc',
+      },
+    }),
+    prisma.formation.findMany({
+      select: {
+        id: true,
+        formation: true,
+      },
+      orderBy: {
+        formation: 'asc',
+      },
+    }),
+    role ? prisma.role.findUnique({ where: { name: role } }) : Promise.resolve(null),
+  ])
 
   // Calculer le statut pour chaque session côté serveur
   const sessionsWithStatus = sessions.map((session) => ({
@@ -52,11 +53,5 @@ export default async function SessionFormationPage({ searchParams }: PageProps) 
     ).length,
   }))
 
-  let userRoleId: string | null = null
-  if (role) {
-    const roleRecord = await prisma.role.findUnique({ where: { name: role } })
-    userRoleId = roleRecord?.id ?? null
-  }
-
-  return <SessionTabsClient sessions={sessionsWithStatus} formations={formations} userRole={role} userRoleId={userRoleId} />
+  return <SessionTabsClient sessions={sessionsWithStatus} formations={formations} userRole={role} userRoleId={roleRecord?.id ?? null} />
 }

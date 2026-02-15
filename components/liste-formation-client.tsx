@@ -14,7 +14,7 @@ export function ListeFormationClient({ initialFormations }: ListeFormationClient
     <div className="pt-20">
       <ServerManagementTable
         servers={initialFormations}
-        onAddNewFormation={() => router.push('/nouvelle-formarion')}
+        onAddNewFormation={() => router.push('/nouvelle-formation')}
       />
     </div>
   )
