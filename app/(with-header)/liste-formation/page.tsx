@@ -3,8 +3,6 @@ import { prisma } from "@/lib/db"
 import { Server } from "@/components/ui/server-management-table"
 import { verifySession } from "@/lib/dal"
 
-export const dynamic = 'force-dynamic'
-
 // Fonction pour convertir le type de formation en status
 function getStatusFromType(typeFormation: string): "active" | "paused" | "inactive" {
   switch (typeFormation) {
@@ -19,8 +17,12 @@ function getStatusFromType(typeFormation: string): "active" | "paused" | "inacti
   }
 }
 
-export default async function ListeFormation() {
-  const { role } = await verifySession()
+interface PageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export default async function ListeFormation({ searchParams }: PageProps) {
+  const [{ role }] = await Promise.all([verifySession(), searchParams])
 
   let userRoleId: string | null = null
   if (role) {

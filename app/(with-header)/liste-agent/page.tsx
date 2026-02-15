@@ -2,10 +2,12 @@ import { ResizableTableWrapper } from "./resizable-table-wrapper"
 import { prisma } from "@/lib/db"
 import { verifySession } from "@/lib/dal"
 
-export const dynamic = 'force-dynamic'
+interface PageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
 
-export default async function PrincipalPage() {
-  const { role } = await verifySession()
+export default async function PrincipalPage({ searchParams }: PageProps) {
+  const [{ role }] = await Promise.all([verifySession(), searchParams])
   // Récupérer les agents depuis la base de données avec leur formation la plus récente
   const agents = await prisma.agent.findMany({
     include: {

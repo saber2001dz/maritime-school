@@ -2,10 +2,12 @@ import { prisma } from "@/lib/db"
 import CoursTableWrapper from "./cours-table-wrapper"
 import { verifySession } from "@/lib/dal"
 
-export const dynamic = 'force-dynamic'
+interface PageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
 
-export default async function ListeCoursPage() {
-  const { role } = await verifySession()
+export default async function ListeCoursPage({ searchParams }: PageProps) {
+  const [{ role }] = await Promise.all([verifySession(), searchParams])
 
   let userRoleId: string | null = null
   if (role) {

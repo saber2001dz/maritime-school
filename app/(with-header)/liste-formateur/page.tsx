@@ -2,10 +2,12 @@ import { ResizableTableWrapper } from "./resizable-table-wrapper"
 import { prisma } from "@/lib/db"
 import { verifySession } from "@/lib/dal"
 
-export const dynamic = 'force-dynamic'
+interface PageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
 
-export default async function ListeFormateurPage() {
-  const { role } = await verifySession()
+export default async function ListeFormateurPage({ searchParams }: PageProps) {
+  const [{ role }] = await Promise.all([verifySession(), searchParams])
   // Récupérer les formateurs depuis la base de données
   const formateurs = await prisma.formateur.findMany({
     orderBy: {

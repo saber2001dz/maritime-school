@@ -3,10 +3,12 @@ import { computeSessionStatus } from "@/lib/session-utils"
 import { SessionTabsClient } from "./session-tabs-client"
 import { verifySession } from "@/lib/dal"
 
-export const dynamic = 'force-dynamic'
+interface PageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
 
-export default async function SessionFormationPage() {
-  const { role } = await verifySession()
+export default async function SessionFormationPage({ searchParams }: PageProps) {
+  const [{ role }] = await Promise.all([verifySession(), searchParams])
   // Récupérer les sessions depuis la base de données avec les formations liées
   const sessions = await prisma.sessionFormation.findMany({
     include: {
