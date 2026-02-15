@@ -8,9 +8,10 @@ import { usePermissions } from "@/lib/permissions-context"
 interface FormationTableWrapperProps {
   formations: Server[]
   userRole?: string | null
+  userRoleId?: string | null
 }
 
-export function FormationTableWrapper({ formations, userRole }: FormationTableWrapperProps) {
+export function FormationTableWrapper({ formations, userRole, userRoleId }: FormationTableWrapperProps) {
   const permissionsMap = usePermissions()
   const router = useRouter()
 
@@ -20,6 +21,7 @@ export function FormationTableWrapper({ formations, userRole }: FormationTableWr
         servers={formations}
         onAddNewFormation={can(userRole, "formation", "create", permissionsMap) ? () => router.push('/nouvelle-formarion') : undefined}
         userRole={userRole}
+        userRoleId={userRoleId}
       />
     </div>
   )

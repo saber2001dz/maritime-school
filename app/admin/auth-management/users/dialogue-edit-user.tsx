@@ -242,6 +242,10 @@ export function DialogueEditUser({ user, roles, isOpen, onClose, onSave, onKillS
                                 ? "bg-blue-500"
                                 : role.color === "green"
                                 ? "bg-green-500"
+                                : role.color === "orange"
+                                ? "bg-orange-500"
+                                : role.color === "indigo"
+                                ? "bg-orange-500"
                                 : "bg-gray-500"
                             }`}
                           />

@@ -3,6 +3,8 @@ import { computeSessionStatus } from "@/lib/session-utils"
 import { SessionTabsClient } from "./session-tabs-client"
 import { verifySession } from "@/lib/dal"
 
+export const dynamic = 'force-dynamic'
+
 export default async function SessionFormationPage() {
   const { role } = await verifySession()
   // Récupérer les sessions depuis la base de données avec les formations liées

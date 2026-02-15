@@ -145,11 +145,11 @@ export function PermissionsTable({
         check: "accent-blue-600",
       },
       indigo: {
-        bg: "bg-teal-500/10",
-        text: "text-teal-600 dark:text-teal-400",
-        border: "border-teal-500/30",
-        header: "bg-teal-500/10 border-teal-500/30",
-        check: "accent-teal-600",
+        bg: "bg-orange-500/10",
+        text: "text-orange-600 dark:text-orange-400",
+        border: "border-orange-500/30",
+        header: "bg-orange-500/10 border-orange-500/30",
+        check: "accent-orange-600",
       },
       teal: {
         bg: "bg-teal-500/10",

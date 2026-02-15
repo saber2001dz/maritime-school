@@ -22,6 +22,7 @@ interface CoursSimpleTableProps {
   cours?: SimpleCours[]
   className?: string
   onEditClick?: (cours: SimpleCours) => void
+  canEditButton?: boolean
   onAddNewCours?: () => void
   countText?: string
 }
@@ -30,6 +31,7 @@ export default function CoursSimpleTable({
   cours = [],
   className = "",
   onEditClick,
+  canEditButton = true,
   onAddNewCours,
   countText,
 }: CoursSimpleTableProps) {
@@ -157,10 +159,15 @@ export default function CoursSimpleTable({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
-                        className="w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
+                        disabled={!canEditButton}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+                          !canEditButton
+                            ? "opacity-50 cursor-not-allowed text-muted-foreground"
+                            : "text-muted-foreground hover:text-foreground cursor-pointer"
+                        }`}
                         onClick={(e) => {
                           e.stopPropagation()
-                          onEditClick?.(item)
+                          if (canEditButton) onEditClick?.(item)
                         }}
                       >
                         <Pencil className="w-4 h-4" />

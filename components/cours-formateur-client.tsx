@@ -8,6 +8,8 @@ import { ProjectDataTable, Project } from "@/components/ui/project-data-table";
 import DialogueEditionCoursFormateur, { CoursFormateurData, Cours } from "@/components/dialogue-edition-cours-formateur";
 import { can } from "@/lib/permissions";
 import { usePermissions } from "@/lib/permissions-context";
+import { useUIPermissions } from "@/lib/ui-permissions-context";
+import { canAccessUIComponent } from "@/lib/ui-permissions";
 
 interface CoursFormateurClientProps {
   initialData: Project[];
@@ -15,6 +17,7 @@ interface CoursFormateurClientProps {
   notoNaskhArabicClassName: string;
   returnUrl?: string;
   userRole?: string | null;
+  userRoleId?: string | null;
 }
 
 const allColumns: (keyof Project)[] = ["name", "repository", "team", "tech", "createdAt", "contributors", "status"];
@@ -31,8 +34,10 @@ const coursFormateurHeaders = [
   { key: "actions" as const, label: "خيــــارات", width: "w-18" },
 ];
 
-export default function CoursFormateurClient({ initialData, formateurInfo, notoNaskhArabicClassName, returnUrl = '/liste-formateur', userRole }: CoursFormateurClientProps) {
+export default function CoursFormateurClient({ initialData, formateurInfo, notoNaskhArabicClassName, returnUrl = '/liste-formateur', userRole, userRoleId }: CoursFormateurClientProps) {
   const permissionsMap = usePermissions();
+  const uiPermissionsMap = useUIPermissions();
+  const canEditButton = canAccessUIComponent(userRoleId ?? null, "cours_formateur_action_edit", uiPermissionsMap);
   const router = useRouter();
   const [visibleColumns, setVisibleColumns] = useState<Set<keyof Project>>(new Set(allColumns));
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -158,7 +163,7 @@ export default function CoursFormateurClient({ initialData, formateurInfo, notoN
             </div>
           </div>
 
-          <ProjectDataTable projects={initialData} visibleColumns={visibleColumns} onEditClick={can(userRole, "coursFormateur", "edit", permissionsMap) ? handleEditClick : undefined} customHeaders={coursFormateurHeaders} />
+          <ProjectDataTable projects={initialData} visibleColumns={visibleColumns} onEditClick={can(userRole, "coursFormateur", "edit", permissionsMap) ? handleEditClick : undefined} canEditButton={canEditButton} customHeaders={coursFormateurHeaders} />
         </div>
       </div>
 

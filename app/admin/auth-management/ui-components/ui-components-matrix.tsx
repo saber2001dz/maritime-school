@@ -132,6 +132,12 @@ export function UIComponentsMatrix({
         border: "border-green-500/30",
         hover: "hover:bg-green-500/20",
       },
+      indigo: {
+        bg: "bg-orange-500/10",
+        text: "text-orange-600 dark:text-orange-400",
+        border: "border-orange-500/30",
+        hover: "hover:bg-orange-500/20",
+      },
       gray: {
         bg: "bg-gray-500/10",
         text: "text-gray-600 dark:text-gray-400",

@@ -2,6 +2,8 @@ import { ResizableTableWrapper } from "./resizable-table-wrapper"
 import { prisma } from "@/lib/db"
 import { verifySession } from "@/lib/dal"
 
+export const dynamic = 'force-dynamic'
+
 export default async function ListeFormateurPage() {
   const { role } = await verifySession()
   // Récupérer les formateurs depuis la base de données

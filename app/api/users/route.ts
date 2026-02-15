@@ -61,6 +61,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Supprimer la session automatiquement créée par signUpEmail
+    await prisma.session.deleteMany({
+      where: { userId: signUpResponse.user.id },
+    })
+
     // Mettre à jour le rôle et emailVerified après création
     const newUser = await prisma.user.update({
       where: { id: signUpResponse.user.id },

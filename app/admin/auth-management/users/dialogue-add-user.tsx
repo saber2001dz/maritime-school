@@ -246,6 +246,10 @@ export function DialogueAddUser({ roles, isOpen, onClose, onSave }: DialogueAddU
                                 ? "bg-blue-500"
                                 : role.color === "green"
                                 ? "bg-green-500"
+                                : role.color === "orange"
+                                ? "bg-orange-500"
+                                : role.color === "indigo"
+                                ? "bg-orange-500"
                                 : "bg-gray-500"
                             }`}
                           />

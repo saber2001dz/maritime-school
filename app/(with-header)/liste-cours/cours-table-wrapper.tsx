@@ -8,6 +8,8 @@ import { ToastProvider, useToast } from "@/components/ui/ultra-quality-toast"
 import DialogueCours, { type CoursData } from "@/components/dialogue-cours"
 import { can } from "@/lib/permissions"
 import { usePermissions } from "@/lib/permissions-context"
+import { useUIPermissions } from "@/lib/ui-permissions-context"
+import { canAccessUIComponent } from "@/lib/ui-permissions"
 
 interface Cours {
   id: string
@@ -19,10 +21,13 @@ interface Cours {
 interface CoursTableWrapperProps {
   cours: Cours[]
   userRole?: string | null
+  userRoleId?: string | null
 }
 
-function CoursTableWrapperContent({ cours: initialCours, userRole }: CoursTableWrapperProps) {
+function CoursTableWrapperContent({ cours: initialCours, userRole, userRoleId }: CoursTableWrapperProps) {
   const permissionsMap = usePermissions()
+  const uiPermissionsMap = useUIPermissions()
+  const canEditButton = canAccessUIComponent(userRoleId ?? null, "cours_edit_button", uiPermissionsMap)
   const router = useRouter()
   const [cours, setCours] = useState<SimpleCours[]>(
     initialCours.map((item, index) => ({
@@ -155,6 +160,7 @@ function CoursTableWrapperContent({ cours: initialCours, userRole }: CoursTableW
       <CoursSimpleTable
         cours={cours}
         onEditClick={can(userRole, "cours", "edit", permissionsMap) ? handleEditClick : undefined}
+        canEditButton={canEditButton}
         onAddNewCours={can(userRole, "cours", "create", permissionsMap) ? handleAddNewCours : undefined}
         countText={`عدد الدروس: ${cours.length}`}
       />

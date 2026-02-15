@@ -2,6 +2,8 @@ import { ResizableTableWrapper } from "./resizable-table-wrapper"
 import { prisma } from "@/lib/db"
 import { verifySession } from "@/lib/dal"
 
+export const dynamic = 'force-dynamic'
+
 export default async function PrincipalPage() {
   const { role } = await verifySession()
   // Récupérer les agents depuis la base de données avec leur formation la plus récente

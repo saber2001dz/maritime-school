@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db"
 import { Server } from "@/components/ui/server-management-table"
 import { verifySession } from "@/lib/dal"
 
+export const dynamic = 'force-dynamic'
+
 // Fonction pour convertir le type de formation en status
 function getStatusFromType(typeFormation: string): "active" | "paused" | "inactive" {
   switch (typeFormation) {
@@ -19,6 +21,12 @@ function getStatusFromType(typeFormation: string): "active" | "paused" | "inacti
 
 export default async function ListeFormation() {
   const { role } = await verifySession()
+
+  let userRoleId: string | null = null
+  if (role) {
+    const roleRecord = await prisma.role.findUnique({ where: { name: role } })
+    userRoleId = roleRecord?.id ?? null
+  }
   // Récupérer les formations depuis la base de données
   const formations = await prisma.formation.findMany({
     orderBy: {
@@ -38,5 +46,5 @@ export default async function ListeFormation() {
     status: getStatusFromType(formation.typeFormation),
   }))
 
-  return <FormationTableWrapper formations={formattedFormations} userRole={role} />
+  return <FormationTableWrapper formations={formattedFormations} userRole={role} userRoleId={userRoleId} />
 }

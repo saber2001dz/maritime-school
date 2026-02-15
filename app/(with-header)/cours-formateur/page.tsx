@@ -74,6 +74,12 @@ export default async function CoursFormateurPage({ searchParams }: PageProps) {
   // Transformer les données pour le format attendu par le composant client
   const transformedData = transformCoursFormateurs(coursFormateurs)
 
+  let userRoleId: string | null = null
+  if (role) {
+    const roleRecord = await prisma.role.findUnique({ where: { name: role } })
+    userRoleId = roleRecord?.id ?? null
+  }
+
   return (
     <CoursFormateurClient
       initialData={transformedData}
@@ -81,6 +87,7 @@ export default async function CoursFormateurPage({ searchParams }: PageProps) {
       notoNaskhArabicClassName={notoNaskhArabic.className}
       returnUrl={returnUrl}
       userRole={role}
+      userRoleId={userRoleId}
     />
   )
 }

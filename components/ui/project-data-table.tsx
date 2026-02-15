@@ -37,6 +37,7 @@ interface ProjectDataTableProps {
   projects: Project[];
   visibleColumns: Set<keyof Project>;
   onEditClick?: (project: Project) => void;
+  canEditButton?: boolean;
   customHeaders?: { key: keyof Project | 'actions'; label: string; width?: string }[];
   notoNaskhArabicClassName?: string;
 }
@@ -75,7 +76,7 @@ const dotVariants = cva("w-1.5 h-1.5 rounded-full", {
 });
 
 // --- MAIN COMPONENT ---
-export const ProjectDataTable = ({ projects, visibleColumns, onEditClick, customHeaders, notoNaskhArabicClassName }: ProjectDataTableProps) => {
+export const ProjectDataTable = ({ projects, visibleColumns, onEditClick, canEditButton = true, customHeaders, notoNaskhArabicClassName }: ProjectDataTableProps) => {
   // Animation variants for table rows
   const rowVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
@@ -171,8 +172,13 @@ export const ProjectDataTable = ({ projects, visibleColumns, onEditClick, custom
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button
-                            onClick={() => onEditClick?.(project)}
-                            className="p-1.5 rounded-md transition-all duration-150 cursor-pointer hover:bg-slate-200 text-[#06407F]/70 hover:text-[#06407F] dark:hover:bg-blue-950/50 dark:text-foreground/70 dark:hover:text-foreground"
+                            onClick={() => canEditButton && onEditClick?.(project)}
+                            disabled={!canEditButton}
+                            className={`p-1.5 rounded-md transition-all duration-150 ${
+                              !canEditButton
+                                ? "opacity-50 cursor-not-allowed text-foreground/70"
+                                : "cursor-pointer hover:bg-slate-200 text-[#06407F]/70 hover:text-[#06407F] dark:hover:bg-blue-950/50 dark:text-foreground/70 dark:hover:text-foreground"
+                            }`}
                             aria-label="Modifier"
                           >
                             <SquarePen size={16} />

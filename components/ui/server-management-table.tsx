@@ -10,6 +10,8 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { useTheme } from "next-themes"
 import { can } from "@/lib/permissions"
 import { usePermissions } from "@/lib/permissions-context"
+import { useUIPermissions } from "@/lib/ui-permissions-context"
+import { canAccessUIComponent } from "@/lib/ui-permissions"
 
 const notoNaskhArabic = localFont({
   src: "../../app/fonts/NotoNaskhArabic.woff2",
@@ -32,6 +34,7 @@ interface ServerManagementTableProps {
   className?: string
   onAddNewFormation?: () => void
   userRole?: string | null
+  userRoleId?: string | null
 }
 
 function ServerManagementTableContent({
@@ -40,8 +43,11 @@ function ServerManagementTableContent({
   className = "",
   onAddNewFormation,
   userRole,
+  userRoleId,
 }: ServerManagementTableProps = {}) {
   const permissionsMap = usePermissions()
+  const uiPermissionsMap = useUIPermissions()
+  const canEditButton = canAccessUIComponent(userRoleId ?? null, "formation_edit_button", uiPermissionsMap)
   const [servers, setServers] = useState<Server[]>(initialServers)
   const [editingFormation, setEditingFormation] = useState<FormationData | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
@@ -421,10 +427,15 @@ function ServerManagementTableContent({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
-                          className="w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
+                          disabled={!canEditButton}
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+                            !canEditButton
+                              ? "opacity-50 cursor-not-allowed text-muted-foreground"
+                              : "text-muted-foreground hover:text-foreground cursor-pointer"
+                          }`}
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleEditClick(server)
+                            if (canEditButton) handleEditClick(server)
                           }}
                         >
                           <Pencil className="w-4 h-4" />

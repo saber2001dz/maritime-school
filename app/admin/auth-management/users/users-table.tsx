@@ -632,7 +632,7 @@ export function UsersTable({
               className="px-3 py-3 text-xs font-semibold text-foreground border-b border-border text-left"
               style={{
                 display: "grid",
-                gridTemplateColumns: "40px 120px 260px 1fr 180px 150px 120px 180px 180px 80px",
+                gridTemplateColumns: "40px 120px 260px 300px 220px 150px 200px 200px 80px",
                 columnGap: "0px",
                 backgroundColor: "#F3F3F3",
               }}
@@ -665,10 +665,6 @@ export function UsersTable({
                 <Mail className="w-3.5 h-3.5 opacity-50" />
                 <span>Email</span>
                 {sortField === "email" && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
-              </div>
-              <div className="flex items-center gap-1.5 border-r border-border px-3">
-                <Shield className="w-3.5 h-3.5 opacity-50" />
-                <span>Password</span>
               </div>
               <div className="flex items-center gap-1.5 border-r border-border px-3">
                 <Shield className="w-3.5 h-3.5 opacity-50" />
@@ -713,7 +709,7 @@ export function UsersTable({
                       }`}
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "40px 120px 260px 1fr 180px 150px 120px 180px 180px 80px",
+                        gridTemplateColumns: "40px 120px 260px 300px 220px 150px 200px 200px 80px",
                         columnGap: "0px",
                         alignItems: "center",
                       }}
@@ -757,10 +753,6 @@ export function UsersTable({
 
                       <div className="flex items-center min-w-0 border-r border-border px-3">
                         <div className="text-sm text-foreground truncate">{user.email}</div>
-                      </div>
-
-                      <div className="flex items-center border-r border-border px-3">
-                        <span className="text-sm text-foreground/80 font-mono truncate">••••••••</span>
                       </div>
 
                       <div className="flex items-center border-r border-border px-3">
