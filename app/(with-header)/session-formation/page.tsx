@@ -48,5 +48,11 @@ export default async function SessionFormationPage() {
     ).length,
   }))
 
-  return <SessionTabsClient sessions={sessionsWithStatus} formations={formations} userRole={role} />
+  let userRoleId: string | null = null
+  if (role) {
+    const roleRecord = await prisma.role.findUnique({ where: { name: role } })
+    userRoleId = roleRecord?.id ?? null
+  }
+
+  return <SessionTabsClient sessions={sessionsWithStatus} formations={formations} userRole={role} userRoleId={userRoleId} />
 }

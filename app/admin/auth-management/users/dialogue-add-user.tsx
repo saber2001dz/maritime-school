@@ -128,7 +128,7 @@ export function DialogueAddUser({ roles, isOpen, onClose, onSave }: DialogueAddU
             className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-background border border-border rounded-lg shadow-lg z-50 p-6"
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Ajouter un utilisateur</h2>
+              <h2 className="text-lg font-semibold" style={{ color: "#06407F" }}>Ajouter un utilisateur</h2>
               <button
                 onClick={handleCloseDialog}
                 className="p-1 hover:bg-muted rounded transition-colors cursor-pointer"
@@ -190,6 +190,7 @@ export function DialogueAddUser({ roles, isOpen, onClose, onSave }: DialogueAddU
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -211,6 +212,7 @@ export function DialogueAddUser({ roles, isOpen, onClose, onSave }: DialogueAddU
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    tabIndex={-1}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                   >
                     {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -228,7 +230,12 @@ export function DialogueAddUser({ roles, isOpen, onClose, onSave }: DialogueAddU
                     <SelectValue placeholder="Sélectionner un rôle" />
                   </SelectTrigger>
                   <SelectContent>
-                    {roles.map((role) => (
+                    {[...roles].sort((a, b) => {
+                      const order = ["administrateur", "coordinateur", "formateur", "direction", "agent"]
+                      const aIdx = order.indexOf(a.name)
+                      const bIdx = order.indexOf(b.name)
+                      return (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx)
+                    }).map((role) => (
                       <SelectItem key={role.name} value={role.name}>
                         <div className="flex items-center gap-2">
                           <span

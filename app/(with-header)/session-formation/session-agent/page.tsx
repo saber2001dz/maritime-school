@@ -109,6 +109,13 @@ export default async function SessionAgentPage({ searchParams }: PageProps) {
   // Transformer les données pour le format attendu par le composant client
   const transformedData = transformSessionAgents(agentFormations)
 
+  // Récupérer l'ID du rôle pour les UI permissions
+  let userRoleId: string | null = null
+  if (role) {
+    const roleRecord = await prisma.role.findUnique({ where: { name: role } })
+    userRoleId = roleRecord?.id ?? null
+  }
+
   return (
     <SessionAgentClient
       initialData={transformedData}
@@ -119,6 +126,7 @@ export default async function SessionAgentPage({ searchParams }: PageProps) {
       formationId={formationId}
       nombreParticipants={nombreParticipants}
       userRole={role}
+      userRoleId={userRoleId}
     />
   )
 }

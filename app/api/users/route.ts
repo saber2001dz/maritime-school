@@ -44,51 +44,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cet email est déjà utilisé' }, { status: 400 })
     }
 
-    // Créer l'utilisateur directement avec Prisma et Better-Auth
-    // Better-Auth gère l'authentification, mais on crée l'utilisateur manuellement pour avoir plus de contrôle
-    const bcrypt = await import('bcryptjs')
-    const hashedPassword = await bcrypt.hash(password, 10)
+    // Utiliser l'API native Better-Auth pour créer l'utilisateur
+    // Cela garantit le bon algorithme de hachage (scrypt)
+    const signUpResponse = await auth.api.signUpEmail({
+      body: {
+        email,
+        name,
+        password,
+      },
+    })
 
-    try {
-      // Créer l'utilisateur dans la base de données
-      const newUser = await prisma.user.create({
-        data: {
-          email,
-          name,
-          emailVerified: emailVerified || false,
-          role: userRole,
-        },
-      })
-
-      // Créer le compte associé avec le mot de passe hashé
-      await prisma.account.create({
-        data: {
-          userId: newUser.id,
-          accountId: newUser.id,
-          providerId: 'credential',
-          password: hashedPassword,
-        },
-      })
-
-      return NextResponse.json(newUser, { status: 201 })
-    } catch (createError) {
-      console.error('Erreur lors de la création:', createError)
-
-      // Gérer les erreurs spécifiques
-      if (createError instanceof Error) {
-        if (createError.message.includes('Unique constraint')) {
-          return NextResponse.json(
-            { error: 'Cet email est déjà utilisé' },
-            { status: 400 }
-          )
-        }
-      }
-
+    if (!signUpResponse?.user?.id) {
       return NextResponse.json(
         { error: 'Erreur lors de la création du compte' },
         { status: 400 }
       )
     }
+
+    // Mettre à jour le rôle et emailVerified après création
+    const newUser = await prisma.user.update({
+      where: { id: signUpResponse.user.id },
+      data: {
+        role: userRole,
+        emailVerified: emailVerified || false,
+      },
+    })
+
+    return NextResponse.json(newUser, { status: 201 })
   } catch (error) {
     console.error('Erreur lors de la création de l\'utilisateur:', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

@@ -68,9 +68,9 @@ const formatWithTunisianMonths = (date: Date, formatStr: string) => {
 
 // Traduction des vues du calendrier
 const viewLabels: Record<CalendarView, { full: string; short: string }> = {
-  month: { full: "شهر", short: "ش" },
+  month: { full: "شهــــر", short: "ش" },
   week: { full: "أسبوع", short: "أ" },
-  day: { full: "يوم", short: "ي" },
+  day: { full: "يـــــوم", short: "ي" },
   agenda: { full: "جدول الأعمال", short: "ج" },
 }
 import {
@@ -197,6 +197,7 @@ export function EventCalendar({
   }
 
   const handleEventSelect = (event: CalendarEvent) => {
+    if (!onEventUpdate && !onEventDelete) return
     setSelectedEvent(event)
     setIsEventDialogOpen(true)
   }
@@ -347,7 +348,7 @@ export function EventCalendar({
                 size={16}
                 aria-hidden="true"
               />
-              <span className="max-[479px]:sr-only">اليوم</span>
+              <span className="max-[479px]:sr-only cursor-pointer">اليوم</span>
             </Button>
             <div className="flex items-center gap-1 sm:gap-1">
               <Button
@@ -355,6 +356,7 @@ export function EventCalendar({
                 size="icon"
                 onClick={handlePrevious}
                 aria-label="Previous"
+                className="cursor-pointer"
               >
                 <ChevronRightIcon size={16} aria-hidden="true" />
               </Button>
@@ -366,6 +368,7 @@ export function EventCalendar({
                 size="icon"
                 onClick={handleNext}
                 aria-label="Next"
+                className="cursor-pointer"
               >
                 <ChevronLeftIcon size={16} aria-hidden="true" />
               </Button>
@@ -374,7 +377,7 @@ export function EventCalendar({
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-1.5 max-[479px]:h-8">
+                <Button variant="outline" className="gap-1.5 max-[479px]:h-8 cursor-pointer">
                   <span>
                     <span className="min-[480px]:hidden" aria-hidden="true">
                       {viewLabels[view].short}
@@ -411,6 +414,7 @@ export function EventCalendar({
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>
+            {onEventAdd && (
             <Button
               className="max-[479px]:aspect-square max-[479px]:p-0!"
               onClick={() => {
@@ -418,7 +422,7 @@ export function EventCalendar({
                 setIsEventDialogOpen(true)
               }}
             >
-              
+
               <span className="max-sm:sr-only">تـكـــويــن جــديــد</span>
               <PlusIcon
                 className="opacity-60 sm:-ms-1"
@@ -426,6 +430,7 @@ export function EventCalendar({
                 aria-hidden="true"
               />
             </Button>
+            )}
           </div>
         </div>
 
@@ -435,7 +440,7 @@ export function EventCalendar({
               currentDate={currentDate}
               events={events}
               onEventSelect={handleEventSelect}
-              onEventCreate={handleEventCreate}
+              onEventCreate={onEventAdd ? handleEventCreate : undefined}
             />
           )}
           {view === "week" && (
@@ -443,7 +448,7 @@ export function EventCalendar({
               currentDate={currentDate}
               events={events}
               onEventSelect={handleEventSelect}
-              onEventCreate={handleEventCreate}
+              onEventCreate={onEventAdd ? handleEventCreate : undefined}
             />
           )}
           {view === "day" && (
@@ -451,7 +456,7 @@ export function EventCalendar({
               currentDate={currentDate}
               events={events}
               onEventSelect={handleEventSelect}
-              onEventCreate={handleEventCreate}
+              onEventCreate={onEventAdd ? handleEventCreate : undefined}
             />
           )}
           {view === "agenda" && (

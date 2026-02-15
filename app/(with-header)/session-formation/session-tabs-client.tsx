@@ -17,9 +17,10 @@ interface SessionTabsClientProps {
   sessions: SessionFormation[]
   formations: Formation[]
   userRole?: string | null
+  userRoleId?: string | null
 }
 
-export function SessionTabsClient({ sessions: initialSessions, formations, userRole }: SessionTabsClientProps) {
+export function SessionTabsClient({ sessions: initialSessions, formations, userRole, userRoleId }: SessionTabsClientProps) {
   // État partagé des sessions entre les deux onglets
   const [sessions, setSessions] = useState<SessionFormation[]>(initialSessions)
 
@@ -66,6 +67,7 @@ export function SessionTabsClient({ sessions: initialSessions, formations, userR
                   onSessionUpdated={handleSessionUpdated}
                   onSessionDeleted={handleSessionDeleted}
                   userRole={userRole}
+                  userRoleId={userRoleId}
                 />
               </TabsContent>
 

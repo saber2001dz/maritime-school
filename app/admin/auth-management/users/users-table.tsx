@@ -16,8 +16,6 @@ import {
   Check,
   Search,
   UserPlus,
-  Eye,
-  EyeOff,
   Circle,
 } from "lucide-react"
 import {
@@ -99,7 +97,6 @@ export function UsersTable({
   const [userToEdit, setUserToEdit] = useState<User | null>(null)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set())
   const shouldReduceMotion = useReducedMotion()
   const { theme } = useTheme()
   const isDark = theme === "dark"
@@ -113,9 +110,9 @@ export function UsersTable({
   const handleUserSelect = (userId: string) => {
     setSelectedUsers((prev) => {
       if (prev.includes(userId)) {
-        return prev.filter((id) => id !== userId)
+        return []
       } else {
-        return [...prev, userId]
+        return [userId]
       }
     })
   }
@@ -128,17 +125,6 @@ export function UsersTable({
     }
   }
 
-  const togglePasswordVisibility = (userId: string) => {
-    setVisiblePasswords((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(userId)) {
-        newSet.delete(userId)
-      } else {
-        newSet.add(userId)
-      }
-      return newSet
-    })
-  }
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -773,22 +759,8 @@ export function UsersTable({
                         <div className="text-sm text-foreground truncate">{user.email}</div>
                       </div>
 
-                      <div className="flex items-center justify-between border-r border-border px-3 gap-2">
-                        <span className="text-sm text-foreground/80 font-mono truncate flex-1">
-                          {visiblePasswords.has(user.id) ? user.password : "••••••••"}
-                        </span>
-                        <button
-                          onClick={() => togglePasswordVisibility(user.id)}
-                          disabled={!selectedUsers.includes(user.id)}
-                          className="p-1 hover:bg-muted/50 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shrink-0"
-                          title={visiblePasswords.has(user.id) ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-                        >
-                          {visiblePasswords.has(user.id) ? (
-                            <EyeOff size={14} className="text-foreground/60" />
-                          ) : (
-                            <Eye size={14} className="text-foreground/60" />
-                          )}
-                        </button>
+                      <div className="flex items-center border-r border-border px-3">
+                        <span className="text-sm text-foreground/80 font-mono truncate">••••••••</span>
                       </div>
 
                       <div className="flex items-center border-r border-border px-3">
@@ -914,6 +886,7 @@ export function UsersTable({
       </AlertDialog>
 
       <DialogueEditUser
+        key={userToEdit?.id}
         user={userToEdit}
         roles={roles}
         isOpen={editDialogOpen}

@@ -36,6 +36,8 @@ import { ToastProvider, useToast } from "@/components/ui/ultra-quality-toast"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { can } from "@/lib/permissions"
 import { usePermissions } from "@/lib/permissions-context"
+import { useUIPermissions } from "@/lib/ui-permissions-context"
+import { canAccessUIComponent } from "@/lib/ui-permissions"
 
 export interface SessionFormation {
   id: string
@@ -66,6 +68,7 @@ interface ResizableSessionTableProps {
   className?: string
   enableAnimations?: boolean
   userRole?: string | null
+  userRoleId?: string | null
   searchParams?: ReadonlyURLSearchParams | null
 }
 
@@ -118,9 +121,15 @@ export function ResizableSessionTable({
   className = "",
   enableAnimations = true,
   userRole,
+  userRoleId,
   searchParams,
 }: ResizableSessionTableProps) {
   const permissionsMap = usePermissions()
+  const uiPermissionsMap = useUIPermissions()
+  const canUseActionMenu = canAccessUIComponent(userRoleId ?? null, "session_table_action_menu", uiPermissionsMap)
+  const canUseActionEdit = canAccessUIComponent(userRoleId ?? null, "session_table_action_edit", uiPermissionsMap)
+  const canUseActionParticipants = canAccessUIComponent(userRoleId ?? null, "session_table_action_participants", uiPermissionsMap)
+  const canUseActionDelete = canAccessUIComponent(userRoleId ?? null, "session_table_action_delete", uiPermissionsMap)
   const router = useRouter()
   const pathname = usePathname()
 
@@ -1111,6 +1120,7 @@ export function ResizableSessionTable({
                             className="flex mx-2 items-center justify-center"
                             style={{ width: columnWidths.actions }}
                           >
+                            {canUseActionMenu && (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <button className="opacity-60 hover:opacity-100 transition-opacity cursor-pointer flex items-center">
@@ -1118,7 +1128,7 @@ export function ResizableSessionTable({
                                 </button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="start" side="bottom">
-                                {can(userRole, "sessionFormation", "edit", permissionsMap) && (
+                                {canUseActionEdit && can(userRole, "sessionFormation", "edit", permissionsMap) && (
                                 <DropdownMenuItem
                                   dir="rtl"
                                   className="gap-2 cursor-pointer"
@@ -1131,6 +1141,7 @@ export function ResizableSessionTable({
                                   </span>
                                 </DropdownMenuItem>
                                 )}
+                                {canUseActionParticipants && (
                                 <DropdownMenuItem
                                   dir="rtl"
                                   className="gap-2 cursor-pointer"
@@ -1142,7 +1153,8 @@ export function ResizableSessionTable({
                                     قائمـة المشاركيــن
                                   </span>
                                 </DropdownMenuItem>
-                                {can(userRole, "sessionFormation", "delete", permissionsMap) && (
+                                )}
+                                {canUseActionDelete && can(userRole, "sessionFormation", "delete", permissionsMap) && (
                                 <DropdownMenuItem
                                   dir="rtl"
                                   className="gap-2 cursor-pointer text-red-600 focus:text-red-600"
@@ -1157,6 +1169,7 @@ export function ResizableSessionTable({
                                 )}
                               </DropdownMenuContent>
                             </DropdownMenu>
+                            )}
                           </div>
                         </div>
                       </motion.div>

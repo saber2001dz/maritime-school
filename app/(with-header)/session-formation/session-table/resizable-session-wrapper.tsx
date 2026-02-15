@@ -13,6 +13,7 @@ interface ResizableSessionWrapperProps {
   onSessionUpdated?: (session: SessionFormation) => void
   onSessionDeleted?: (sessionId: string) => void
   userRole?: string | null
+  userRoleId?: string | null
 }
 
 export function ResizableSessionWrapper({
@@ -21,6 +22,7 @@ export function ResizableSessionWrapper({
   onSessionUpdated,
   onSessionDeleted,
   userRole,
+  userRoleId,
 }: ResizableSessionWrapperProps) {
   const searchParams = useSearchParams()
   const permissionsMap = usePermissions()
@@ -75,6 +77,7 @@ export function ResizableSessionWrapper({
         onAddNewSession={can(userRole, "sessionFormation", "create", permissionsMap) ? handleAddNewSession : undefined}
         onEditSession={can(userRole, "sessionFormation", "edit", permissionsMap) ? handleEditSession : undefined}
         userRole={userRole}
+        userRoleId={userRoleId}
         searchParams={searchParams}
       />
 

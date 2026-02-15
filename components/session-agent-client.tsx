@@ -21,6 +21,8 @@ import { useToast } from "@/components/ui/ultra-quality-toast"
 import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon"
 import { can } from "@/lib/permissions"
 import { usePermissions } from "@/lib/permissions-context"
+import { useUIPermissions } from "@/lib/ui-permissions-context"
+import { canAccessUIComponent } from "@/lib/ui-permissions"
 import { RESULTAT_OPTIONS } from "@/lib/resultat-utils"
 
 interface SessionAgentClientProps {
@@ -38,6 +40,7 @@ interface SessionAgentClientProps {
   formationId?: string
   nombreParticipants?: number
   userRole?: string | null
+  userRoleId?: string | null
 }
 
 const allColumns: (keyof Project)[] = ["name", "repository", "team", "tech", "status"]
@@ -179,6 +182,9 @@ interface SessionAgentTableProps {
   editInputRef: React.RefObject<HTMLInputElement | null>
   nombreParticipants?: number
   isSessionFinished?: boolean
+  canUseResultatDropdown?: boolean
+  canUseDeleteButton?: boolean
+  canUseEditButton?: boolean
 }
 
 const SessionAgentTable = ({
@@ -206,6 +212,9 @@ const SessionAgentTable = ({
   editInputRef,
   nombreParticipants = 0,
   isSessionFinished = false,
+  canUseResultatDropdown = true,
+  canUseDeleteButton = true,
+  canUseEditButton = true,
 }: SessionAgentTableProps) => {
   const mounted = true
   const [openResultatDropdown, setOpenResultatDropdown] = useState<string | null>(null)
@@ -429,15 +438,15 @@ const SessionAgentTable = ({
                         </div>
                       ) : (
                         <div className="flex justify-center items-center gap-1">
-                          {/* Bouton édition - masqué si session terminée ou si confirmé */}
+                          {/* Bouton édition - masqué si session terminée ou si confirmé, désactivé si pas de permission UI */}
                           {!isSessionFinished && !isConfirmed && (
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <button
-                                  onClick={() => onEditClick?.(project)}
-                                  disabled={isAddingNew}
+                                  onClick={() => canUseEditButton && onEditClick?.(project)}
+                                  disabled={isAddingNew || !canUseEditButton}
                                   className={`p-1.5 rounded-md transition-all duration-150 ${
-                                    isAddingNew
+                                    isAddingNew || !canUseEditButton
                                       ? "opacity-50 cursor-not-allowed text-foreground/70"
                                       : "cursor-pointer hover:bg-slate-200 text-[#06407F]/70 hover:text-[#06407F] dark:text-blue-500 dark:hover:bg-blue-900/40 dark:hover:text-blue-400"
                                   }`}
@@ -455,10 +464,10 @@ const SessionAgentTable = ({
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
-                                onClick={() => onDeleteClick?.(project)}
-                                disabled={isAddingNew}
+                                onClick={() => canUseDeleteButton && onDeleteClick?.(project)}
+                                disabled={isAddingNew || !canUseDeleteButton}
                                 className={`p-1.5 rounded-md transition-all duration-150 ${
-                                  isAddingNew
+                                  isAddingNew || !canUseDeleteButton
                                     ? "opacity-50 cursor-not-allowed text-foreground/70"
                                     : "cursor-pointer hover:bg-red-100 text-red-600/70 hover:text-red-600 dark:text-red-500 dark:hover:bg-red-900/40 dark:hover:text-red-400"
                                 }`}
@@ -486,9 +495,9 @@ const SessionAgentTable = ({
                                   if (el) resultatBtnRefs.current.set(project.id, el)
                                   else resultatBtnRefs.current.delete(project.id)
                                 }}
-                                onClick={() => updatingResultatRowId !== project.id && setOpenResultatDropdown(openResultatDropdown === project.id ? null : project.id)}
-                                disabled={updatingResultatRowId === project.id}
-                                className={`flex items-center justify-between gap-1 min-w-[118px] px-2 py-2 rounded-md border transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
+                                onClick={() => canUseResultatDropdown && updatingResultatRowId !== project.id && setOpenResultatDropdown(openResultatDropdown === project.id ? null : project.id)}
+                                disabled={updatingResultatRowId === project.id || !canUseResultatDropdown}
+                                className={`flex items-center justify-between gap-1 min-w-[118px] px-2 py-2 rounded-md border transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed ${!canUseResultatDropdown ? "cursor-not-allowed opacity-60" : "cursor-pointer"} ${
                                   project.status.variant === "success"
                                     ? "border-green-600 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-700 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
                                     : project.status.variant === "inProgress"
@@ -510,7 +519,7 @@ const SessionAgentTable = ({
                                 >
                                   {RESULTAT_OPTIONS.find(o => o.value === project.status.value)?.label ?? project.status.text}
                                 </span>
-                                {updatingResultatRowId !== project.id && <ChevronDown className="h-3 w-3 opacity-60 shrink-0" />}
+                                {updatingResultatRowId !== project.id && <ChevronDown className={`h-3 w-3 shrink-0 ${canUseResultatDropdown ? "opacity-60" : "invisible"}`} />}
                               </button>
                               {openResultatDropdown === project.id && resultatDropdownPos && mounted && createPortal(
                                 <>
@@ -654,8 +663,13 @@ export default function SessionAgentClient({
   formationId,
   nombreParticipants = 0,
   userRole,
+  userRoleId,
 }: SessionAgentClientProps) {
   const permissionsMap = usePermissions()
+  const uiPermissionsMap = useUIPermissions()
+  const canUseResultatDropdown = canAccessUIComponent(userRoleId ?? null, "session_agent_confirmation_dropdown", uiPermissionsMap)
+  const canUseDeleteButton = canAccessUIComponent(userRoleId ?? null, "session_agent_delete_button", uiPermissionsMap)
+  const canUseEditButton = canAccessUIComponent(userRoleId ?? null, "session_agent_edit_button", uiPermissionsMap)
   const router = useRouter()
   const { addToast } = useToast()
   const [visibleColumns, setVisibleColumns] = useState<Set<keyof Project>>(new Set(allColumns))
@@ -1261,6 +1275,9 @@ export default function SessionAgentClient({
             onDeleteClick={can(userRole, "sessionAgent", "delete", permissionsMap) ? handleDeleteClick : undefined}
             onConfirmParticipation={can(userRole, "sessionAgent", "edit", permissionsMap) ? handleConfirmParticipation : undefined}
             onChangeResultat={can(userRole, "sessionAgent", "edit", permissionsMap) ? handleChangeResultat : undefined}
+            canUseResultatDropdown={canUseResultatDropdown}
+            canUseDeleteButton={canUseDeleteButton}
+            canUseEditButton={canUseEditButton}
             customHeaders={getSessionAgentHeaders(isSessionFinished)}
             notoNaskhArabicClassName={notoNaskhArabicClassName}
             isAddingNew={isAddingNew}
